@@ -283,6 +283,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
     <input id="loginPin" type="password" inputmode="numeric" placeholder="••••">
     <button id="loginBtn">Entrar</button>
     <div id="loginMsg" class="login-msg"></div>
+    <div id="loginDebug" style="margin-top:10px;font-size:11px;color:#555;font-family:monospace;background:#f4f4f4;border-radius:6px;padding:6px;text-align:left;white-space:pre-wrap"></div>
   </div>
 </div>
 
@@ -8930,6 +8931,8 @@ async function applyCloud(userId){
 }
 async function doLogin(nome,pin){
   const msg=document.getElementById('loginMsg');
+  const dbg=document.getElementById('loginDebug');
+  if(dbg)dbg.textContent='clique recebido ✓ ('+nome+')\nchamando o banco...';
   console.log('[login] clique:',nome);
   if(typeof window.supabase==='undefined'){msg.textContent='Biblioteca não carregou (sem internet?).';return;}
   if(!sb){try{sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);}catch(e){msg.textContent='Erro ao iniciar: '+(e.message||e);return;}}
@@ -8943,11 +8946,7 @@ async function doLogin(nome,pin){
   }catch(e){
     console.error('[login] erro RPC:',e);
     msg.textContent='Erro no login: '+(e.message||e.hint||JSON.stringify(e));
+    if(dbg)dbg.textContent='ERRO ao falar com o banco:\n'+(e.message||'')+'\n'+JSON.stringify(e);
     return;
   }
-  currentUser={id:userId,nome:nome};
-  try{await applyCloud(userId);}catch(e){console.error('[login] erro carregar progresso:',e);}
-  try{localStorage.setItem('painelUser',JSON.stringify(currentUser));}catch(e){}
-  try{document.getElementById('whoami').textContent=nome;}catch(e){}
-  document.getElementById('loginOverlay').style.display='none';
-  try{renderOverview();}catch(e){console.error('[login] erro render:',e);alert('Logou, mas falhou ao de
+  currentUser={id:userId,nome:
