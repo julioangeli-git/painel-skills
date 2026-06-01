@@ -8930,30 +8930,24 @@ async function applyCloud(userId){
 }
 async function doLogin(nome,pin){
   const msg=document.getElementById('loginMsg');
-  if(!sb){msg.textContent='Sem conexão com o servidor.';return;}
+  console.log('[login] clique:',nome);
+  if(typeof window.supabase==='undefined'){msg.textContent='Biblioteca não carregou (sem internet?).';return;}
+  if(!sb){try{sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);}catch(e){msg.textContent='Erro ao iniciar: '+(e.message||e);return;}}
   msg.textContent='Entrando…';
+  let userId=null;
   try{
     const {data,error}=await sb.rpc('login',{p_nome:nome,p_pin:pin});
     if(error)throw error;
-    if(!data){msg.textContent='Nome ou PIN incorreto.';return;}
-    currentUser={id:data,nome:nome};
-    await applyCloud(data);
-    try{localStorage.setItem('painelUser',JSON.stringify(currentUser));}catch(e){}
-    document.getElementById('whoami').textContent=nome;
-    document.getElementById('loginOverlay').style.display='none';
-    renderOverview();
-    setStatus('salvo na nuvem ✓');
-  }catch(e){msg.textContent='Erro de conexão. Tente de novo.';}
-}
-(function(){
-  const sel=document.getElementById('loginNome');
-  const pin=document.getElementById('loginPin');
-  const btn=document.getElementById('loginBtn');
-  if(btn)btn.onclick=()=>doLogin(sel.value,pin.value.trim());
-  if(pin)pin.addEventListener('keydown',e=>{if(e.key==='Enter')btn.click();});
-  const sv=document.getElementById('saveBtn');
-  if(sv)sv.onclick=salvarAgora;
-  const out=document.getElementById('logoutBtn');
-  if(out)out.onclick=()=>{
-    currentUser=null;
-    try{loc
+    if(data===null||data===undefined){msg.textContent='Nome ou PIN incorreto.';return;}
+    userId=data;
+  }catch(e){
+    console.error('[login] erro RPC:',e);
+    msg.textContent='Erro no login: '+(e.message||e.hint||JSON.stringify(e));
+    return;
+  }
+  currentUser={id:userId,nome:nome};
+  try{await applyCloud(userId);}catch(e){console.error('[login] erro carregar progresso:',e);}
+  try{localStorage.setItem('painelUser',JSON.stringify(currentUser));}catch(e){}
+  try{document.getElementById('whoami').textContent=nome;}catch(e){}
+  document.getElementById('loginOverlay').style.display='none';
+  try{renderOverview();}catch(e){console.error('[login] erro render:',e);alert('Logou, mas falhou ao de
