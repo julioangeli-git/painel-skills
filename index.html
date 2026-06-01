@@ -271,18 +271,12 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
     <div class="login-flag"><span></span><span></span><span></span></div>
     <h2>Central de Skills</h2>
     <p>Entre para ver e salvar seu progresso</p>
-    <label>Quem é você?</label>
-    <select id="loginNome">
-      <option value="Julio">Julio</option>
-      <option value="Raquel">Raquel</option>
-      <option value="Larissa">Larissa</option>
-      <option value="Beatriz">Beatriz</option>
-    </select>
-    <label>PIN</label>
-    <input id="loginPin" type="password" inputmode="numeric" placeholder="••••">
+    <label>Usuário</label>
+    <input id="loginNome" type="text" autocomplete="username" placeholder="seu nome de usuário">
+    <label>Senha</label>
+    <input id="loginPin" type="password" inputmode="numeric" autocomplete="current-password" placeholder="senha">
     <button id="loginBtn">Entrar</button>
     <div id="loginMsg" class="login-msg"></div>
-    <div id="loginDebug" style="margin-top:10px;font-size:11px;color:#555;font-family:monospace;background:#f4f4f4;border-radius:6px;padding:6px;text-align:left;white-space:pre-wrap"></div>
   </div>
 </div>
 
@@ -8921,18 +8915,16 @@ async function applyCloud(userId){
 }
 async function doLogin(nome,pin){
   var msg=document.getElementById('loginMsg');
-  var dbg=document.getElementById('loginDebug');
-  if(dbg)dbg.textContent='clique recebido ✓ ('+nome+')\nchamando o banco...';
-  if(typeof window.supabase==='undefined'){if(msg)msg.textContent='Biblioteca nao carregou (sem internet?).';return;}
+  if(typeof window.supabase==='undefined'){if(msg)msg.textContent='Sem conexão. Verifique a internet.';return;}
   if(!sb){try{sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);}catch(e){if(msg)msg.textContent='Erro ao iniciar: '+(e.message||e);return;}}
   if(msg)msg.textContent='Entrando...';
   var userId=null;
   try{
     var r=await sb.rpc('login',{p_nome:nome,p_pin:pin});
     if(r.error)throw r.error;
-    if(r.data===null||r.data===undefined){if(msg)msg.textContent='Nome ou PIN incorreto.';if(dbg)dbg.textContent='login retornou vazio (PIN errado?)';return;}
+    if(r.data===null||r.data===undefined){if(msg)msg.textContent='Usuário ou senha incorretos.';return;}
     userId=r.data;
-  }catch(e){ if(msg)msg.textContent='Erro no login: '+(e.message||e.hint||JSON.stringify(e)); if(dbg)dbg.textContent='ERRO banco:\n'+(e.message||'')+'\n'+JSON.stringify(e); return; }
+  }catch(e){ if(msg)msg.textContent='Erro ao entrar. Tente de novo.'; console.error('login',e); return; }
   currentUser={id:userId,nome:nome};
   try{await applyCloud(userId);}catch(e){console.error('carregar progresso',e);}
   try{localStorage.setItem('painelUser',JSON.stringify(currentUser));}catch(e){}
@@ -8945,9 +8937,7 @@ function wireLogin(){
   var sel=document.getElementById('loginNome');
   var pin=document.getElementById('loginPin');
   var btn=document.getElementById('loginBtn');
-  var dbg=document.getElementById('loginDebug');
-  if(dbg)dbg.textContent='diagnostico:\nlib supabase = '+(typeof window.supabase)+'\ncliente sb = '+(sb?'criado':'NULO')+'\nbotao = '+(btn?'ok':'NAO ACHOU');
-  if(btn)btn.onclick=function(){doLogin(sel.value,pin.value.trim());};
+  if(btn)btn.onclick=function(){doLogin(sel.value.trim(),pin.value.trim());};
   if(pin)pin.addEventListener('keydown',function(e){if(e.key==='Enter'&&btn)btn.click();});
   var sv=document.getElementById('saveBtn'); if(sv)sv.onclick=salvarAgora;
   var out=document.getElementById('logoutBtn');
@@ -8961,4 +8951,4 @@ if(document.getElementById('loginBtn')){wireLogin();}else{document.addEventListe
 })();
 
 </script>
-</body></html>
+</body></html>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
