@@ -252,7 +252,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 .anki-dl-btn{display:inline-flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;border:1px solid var(--terra);color:var(--terra);background:rgba(184,90,40,.06);padding:7px 16px;border-radius:999px;cursor:pointer;transition:.18s;margin-top:12px}
 .anki-dl-btn:hover{background:rgba(184,90,40,.14)}
 
-/* ── Login / cloud ── */
+/* Login / cloud */
 .login-ov{position:fixed;inset:0;background:rgba(20,18,15,.6);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;z-index:9999}
 .login-box{background:#fff;border-radius:18px;padding:28px 26px;width:300px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.35);text-align:center;color:#222}
 .login-box h2{margin:6px 0 2px;font-size:20px}
@@ -260,9 +260,8 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 .login-box label{display:block;text-align:left;font-size:12px;font-weight:600;margin:10px 0 4px;opacity:.8}
 .login-box select,.login-box input{width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #ccc;border-radius:10px;font-size:15px;background:#fff;color:#222}
 .login-box button{width:100%;margin-top:16px;padding:11px;border:none;border-radius:10px;background:#2e7d32;color:#fff;font-size:15px;font-weight:600;cursor:pointer}
-.login-box button:active{opacity:.85}
 .login-flag{display:flex;width:46px;height:30px;margin:0 auto 8px;border-radius:5px;overflow:hidden}
-.login-flag span{flex:1}.login-flag span:nth-child(2){background:#fff}.login-flag span:nth-child(1){background:#2e7d32}.login-flag span:nth-child(3){background:#c62828}
+.login-flag span{flex:1}.login-flag span:nth-child(1){background:#2e7d32}.login-flag span:nth-child(2){background:#fff}.login-flag span:nth-child(3){background:#c62828}
 .login-msg{margin-top:10px;font-size:13px;color:#c62828;min-height:18px}
 .cloud-status{font-size:12px;opacity:.65;margin-right:6px;white-space:nowrap}
 .whoami-wrap{font-size:13px;margin-right:6px;white-space:nowrap}
@@ -297,7 +296,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
   </div>
   <div class="tools">
     <div class="date-field">Início<input type="date" id="startDate"></div>
-    <span id="cloudStatus" class="cloud-status"></span><span class="whoami-wrap">👤 <b id="whoami"></b></span><button class="btn" id="saveBtn">💾 Salvar agora</button><button class="btn" id="logoutBtn">Sair</button><button class="btn" id="expBtn">Exportar</button>
+    <button class="btn" id="saveBtn">💾 Salvar agora</button><span id="cloudStatus" class="cloud-status"></span><span class="whoami-wrap">👤 <b id="whoami"></b></span><button class="btn" id="logoutBtn">Sair</button><button class="btn" id="expBtn">Exportar</button>
     <button class="btn" id="impBtn">Importar</button>
     <button class="btn" id="resetBtn">Zerar</button>
     <input type="file" id="impFile" accept="application/json" style="display:none">
@@ -8886,67 +8885,80 @@ document.getElementById('impFile').onchange=e=>{
 };
 document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progresso?')){state.done={};state.pace={};save();renderOverview();}};
 
-/* ========= Supabase cloud sync ========= */
+/* ===== Supabase cloud sync ===== */
 const SUPABASE_URL="https://iimyqfnxlyjpsolnwgst.supabase.co";
 const SUPABASE_KEY="sb_publishable_sKx3adUH-u4r1cAqA1t-Zw_R-hY-Ws6";
 let sb=null;
-try{ sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY); }catch(e){ console.warn('Supabase indisponível',e); }
+try{ sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY); }catch(e){ console.warn('Supabase indisponivel',e); }
 let currentUser=null, cloudTimer=null;
-function setStatus(t){const el=document.getElementById('cloudStatus');if(el)el.textContent=t;}
+function setStatus(t){var el=document.getElementById('cloudStatus');if(el)el.textContent=t;}
 function scheduleCloudSave(){
   if(!currentUser||!sb)return;
-  clearTimeout(cloudTimer);
-  setStatus('salvando…');
-  cloudTimer=setTimeout(async()=>{
-    try{
-      const {error}=await sb.rpc('salvar_progresso',{p_user_id:currentUser.id,p_done:state.done,p_pace:state.pace,p_start:state.startDate});
-      if(error)throw error;
-      setStatus('salvo na nuvem ✓');
-    }catch(e){ setStatus('sem conexão — salvo no aparelho'); }
+  clearTimeout(cloudTimer); setStatus('salvando...');
+  cloudTimer=setTimeout(async function(){
+    try{ var r=await sb.rpc('salvar_progresso',{p_user_id:currentUser.id,p_done:state.done,p_pace:state.pace,p_start:state.startDate}); if(r.error)throw r.error; setStatus('salvo na nuvem ✓'); }
+    catch(e){ setStatus('sem conexao - salvo no aparelho'); }
   },800);
 }
-const _origSave=save;
+var _origSave=save;
 save=function(){_origSave();scheduleCloudSave();};
 async function salvarAgora(){
   _origSave();
-  const btn=document.getElementById('saveBtn');
+  var btn=document.getElementById('saveBtn');
   if(!currentUser||!sb){setStatus('entre para salvar na nuvem');return;}
-  clearTimeout(cloudTimer);
-  setStatus('salvando…');
-  if(btn){btn.disabled=true;}
-  try{
-    const {error}=await sb.rpc('salvar_progresso',{p_user_id:currentUser.id,p_done:state.done,p_pace:state.pace,p_start:state.startDate});
-    if(error)throw error;
-    setStatus('salvo na nuvem ✓');
-    if(btn){const o=btn.textContent;btn.textContent='✓ Salvo';setTimeout(()=>{btn.textContent=o;},1400);}
-  }catch(e){ setStatus('erro ao salvar — tente de novo'); }
+  clearTimeout(cloudTimer); setStatus('salvando...'); if(btn)btn.disabled=true;
+  try{ var r=await sb.rpc('salvar_progresso',{p_user_id:currentUser.id,p_done:state.done,p_pace:state.pace,p_start:state.startDate}); if(r.error)throw r.error; setStatus('salvo na nuvem ✓'); if(btn){var o=btn.textContent;btn.textContent='✓ Salvo';setTimeout(function(){btn.textContent=o;},1400);} }
+  catch(e){ setStatus('erro ao salvar - tente de novo'); }
   finally{ if(btn)btn.disabled=false; }
 }
 async function applyCloud(userId){
-  const {data:prog,error}=await sb.rpc('carregar_progresso',{p_user_id:userId});
-  if(error)throw error;
+  var r=await sb.rpc('carregar_progresso',{p_user_id:userId});
+  if(r.error)throw r.error;
+  var prog=r.data;
   if(prog){state.done=prog.done||{};state.pace=prog.pace||{};state.startDate=prog.start_date||APP.startDate;}
   else{state.done={};state.pace={};state.startDate=APP.startDate;}
-  if(document.getElementById('startDate'))document.getElementById('startDate').value=state.startDate;
+  var sd=document.getElementById('startDate'); if(sd)sd.value=state.startDate;
 }
 async function doLogin(nome,pin){
-  const msg=document.getElementById('loginMsg');
-  const dbg=document.getElementById('loginDebug');
+  var msg=document.getElementById('loginMsg');
+  var dbg=document.getElementById('loginDebug');
   if(dbg)dbg.textContent='clique recebido ✓ ('+nome+')\nchamando o banco...';
-  console.log('[login] clique:',nome);
-  if(typeof window.supabase==='undefined'){msg.textContent='Biblioteca não carregou (sem internet?).';return;}
-  if(!sb){try{sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);}catch(e){msg.textContent='Erro ao iniciar: '+(e.message||e);return;}}
-  msg.textContent='Entrando…';
-  let userId=null;
+  if(typeof window.supabase==='undefined'){if(msg)msg.textContent='Biblioteca nao carregou (sem internet?).';return;}
+  if(!sb){try{sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);}catch(e){if(msg)msg.textContent='Erro ao iniciar: '+(e.message||e);return;}}
+  if(msg)msg.textContent='Entrando...';
+  var userId=null;
   try{
-    const {data,error}=await sb.rpc('login',{p_nome:nome,p_pin:pin});
-    if(error)throw error;
-    if(data===null||data===undefined){msg.textContent='Nome ou PIN incorreto.';return;}
-    userId=data;
-  }catch(e){
-    console.error('[login] erro RPC:',e);
-    msg.textContent='Erro no login: '+(e.message||e.hint||JSON.stringify(e));
-    if(dbg)dbg.textContent='ERRO ao falar com o banco:\n'+(e.message||'')+'\n'+JSON.stringify(e);
-    return;
-  }
-  currentUser={id:userId,nome:
+    var r=await sb.rpc('login',{p_nome:nome,p_pin:pin});
+    if(r.error)throw r.error;
+    if(r.data===null||r.data===undefined){if(msg)msg.textContent='Nome ou PIN incorreto.';if(dbg)dbg.textContent='login retornou vazio (PIN errado?)';return;}
+    userId=r.data;
+  }catch(e){ if(msg)msg.textContent='Erro no login: '+(e.message||e.hint||JSON.stringify(e)); if(dbg)dbg.textContent='ERRO banco:\n'+(e.message||'')+'\n'+JSON.stringify(e); return; }
+  currentUser={id:userId,nome:nome};
+  try{await applyCloud(userId);}catch(e){console.error('carregar progresso',e);}
+  try{localStorage.setItem('painelUser',JSON.stringify(currentUser));}catch(e){}
+  var w=document.getElementById('whoami'); if(w)w.textContent=nome;
+  document.getElementById('loginOverlay').style.display='none';
+  try{renderOverview();}catch(e){alert('Logou, mas falhou ao desenhar: '+(e.message||e));}
+  setStatus('salvo na nuvem ✓');
+}
+function wireLogin(){
+  var sel=document.getElementById('loginNome');
+  var pin=document.getElementById('loginPin');
+  var btn=document.getElementById('loginBtn');
+  var dbg=document.getElementById('loginDebug');
+  if(dbg)dbg.textContent='diagnostico:\nlib supabase = '+(typeof window.supabase)+'\ncliente sb = '+(sb?'criado':'NULO')+'\nbotao = '+(btn?'ok':'NAO ACHOU');
+  if(btn)btn.onclick=function(){doLogin(sel.value,pin.value.trim());};
+  if(pin)pin.addEventListener('keydown',function(e){if(e.key==='Enter'&&btn)btn.click();});
+  var sv=document.getElementById('saveBtn'); if(sv)sv.onclick=salvarAgora;
+  var out=document.getElementById('logoutBtn');
+  if(out)out.onclick=function(){ currentUser=null; try{localStorage.removeItem('painelUser');}catch(e){} document.getElementById('loginPin').value=''; document.getElementById('loginMsg').textContent=''; document.getElementById('loginOverlay').style.display='flex'; };
+}
+if(document.getElementById('loginBtn')){wireLogin();}else{document.addEventListener('DOMContentLoaded',wireLogin);}
+(async function(){
+  if(!sb)return;
+  var saved=null; try{saved=JSON.parse(localStorage.getItem('painelUser')||'null');}catch(e){}
+  if(saved&&saved.id){ currentUser=saved; try{ await applyCloud(saved.id); var w=document.getElementById('whoami'); if(w)w.textContent=saved.nome; document.getElementById('loginOverlay').style.display='none'; renderOverview(); setStatus('salvo na nuvem ✓'); }catch(e){ document.getElementById('loginOverlay').style.display='flex'; } }
+})();
+
+</script>
+</body></html>
