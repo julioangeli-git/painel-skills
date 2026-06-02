@@ -8743,6 +8743,7 @@ function richBlockHtml(id){
       h+='</div></div></div>';
     }
     h+='<button class="anki-dl-btn" onclick="downloadAnki(\''+id+'\')">⬇ Baixar Anki · Semana '+weekNum+'</button>';
+    h+='<button class="anki-dl-btn" onclick="downloadAnkiApp(\''+id+'\')">⬇ AnkiApp (XML) · Semana '+weekNum+'</button>';
   }
   h+='</div>';
   return h;
@@ -8788,6 +8789,27 @@ function downloadAnki(id){
   var blob=new Blob([rows.join('\n')],{type:'text/plain;charset=utf-8'});
   var a=document.createElement('a');a.href=URL.createObjectURL(blob);
   a.download='anki-semana'+String(weekNum).padStart(2,'0')+'-nivel'+level+'.txt';a.click();
+}
+
+function downloadAnkiApp(id){
+  var d=RICH[id];if(!d)return;
+  var parts=id.split('::');var weekNum=parseInt(parts[2])+1;
+  var esc=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');};
+  var seen={};var cards=[];
+  function addCard(it,pt){var k=String(it).toLowerCase().trim();if(!k||seen[k])return;seen[k]=1;
+    cards.push('<card><text name="Back">'+esc(pt)+'</text><text name="Front">'+esc(it)+'</text></card>');}
+  // 1. vocabulário (80), 2. palavras das frases, 3. palavras da música — dedup por palavra
+  (d.words||[]).forEach(function(cat){(cat.items||[]).forEach(function(w){addCard(w[0],w[1]);});});
+  (d.phraseWords||[]).forEach(function(w){addCard(w[0],w[1]);});
+  (d.songWords||[]).forEach(function(w){addCard(w[0],w[1]);});
+  // 4. frases-foco (inteiras) e 5. versos da música — não deduplicam com palavras
+  (d.phrases||[]).forEach(function(p){cards.push('<card><text name="Back">'+esc(p[1])+'</text><text name="Front">'+esc(p[0])+'</text></card>');});
+  (d.songLines||[]).forEach(function(v){cards.push('<card><text name="Back">♪ música</text><text name="Front">'+esc(v)+'</text></card>');});
+  var deck='Italiano Semana '+String(weekNum).padStart(2,'0');
+  var xml='<deck name="'+deck+'"><fields><text name="Front" sides="10"></text><tts name="TTS" sides="10" lang="it-IT"><sources><ref name="Front" /></sources></tts><text name="Back" sides="01"></text></fields><cards>'+cards.join('')+'</cards></deck>';
+  var blob=new Blob([xml],{type:'application/xml;charset=utf-8'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='Italiano-Semana'+String(weekNum).padStart(2,'0')+'.xml';a.click();
 }
 
 function openDetail(i){
