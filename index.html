@@ -8709,25 +8709,41 @@ Object.assign(RICH, {"Italiano::1::0": {"words": [{"cat": "Cortesia", "items": [
 
 function richBlockHtml(id){
   var d=RICH[id];if(!d)return'';
-  var parts=id.split('::');var weekNum=parseInt(parts[2])+1;
-  var songTitle=['Azzurro','L\'italiano','Volare','La donna è mobile','Funiculi Funiculà','Arrivederci Roma','O Sole Mio','Que Bella Cosa','La vie en rose'];
-  var songArtist=['Adriano Celentano','Toto Cutugno','Domenico Modugno','Verdi','Denza','Renato Rascel','Neapolitan','Brahim','Piaf'];
+  var esc=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');};
+  var isLang=!!(d.songLines||d.songWords);
   var h='<div class="m1-section">';
-  h+='<div class="m1-sec-title">Vocabulário ('+d.words.reduce(function(a,c){return a+c.items.length;},0)+' palavras)</div>';
-  d.words.forEach(function(cat){
-    h+='<div class="word-cat-label">'+cat.cat+' ('+cat.items.length+')</div><div class="word-grid">';
-    cat.items.forEach(function(w){h+='<div class="word-item"><span class="word-it">'+w[0]+'</span><span class="word-pt">'+w[1]+'</span></div>';});
+  if(d.description){h+='<div class="m1-sec-title">'+esc(d.description)+'</div>';}
+  if(d.words&&d.words.length){
+    h+='<div class="m1-sec-title">'+(isLang?'Vocabulário':'Conceitos')+' ('+d.words.reduce(function(a,c){return a+(c.items?c.items.length:0);},0)+')</div>';
+    d.words.forEach(function(cat){
+      h+='<div class="word-cat-label">'+esc(cat.cat)+' ('+(cat.items?cat.items.length:0)+')</div><div class="word-grid">';
+      (cat.items||[]).forEach(function(w){h+='<div class="word-item"><span class="word-it">'+esc(w[0])+'</span><span class="word-pt">'+esc(w[1])+'</span></div>';});
+      h+='</div>';
+    });
+  }
+  if(d.phrases&&d.phrases.length){
+    h+='<div class="m1-section"><div class="m1-sec-title">'+(isLang?'Frases-chave':'Exemplos')+' ('+d.phrases.length+')</div><table class="phrase-table">';
+    d.phrases.forEach(function(p){h+='<tr><td class="pt-it">'+esc(p[0])+'</td><td class="pt-pt">'+esc(p[1])+'</td></tr>';});
+    h+='</table></div>';
+  }
+  if(d.codeExamples&&d.codeExamples.length){
+    h+='<div class="m1-section"><div class="m1-sec-title">Código ('+d.codeExamples.length+')</div>';
+    d.codeExamples.forEach(function(c){h+='<pre style="background:#1e1e2e;color:#cdd6f4;padding:10px;border-radius:8px;overflow:auto;font-size:12px;line-height:1.5;white-space:pre-wrap;margin:4px 0">'+esc(c)+'</pre>';});
     h+='</div>';
-  });
-  h+='<div class="m1-section"><div class="m1-sec-title">Frases-chave ('+d.phrases.length+')</div><table class="phrase-table">';
-  d.phrases.forEach(function(p){h+='<tr><td class="pt-it">'+p[0]+'</td><td class="pt-pt">'+p[1]+'</td></tr>';});
-  h+='</table></div>';
-  h+='<div class="m1-section"><div class="song-box"><div class="song-title">♪ '+songTitle[weekNum-1]+' — '+songArtist[weekNum-1]+'</div>';
-  h+='<div class="song-lyric">'+d.songLines.join('<br>')+'</div>';
-  h+='<div class="m1-sec-title" style="margin-top:6px">Palavras ('+d.songWords.length+' novas)</div><div class="song-words-grid">';
-  d.songWords.forEach(function(w){h+='<span class="song-wchip">'+w[0]+' <span>'+w[1]+'</span></span>';});
-  h+='</div></div></div>';
-  h+='<button class="anki-dl-btn" onclick="downloadAnki(\''+id+'\')">⬇ Baixar Anki · Semana '+weekNum+'</button>';
+  }
+  if(isLang){
+    var parts=id.split('::');var weekNum=parseInt(parts[2])+1;
+    var songTitle=['Azzurro','L\'italiano','Volare','La donna è mobile','Funiculi Funiculà','Arrivederci Roma','O Sole Mio','Que Bella Cosa','La vie en rose'];
+    var songArtist=['Adriano Celentano','Toto Cutugno','Domenico Modugno','Verdi','Denza','Renato Rascel','Neapolitan','Brahim','Piaf'];
+    if(d.songLines){
+      h+='<div class="m1-section"><div class="song-box"><div class="song-title">♪ '+(songTitle[weekNum-1]||'')+' — '+(songArtist[weekNum-1]||'')+'</div>';
+      h+='<div class="song-lyric">'+d.songLines.join('<br>')+'</div>';
+      h+='<div class="m1-sec-title" style="margin-top:6px">Palavras ('+(d.songWords?d.songWords.length:0)+' novas)</div><div class="song-words-grid">';
+      (d.songWords||[]).forEach(function(w){h+='<span class="song-wchip">'+esc(w[0])+' <span>'+esc(w[1])+'</span></span>';});
+      h+='</div></div></div>';
+    }
+    h+='<button class="anki-dl-btn" onclick="downloadAnki(\''+id+'\')">⬇ Baixar Anki · Semana '+weekNum+'</button>';
+  }
   h+='</div>';
   return h;
 }
@@ -8807,7 +8823,7 @@ function renderDetail(){
     html+=tl.map(t=>{
       const done=!!state.done[t.id],nx=c.next&&c.next.id===t.id,tk=t.trk||{};
       const mopen=nx;
-      const rich=richBlockHtml(t.id);
+      let rich='';try{rich=richBlockHtml(t.id);}catch(e){rich='<div class="m1-section">conteúdo indisponível</div>';}
       const blocks=['v','f','m','i'];
       const blockNames=s.lang?['Vocabulário','Frases-chave','Música','Imersão real']:['Conceito','Prática','Projeto','Validação'];
       const blockDone=blocks.map((k,idx)=>!!state.done[t.id+'::'+k]).filter(x=>x).length;
