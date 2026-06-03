@@ -295,7 +295,7 @@ var AVATARS=[
   {id:'hero',      label:'Herói',      icon:'🦸'},
   {id:'pirate',    label:'Pirata',     icon:'🏴‍☠️'},
   {id:'dragon',    label:'Dragão',     icon:'🐉'},
-  {id:'ninja',     label:'Ninja',      icon:'🥷'},
+  {id:'ninja',     label:'Sombra',     icon:'🌙'},
   {id:'vampire',   label:'Vampiro',    icon:'🧛'},
   {id:'princess',  label:'Princesa',   icon:'👸'},
   {id:'fairy',     label:'Fada',       icon:'🧚'},
@@ -305,23 +305,26 @@ var AVATARS=[
   {id:'elf_f',     label:'Elfa',       icon:'🧝‍♀️'},
   {id:'oracle',    label:'Oráculo',    icon:'🔮'}
 ];
+var _srsApplyingAvatar=false;
 function srsApplyAvatar(id){
   var av=AVATARS.find(function(a){return a.id===id;})||null;
   if(!av)return;
+  _srsApplyingAvatar=true;
   try{localStorage.setItem('painelAvatar',id);}catch(e){}
-  // Atualiza o botão de Ajustes (visível em todos os dispositivos)
-  var btn=document.getElementById('cfgBtn');
-  if(btn)btn.innerHTML=av.icon+' Ajustes';
-  // Atualiza whoami no header (desktop)
+  // Badge dedicado (único lugar — visível em todos os dispositivos)
+  var badge=document.getElementById('srsAvatarBadge');
+  if(badge)badge.textContent=av.icon;
+  // Atualiza whoami: apenas o nome, sem duplicar ícone
   var w=document.getElementById('whoami');
   if(w){
-    var nome=w.dataset.nome||(typeof currentUser!=='undefined'&&currentUser?currentUser.nome:'')||w.textContent.replace(/^\S+\s*/,'').trim();
+    var nome=w.dataset.nome||(typeof currentUser!=='undefined'&&currentUser?currentUser.nome:'')||'';
+    if(!nome){nome=w.textContent.replace(/[^ -\w ]/g,'').trim();}
     w.dataset.nome=nome;
-    w.innerHTML=av.icon+(nome?' <b>'+srsEsc(nome)+'</b>':'');
   }
   // Atualiza a grade de avatares se o painel estiver aberto
   var grid=document.getElementById('avatarGrid');
   if(grid)grid.innerHTML=srsAvatarHtml();
+  setTimeout(function(){_srsApplyingAvatar=false;},150);
 }
 function srsAvatarHtml(){
   var cur='';try{cur=localStorage.getItem('painelAvatar')||'';}catch(e){}
@@ -386,6 +389,55 @@ function srsOpenConfig(){
     +'</div></div>';
   ov.style.display='flex';
 }
+/* ===== SRS flip cards: autoplay, karaoke, bandeiras ===== */
+function srsPronFor(word, topicId){
+  var d=RICH[topicId]||{};
+  for(var i=0;i<(d.words||[]).length;i++){
+    var items=d.words[i].items||[];
+    for(var j=0;j<items.length;j++){if(items[j][0]===word)return items[j][2]||'';}
+  }
+  // frases: gera pron por palavra
+  for(var k=0;k<(d.phrases||[]).length;k++){
+    var ph=srsApplyPlaceholders(d.phrases[k][0]);
+    if(ph===word||d.phrases[k][0]===word)return ph.replace(/[.,?!]/g,'').split(/\s+/).filter(Boolean).join('-');
+  }
+  return '';
+}
+function srsRender(){
+  _srsShown=false;
+  var box=document.getElementById('srsCardBox');var btns=document.getElementById('srsBtns');
+  if(!box||!btns)return;
+  var total=srsCardsForTopic(_srsTopic).length;
+  document.getElementById('srsCounts').textContent=
+    'Sessão: '+(_srsIdx+1)+'/'+_srsQueue.length+' · Total do tópico: '+total;
+  if(_srsIdx>=_srsQueue.length){
+    box.innerHTML='<div style="font-size:18px;text-align:center;padding:60px 0">✓ Sessão concluída!<br><span style="font-size:14px;opacity:.6">Volte amanhã para revisar as vencidas.</span></div>';
+    btns.innerHTML='<button class="btn" onclick="closeReview()">Voltar</button>';
+    return;
+  }
+  var c=_srsQueue[_srsIdx];
+  var pron=srsPronFor(c.f,_srsTopic);
+  var pronHtml=pron
+    ?'<div id="karaoke" style="font-size:15px;color:#7a8aa0;letter-spacing:.5px;margin-top:8px">'
+      +pron.split('-').map(function(s,i){return '<span id="ks'+i+'">'+srsEsc(s)+'</span>';}).join(' ')
+      +'</div>':'';
+  var img=c.img?'<img src="'+srsEsc(c.img)+'" alt="" style="max-width:90px;max-height:90px;border-radius:10px;margin-bottom:10px">':'';
+  var flagIT='<img src="https://flagcdn.com/w40/it.png" alt="🇮🇹" style="position:absolute;top:12px;right:14px;width:30px;border-radius:3px;box-shadow:0 1px 4px rgba(0,0,0,.2)">';
+  var flagBR='<img src="https://flagcdn.com/w40/br.png" alt="🇧🇷" style="position:absolute;top:12px;right:14px;width:30px;border-radius:3px;box-shadow:0 1px 4px rgba(0,0,0,.2)">';
+  box.innerHTML='<div class="flip" id="srsFlip" onclick="srsShow()"><div class="flip-in">'
+    +'<div class="face front" style="position:relative">'+flagIT+img
+    +'<div style="font-size:27px;font-weight:700">'+srsEsc(c.f)+'</div>'
+    +pronHtml
+    +'<button class="btn" style="margin-top:14px;font-size:14px" onclick="event.stopPropagation();srsSpeakKaraoke(\''+srsJsq(c.f)+'\',\''+srsJsq(pron)+'\')">🔊 ouvir</button>'
+    +'<div style="margin-top:10px;opacity:.45;font-size:11px">toque para ver tradução</div></div>'
+    +'<div class="face back" style="position:relative">'+flagBR
+    +'<div style="font-size:24px;font-weight:700">'+srsEsc(c.b)+'</div></div>'
+    +'</div></div>';
+  btns.innerHTML='';
+  // Autoplay ao abrir o cartão
+  setTimeout(function(){srsSpeakKaraoke(c.f,pron);},280);
+}
+
 /* ===== SRS detalhado: override de srsCardHtml e openReview ===== */
 function srsCardHtml(id){
   var cards=srsCardsForTopic(id);if(!cards.length)return '';
@@ -457,10 +509,51 @@ function srsCloseAjustes(){
 }
 function srsInitUI(){
   var anchor=document.getElementById('expBtn')||document.getElementById('logoutBtn');
-  if(anchor&&anchor.parentNode&&!document.getElementById('cfgBtn')){var b=document.createElement('button');b.id='cfgBtn';b.className='btn';b.textContent='⚙ Ajustes';b.onclick=srsOpenConfig;anchor.parentNode.insertBefore(b,anchor);}
+  // Botão Ajustes (sem avatar embutido)
+  if(anchor&&anchor.parentNode&&!document.getElementById('cfgBtn')){
+    var b=document.createElement('button');b.id='cfgBtn';b.className='btn';b.textContent='⚙ Ajustes';b.onclick=srsOpenConfig;
+    anchor.parentNode.insertBefore(b,anchor);
+  }
+  // Badge de avatar dedicado (no bloco .tools, visível desktop+mobile)
+  if(!document.getElementById('srsAvatarBadge')){
+    var tools=document.querySelector('.tools');
+    if(tools){
+      var badge=document.createElement('span');badge.id='srsAvatarBadge';
+      badge.style.cssText='font-size:20px;line-height:1;cursor:pointer;padding:0 2px';
+      badge.title='Clique em Ajustes para trocar';badge.onclick=srsOpenConfig;
+      tools.insertBefore(badge,tools.firstChild);
+    }
+    // Remove o 👤 hardcoded do whoami-wrap
+    var ww=document.querySelector('.whoami-wrap');
+    if(ww){Array.from(ww.childNodes).forEach(function(n){if(n.nodeType===3)n.textContent=n.textContent.replace('👤','').replace(' ','');});}
+  }
   try{var th=localStorage.getItem('painelTheme');if(th)srsApplyTheme(th);}catch(e){}
   try{var ti=localStorage.getItem('painelTitle');if(ti)srsApplyTitle(ti);}catch(e){}
-  try{var av=localStorage.getItem('painelAvatar');if(av)srsApplyAvatar(av);}catch(e){}
+  // Aplicar avatar e observar login para reaplicar depois que o nome aparecer
+  (function(){
+    var savedAv=null;try{savedAv=localStorage.getItem('painelAvatar');}catch(e){}
+    if(savedAv)srsApplyAvatar(savedAv);
+    var w=document.getElementById('whoami');
+    if(w){
+      var obs=new MutationObserver(function(){
+        if(_srsApplyingAvatar)return;
+        var av=null;try{av=localStorage.getItem('painelAvatar');}catch(e){}
+        if(av){w.dataset.nome=w.textContent.trim();srsApplyAvatar(av);}
+      });
+      obs.observe(w,{childList:true,characterData:true,subtree:true});
+    }
+  })();
+  // Normalizar nome no login: primeira letra maiúscula, sem travar login
+  (function(){
+    var nomeFld=document.getElementById('loginNome');
+    if(nomeFld&&!nomeFld._srsPatchedNome){
+      nomeFld._srsPatchedNome=true;
+      nomeFld.addEventListener('blur',function(){
+        var v=this.value.trim();
+        if(v)this.value=v.charAt(0).toUpperCase()+v.slice(1).toLowerCase();
+      });
+    }
+  })();
   // First-time: mostrar Ajustes após login (uma vez só)
   if(!localStorage.getItem('painelAjustesShown')){
     var _roOrig=typeof renderOverview==='function'?renderOverview:null;
