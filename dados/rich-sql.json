@@ -1,0 +1,1686 @@
+{
+ "SQL::1::0": {
+  "description": "Modelo relacional e RDBMS",
+  "words": [
+   {
+    "cat": "Conceitos fundamentais (11)",
+    "items": [
+     [
+      "RDBMS",
+      "Sistema de Banco de Dados Relacional"
+     ],
+     [
+      "Relação",
+      "Tabela de dados organizada"
+     ],
+     [
+      "Tupla",
+      "Linha de dados"
+     ],
+     [
+      "Atributo",
+      "Coluna de dados"
+     ],
+     [
+      "Chave Primária (PK)",
+      "Identificador único da linha"
+     ],
+     [
+      "Chave Estrangeira (FK)",
+      "Referência a outra tabela"
+     ],
+     [
+      "Domínio",
+      "Tipo de dado permitido"
+     ],
+     [
+      "Integridade referencial",
+      "FK sempre aponta para PK válida"
+     ],
+     [
+      "Cardinalidade",
+      "1:1, 1:N, N:N entre tabelas"
+     ],
+     [
+      "Esquema",
+      "Estrutura completa do banco"
+     ],
+     [
+      "Instância",
+      "Dados atuais no banco"
+     ]
+    ]
+   }
+  ],
+  "phrases": [
+   [
+    "CREATE TABLE Cliente (id INT PRIMARY KEY AUTO_INCREMENT, nome VARCHAR(100) NOT NULL, email VARCHAR(100) UNIQUE)",
+    "Criar tabela com PK e UNIQUE"
+   ],
+   [
+    "ALTER TABLE Pedido ADD COLUMN data_entrega DATE DEFAULT NULL",
+    "Adicionar coluna"
+   ]
+  ],
+  "codeExamples": [
+   "CREATE TABLE clientes (id INT PRIMARY KEY, nome VARCHAR(100), email VARCHAR(100) UNIQUE);",
+   "CREATE TABLE pedidos (id INT PRIMARY KEY, cliente_id INT NOT NULL, data DATE, FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE);"
+  ]
+ },
+ "SQL::1::1": {
+  "description": "SELECT / FROM / WHERE — consultas básicas",
+  "words": [
+   {
+    "cat": "Cláusula SELECT (5)",
+    "items": [
+     [
+      "SELECT *",
+      "Todas as colunas"
+     ],
+     [
+      "SELECT coluna1, coluna2",
+      "Colunas específicas"
+     ],
+     [
+      "SELECT DISTINCT",
+      "Remove duplicatas"
+     ],
+     [
+      "SELECT COUNT(*)",
+      "Conta número total de linhas"
+     ],
+     [
+      "SELECT TOP 10",
+      "Primeiros 10 (SQL Server) / LIMIT (MySQL/PostgreSQL)"
+     ]
+    ]
+   },
+   {
+    "cat": "Cláusula WHERE (7)",
+    "items": [
+     [
+      "WHERE coluna = valor",
+      "Igualdade exata"
+     ],
+     [
+      "WHERE coluna > valor",
+      "Maior que"
+     ],
+     [
+      "WHERE coluna >= valor",
+      "Maior ou igual"
+     ],
+     [
+      "WHERE coluna < valor",
+      "Menor que"
+     ],
+     [
+      "WHERE coluna <> valor",
+      "Diferente (≠)"
+     ],
+     [
+      "WHERE data >= '2024-01-01'",
+      "Comparação de datas"
+     ],
+     [
+      "WHERE status IS NULL",
+      "Verifica valores nulos"
+     ]
+    ]
+   }
+  ],
+  "phrases": [
+   [
+    "SELECT nome, email FROM clientes WHERE idade > 21",
+    "Buscar clientes maiores de 21 anos"
+   ],
+   [
+    "SELECT * FROM pedidos WHERE status = 'confirmado'",
+    "Listar pedidos confirmados"
+   ]
+  ],
+  "codeExamples": [
+   "SELECT * FROM clientes;",
+   "SELECT nome, email FROM clientes WHERE idade >= 18 AND cidade = 'São Paulo';",
+   "SELECT DISTINCT categoria FROM produtos;"
+  ]
+ },
+ "SQL::1::2": {
+  "description": "ORDER BY, LIMIT/OFFSET e DISTINCT",
+  "words": [
+   {
+    "cat": "ORDER BY (3)",
+    "items": [
+     [
+      "ORDER BY coluna ASC",
+      "Crescente (padrão)"
+     ],
+     [
+      "ORDER BY coluna DESC",
+      "Decrescente"
+     ],
+     [
+      "ORDER BY col1, col2 DESC",
+      "Ordem primária, depois secundária"
+     ]
+    ]
+   },
+   {
+    "cat": "LIMIT e OFFSET (3)",
+    "items": [
+     [
+      "LIMIT 10",
+      "Retorna primeiras 10 linhas"
+     ],
+     [
+      "LIMIT 10 OFFSET 20",
+      "Pula 20, retorna próximas 10"
+     ],
+     [
+      "FETCH FIRST 5 ROWS ONLY",
+      "Sintaxe SQL padrão"
+     ]
+    ]
+   }
+  ],
+  "phrases": [
+   [
+    "SELECT * FROM clientes ORDER BY sobrenome ASC",
+    "Listar clientes em ordem alfabética"
+   ],
+   [
+    "SELECT * FROM pedidos ORDER BY data DESC LIMIT 5",
+    "Últimos 5 pedidos"
+   ]
+  ],
+  "codeExamples": [
+   "SELECT nome, salario FROM funcionarios ORDER BY salario DESC;",
+   "SELECT * FROM log_eventos ORDER BY data_hora DESC LIMIT 100;"
+  ]
+ },
+ "SQL::1::3": {
+  "description": "Tipos de dados e NULL (lógica de 3 valores)",
+  "words": [
+   {
+    "cat": "Tipos numéricos (5)",
+    "items": [
+     [
+      "INT",
+      "Inteiro de 32 bits"
+     ],
+     [
+      "BIGINT",
+      "Inteiro de 64 bits"
+     ],
+     [
+      "DECIMAL(10,2)",
+      "Decimal com 10 dígitos, 2 casas"
+     ],
+     [
+      "FLOAT / REAL",
+      "Ponto flutuante"
+     ],
+     [
+      "NUMERIC",
+      "Decimal de precisão arbitrária"
+     ]
+    ]
+   },
+   {
+    "cat": "Lógica NULL (5)",
+    "items": [
+     [
+      "NULL",
+      "Valor desconhecido"
+     ],
+     [
+      "IS NULL",
+      "Campo não tem valor"
+     ],
+     [
+      "IS NOT NULL",
+      "Campo tem valor"
+     ],
+     [
+      "NULL <> NULL",
+      "Retorna UNKNOWN, não FALSE"
+     ],
+     [
+      "NULL = 0",
+      "Retorna UNKNOWN"
+     ]
+    ]
+   }
+  ],
+  "phrases": [
+   [
+    "WHERE preco IS NOT NULL",
+    "Produtos com preço definido"
+   ],
+   [
+    "SELECT COALESCE(desconto, 0) FROM vendas",
+    "Trata NULL como 0"
+   ]
+  ],
+  "codeExamples": [
+   "SELECT * FROM clientes WHERE data_cancelamento IS NULL;",
+   "SELECT COALESCE(desconto, 0) AS desconto_efetivo FROM vendas;"
+  ]
+ },
+ "SQL::1::4": {
+  "description": "Operadores IN, BETWEEN e LIKE",
+  "words": [
+   {
+    "cat": "Operador IN (3)",
+    "items": [
+     [
+      "WHERE status IN ('ativo', 'pendente')",
+      "Múltiplos valores exatos"
+     ],
+     [
+      "WHERE id NOT IN (1,2,3)",
+      "Exclui valores da lista"
+     ],
+     [
+      "WHERE id IN (SELECT ...)",
+      "Subquery para lista dinâmica"
+     ]
+    ]
+   },
+   {
+    "cat": "Pattern matching LIKE (5)",
+    "items": [
+     [
+      "LIKE 'Jo%'",
+      "Começa com 'Jo'"
+     ],
+     [
+      "LIKE '%Silva'",
+      "Termina com 'Silva'"
+     ],
+     [
+      "LIKE '%e%'",
+      "Contém 'e'"
+     ],
+     [
+      "LIKE 'J_ão'",
+      "Exatamente 'J', qualquer char, 'ão'"
+     ],
+     [
+      "ILIKE (PostgreSQL)",
+      "Case-insensitive"
+     ]
+    ]
+   }
+  ],
+  "phrases": [
+   [
+    "SELECT * FROM pedidos WHERE status IN ('confirmado', 'enviado')",
+    "Pedidos em estados finalizadores"
+   ],
+   [
+    "SELECT * FROM clientes WHERE email LIKE '%@gmail.com'",
+    "Clientes com email Gmail"
+   ]
+  ],
+  "codeExamples": [
+   "SELECT * FROM clientes WHERE cidade IN ('São Paulo', 'Rio de Janeiro');",
+   "SELECT * FROM produtos WHERE descricao LIKE '%eletrônico%';"
+  ]
+ },
+ "SQL::2::0": {
+  "description": "JOINs: INNER, LEFT, RIGHT, FULL, CROSS",
+  "words": [
+   {
+    "cat": "INNER JOIN (2)",
+    "items": [
+     [
+      "SELECT * FROM A INNER JOIN B ON A.id = B.fk_id",
+      "Só registros que existem em ambas"
+     ],
+     [
+      "Retorna linhas coincidentes",
+      "Exclui não-correspondências"
+     ]
+    ]
+   },
+   {
+    "cat": "LEFT JOIN (2)",
+    "items": [
+     [
+      "SELECT * FROM A LEFT JOIN B ON A.id = B.fk_id",
+      "Todos de A + coincidências de B"
+     ],
+     [
+      "NULL para não-correspondências",
+      "Preserva registros de A"
+     ]
+    ]
+   }
+  ],
+  "phrases": [
+   [
+    "SELECT c.nome, COUNT(p.id) FROM clientes c LEFT JOIN pedidos p ON c.id = p.cliente_id GROUP BY c.id",
+    "Clientes com contagem de pedidos"
+   ],
+   [
+    "SELECT * FROM produtos LEFT JOIN estoque ON produtos.id = estoque.produto_id",
+    "Produtos com ou sem estoque"
+   ]
+  ],
+  "codeExamples": [
+   "SELECT c.nome, p.valor FROM clientes c INNER JOIN pedidos p ON c.id = p.cliente_id;",
+   "SELECT * FROM vendedores v LEFT JOIN vendas vd ON v.id = vd.vendedor_id;"
+  ]
+ },
+ "SQL::2::1": {
+  "description": "GROUP BY e agregações",
+  "words": [
+   {
+    "cat": "GROUP BY básico (3)",
+    "items": [
+     [
+      "GROUP BY coluna",
+      "Agrupa registros iguais"
+     ],
+     [
+      "COUNT(*)",
+      "Conta linhas por grupo"
+     ],
+     [
+      "SUM(coluna)",
+      "Soma por grupo"
+     ]
+    ]
+   },
+   {
+    "cat": "Agregações (4)",
+    "items": [
+     [
+      "COUNT(*) vs COUNT(col)",
+      "* conta NULLs, coluna não"
+     ],
+     [
+      "COUNT(DISTINCT col)",
+      "Valores únicos no grupo"
+     ],
+     [
+      "MAX() / MIN()",
+      "Maior/menor valor"
+     ],
+     [
+      "AVG(coluna)",
+      "Média por grupo"
+     ]
+    ]
+   }
+  ],
+  "phrases": [
+   [
+    "SELECT cidade, COUNT(*) as total FROM clientes GROUP BY cidade",
+    "Clientes por cidade"
+   ],
+   [
+    "SELECT categoria, SUM(quantidade) FROM vendas GROUP BY categoria",
+    "Quantidade vendida por categoria"
+   ]
+  ],
+  "codeExamples": [
+   "SELECT departamento, AVG(salario) FROM funcionarios GROUP BY departamento;",
+   "SELECT produto_id, COUNT(*) as vezes_vendido FROM vendas GROUP BY produto_id ORDER BY COUNT(*) DESC;"
+  ]
+ },
+ "SQL::2::2": {
+  "description": "HAVING e ordem lógica de execução",
+  "words": [
+   {
+    "cat": "HAVING vs WHERE (2)",
+    "items": [
+     [
+      "WHERE filtra linhas",
+      "Antes de GROUP BY"
+     ],
+     [
+      "HAVING filtra grupos",
+      "Depois de GROUP BY"
+     ]
+    ]
+   },
+   {
+    "cat": "Ordem lógica (6)",
+    "items": [
+     [
+      "1. FROM (tabela)",
+      "De onde vem os dados"
+     ],
+     [
+      "2. WHERE (filtro)",
+      "Filtra linhas"
+     ],
+     [
+      "3. GROUP BY (agrupamento)",
+      "Agrupa"
+     ],
+     [
+      "4. HAVING (filtro grupo)",
+      "Filtra grupos"
+     ],
+     [
+      "5. SELECT (exibição)",
+      "Escolhe colunas"
+     ],
+     [
+      "6. ORDER BY (ordenação)",
+      "Ordena resultado"
+     ]
+    ]
+   }
+  ],
+  "phrases": [
+   [
+    "SELECT categoria, SUM(valor) FROM vendas GROUP BY categoria HAVING SUM(valor) > 10000",
+    "Categorias com venda > 10k"
+   ],
+   [
+    "SELECT cliente_id, COUNT(*) FROM pedidos GROUP BY cliente_id HAVING COUNT(*) >= 3",
+    "Clientes com 3+ pedidos"
+   ]
+  ],
+  "codeExamples": [
+   "SELECT departamento, COUNT(*) FROM funcionarios GROUP BY departamento HAVING COUNT(*) > 5;",
+   "SELECT produto_id, SUM(quantidade) FROM vendas WHERE data > '2024-01-01' GROUP BY produto_id HAVING SUM(quantidade) > 100;"
+  ]
+ },
+ "SQL::2::3": {
+  "description": "Aliases de coluna e tabela",
+  "words": [
+   {
+    "cat": "Aliases de coluna (3)",
+    "items": [
+     [
+      "SELECT nome AS 'Nome Completo'",
+      "Renomeia saída"
+     ],
+     [
+      "SELECT UPPER(nome) nome_maiuscula",
+      "Alias sem AS"
+     ],
+     [
+      "SELECT COUNT(*) total FROM Clientes",
+      "Nomeia resultado de agregação"
+     ]
+    ]
+   },
+   {
+    "cat": "Aliases de tabela (3)",
+    "items": [
+     [
+      "FROM Clientes AS c",
+      "Tabela com apelido"
+     ],
+     [
+      "SELECT c.nome FROM Clientes c",
+      "Uso do alias"
+     ],
+     [
+      "SELECT * FROM Clientes c INNER JOIN Pedidos p ON c.id = p.cliente_id",
+      "Aliases facilitam JOINs"
+     ]
+    ]
+   }
+  ],
+  "phrases": [
+   [
+    "SELECT nome AS cliente, COUNT(*) AS total_pedidos FROM clientes c GROUP BY c.id",
+    "Exemplo com múltiplos aliases"
+   ],
+   [
+    "SELECT DATE_TRUNC('month', data) AS mes, SUM(valor) AS faturamento FROM vendas GROUP BY mes",
+    "Aliases em agregação"
+   ]
+  ],
+  "codeExamples": [
+   "SELECT c.nome AS cliente, COUNT(p.id) AS num_pedidos FROM clientes c LEFT JOIN pedidos p ON c.id = p.cliente_id GROUP BY c.id;"
+  ]
+ },
+ "SQL::2::4": {
+  "description": "DML: INSERT, UPDATE, DELETE, UPSERT",
+  "words": [
+   {
+    "cat": "INSERT (3)",
+    "items": [
+     [
+      "INSERT INTO tabela (col1, col2) VALUES (val1, val2)",
+      "Insere 1 linha"
+     ],
+     [
+      "INSERT INTO tabela VALUES (val1, val2, val3)",
+      "Todas as colunas na ordem"
+     ],
+     [
+      "INSERT INTO tabela SELECT * FROM outra_tabela",
+      "Insere resultado de SELECT"
+     ]
+    ]
+   },
+   {
+    "cat": "UPDATE e DELETE (2)",
+    "items": [
+     [
+      "UPDATE tabela SET coluna = novo_valor WHERE id = 5",
+      "Atualiza com filtro"
+     ],
+     [
+      "DELETE FROM tabela WHERE id = 5",
+      "Delete específico"
+     ]
+    ]
+   }
+  ],
+  "phrases": [
+   [
+    "INSERT INTO clientes (nome, email) VALUES ('João Silva', 'joao@email.com')",
+    "Insere novo cliente"
+   ],
+   [
+    "UPDATE clientes SET email = 'novo@email.com' WHERE id = 10",
+    "Atualiza email específico"
+   ],
+   [
+    "DELETE FROM clientes WHERE data_cancelamento IS NOT NULL",
+    "Remove clientes cancelados"
+   ]
+  ],
+  "codeExamples": [
+   "INSERT INTO produtos (nome, preco, estoque) VALUES ('Notebook', 3500.00, 10);",
+   "UPDATE pedidos SET status = 'entregue' WHERE id = 123;",
+   "DELETE FROM logs WHERE data < DATE_SUB(NOW(), INTERVAL 30 DAY);"
+  ]
+ },
+ "SQL::2::5": {
+  "description": "DDL: Constraints e Índices",
+  "words": [
+   {
+    "cat": "Constraints (4)",
+    "items": [
+     [
+      "PRIMARY KEY",
+      "Identifica linha única"
+     ],
+     [
+      "FOREIGN KEY",
+      "Referencia outra tabela"
+     ],
+     [
+      "UNIQUE",
+      "Valor único (pode ser NULL)"
+     ],
+     [
+      "NOT NULL",
+      "Campo obrigatório"
+     ]
+    ]
+   },
+   {
+    "cat": "Índices (2)",
+    "items": [
+     [
+      "CREATE INDEX idx_email ON Clientes(email)",
+      "Busca mais rápida"
+     ],
+     [
+      "CREATE UNIQUE INDEX",
+      "Garante unicidade + velocidade"
+     ]
+    ]
+   }
+  ],
+  "phrases": [
+   [
+    "CREATE TABLE Clientes (id INT PRIMARY KEY AUTO_INCREMENT, email VARCHAR(100) UNIQUE NOT NULL, idade INT CHECK (idade >= 18))",
+    "Tabela com múltiplos constraints"
+   ],
+   [
+    "ALTER TABLE Pedidos ADD CONSTRAINT fk_cliente FOREIGN KEY (cliente_id) REFERENCES Clientes(id) ON DELETE CASCADE",
+    "Adiciona FK com cascata"
+   ]
+  ],
+  "codeExamples": [
+   "CREATE TABLE usuarios (id INT PRIMARY KEY, email VARCHAR(100) UNIQUE NOT NULL);",
+   "CREATE INDEX idx_cliente_id ON pedidos(cliente_id);",
+   "CREATE INDEX idx_data ON pedidos(data_pedido DESC);"
+  ]
+ },
+ "SQL::3::0": {
+  "description": "Subqueries: escalar e correlacionada",
+  "words": [
+   {
+    "cat": "Subqueries tipos (3)",
+    "items": [
+     [
+      "Subquery escalar",
+      "Retorna 1 valor para WHERE"
+     ],
+     [
+      "Subquery correlacionada",
+      "Referencia coluna da tabela externa"
+     ],
+     [
+      "Subquery em FROM",
+      "Tabela temporária com SELECT"
+     ]
+    ]
+   }
+  ],
+  "phrases": [
+   [
+    "SELECT * FROM clientes WHERE id IN (SELECT cliente_id FROM pedidos WHERE valor > 1000)",
+    "Clientes com pedidos > 1k"
+   ],
+   [
+    "SELECT nome, (SELECT COUNT(*) FROM pedidos WHERE pedidos.cliente_id = clientes.id) as num_pedidos FROM clientes",
+    "Correlacionada"
+   ]
+  ],
+  "codeExamples": [
+   "SELECT * FROM clientes WHERE id = (SELECT cliente_id FROM pedidos WHERE valor = (SELECT MAX(valor) FROM pedidos));",
+   "SELECT c.nome FROM clientes c WHERE (SELECT COUNT(*) FROM pedidos p WHERE p.cliente_id = c.id) > 5;"
+  ]
+ },
+ "SQL::3::1": {
+  "description": "CASE WHEN e pivot manual",
+  "words": [
+   {
+    "cat": "CASE WHEN (3)",
+    "items": [
+     [
+      "CASE WHEN condicao THEN resultado",
+      "Condicional simples"
+     ],
+     [
+      "CASE WHEN ... ELSE",
+      "Com valor padrão"
+     ],
+     [
+      "CASE WHEN ... WHEN ...",
+      "Múltiplas condições"
+     ]
+    ]
+   }
+  ],
+  "phrases": [
+   [
+    "SELECT nome, CASE WHEN idade < 18 THEN 'Menor' ELSE 'Maior' END as faixa FROM clientes",
+    "Categorizar por idade"
+   ],
+   [
+    "SELECT produto, CASE WHEN estoque = 0 THEN 'Fora de estoque' WHEN estoque < 10 THEN 'Baixo' ELSE 'Disponível' END FROM produtos",
+    "Status de estoque"
+   ]
+  ],
+  "codeExamples": [
+   "SELECT nome, CASE WHEN salario > 5000 THEN 'Alto' WHEN salario > 3000 THEN 'Médio' ELSE 'Baixo' END as faixa_salarial FROM funcionarios;"
+  ]
+ },
+ "SQL::3::2": {
+  "description": "Funções de data, string e número",
+  "words": [
+   {
+    "cat": "Funções data (5)",
+    "items": [
+     [
+      "DATE()",
+      "Extrai apenas data"
+     ],
+     [
+      "EXTRACT(YEAR FROM data)",
+      "Extrai parte da data"
+     ],
+     [
+      "DATE_ADD(data, INTERVAL 1 DAY)",
+      "Adiciona período"
+     ],
+     [
+      "DATEDIFF(data1, data2)",
+      "Diferença entre datas"
+     ],
+     [
+      "NOW() / CURRENT_DATE",
+      "Data/hora atual"
+     ]
+    ]
+   },
+   {
+    "cat": "Funções string (5)",
+    "items": [
+     [
+      "UPPER() / LOWER()",
+      "Maiúscula/minúscula"
+     ],
+     [
+      "SUBSTRING(texto, 1, 5)",
+      "Extrai parte da string"
+     ],
+     [
+      "LENGTH(texto)",
+      "Comprimento da string"
+     ],
+     [
+      "TRIM(texto)",
+      "Remove espaços"
+     ],
+     [
+      "CONCAT(str1, str2)",
+      "Concatena strings"
+     ]
+    ]
+   }
+  ],
+  "phrases": [
+   [
+    "SELECT nome, YEAR(data_criacao) FROM clientes",
+    "Ano de criação"
+   ],
+   [
+    "SELECT UPPER(nome) FROM produtos",
+    "Nome em maiúsculas"
+   ]
+  ],
+  "codeExamples": [
+   "SELECT nome, DATEDIFF(CURDATE(), data_nascimento) / 365 as idade FROM clientes;",
+   "SELECT CONCAT(primeiro_nome, ' ', ultimo_nome) as nome_completo FROM usuarios;"
+  ]
+ },
+ "SQL::3::3": {
+  "description": "Conjuntos: UNION, INTERSECT, EXCEPT",
+  "words": [
+   {
+    "cat": "UNION (2)",
+    "items": [
+     [
+      "SELECT ... UNION SELECT ...",
+      "Combina sem duplicata"
+     ],
+     [
+      "SELECT ... UNION ALL SELECT ...",
+      "Combina com duplicata"
+     ]
+    ]
+   },
+   {
+    "cat": "INTERSECT e EXCEPT (2)",
+    "items": [
+     [
+      "SELECT ... INTERSECT SELECT ...",
+      "Valores em comum"
+     ],
+     [
+      "SELECT ... EXCEPT SELECT ...",
+      "Valores apenas em primeira"
+     ]
+    ]
+   }
+  ],
+  "phrases": [
+   [
+    "SELECT nome FROM clientes UNION SELECT nome FROM fornecedores",
+    "Todos nomes únicos"
+   ],
+   [
+    "SELECT cliente_id FROM pedidos INTERSECT SELECT cliente_id FROM devolucoes",
+    "Clientes com pedido E devolução"
+   ]
+  ],
+  "codeExamples": [
+   "SELECT id FROM pedidos WHERE status = 'ativo' UNION SELECT id FROM pedidos WHERE status = 'processando';",
+   "SELECT produto_id FROM vendas WHERE ano = 2024 EXCEPT SELECT produto_id FROM devolvidas;"
+  ]
+ },
+ "SQL::3::4": {
+  "description": "Views (e quando usá-las)",
+  "words": [
+   {
+    "cat": "CREATE VIEW (2)",
+    "items": [
+     [
+      "CREATE VIEW nome AS SELECT ...",
+      "Cria visualização"
+     ],
+     [
+      "DROP VIEW nome",
+      "Remove visualização"
+     ]
+    ]
+   },
+   {
+    "cat": "Quando usar (3)",
+    "items": [
+     [
+      "Simplificar queries complexas",
+      "Esconder complexidade"
+     ],
+     [
+      "Segurança",
+      "Limitar colunas visíveis"
+     ],
+     [
+      "Reutilização",
+      "View como tabela"
+     ]
+    ]
+   }
+  ],
+  "phrases": [
+   [
+    "CREATE VIEW clientes_ativos AS SELECT * FROM clientes WHERE ativo = 1",
+    "View de clientes ativos"
+   ],
+   [
+    "SELECT * FROM clientes_ativos",
+    "Usa view como tabela"
+   ]
+  ],
+  "codeExamples": [
+   "CREATE VIEW vendas_mensais AS SELECT DATE_TRUNC('month', data) as mes, SUM(valor) as total FROM vendas GROUP BY mes;",
+   "SELECT * FROM vendas_mensais WHERE mes >= '2024-01-01';"
+  ]
+ },
+ "SQL::3::5": {
+  "description": "Normalização 1NF→3NF e desnormalização",
+  "words": [
+   {
+    "cat": "Normalização (3)",
+    "items": [
+     [
+      "1NF: Sem repetição",
+      "Cada campo = 1 valor"
+     ],
+     [
+      "2NF: Dependência total",
+      "Todos atributos dependem de PK completa"
+     ],
+     [
+      "3NF: Sem transitiva",
+      "Sem X→Y→Z"
+     ]
+    ]
+   },
+   {
+    "cat": "Desnormalização (2)",
+    "items": [
+     [
+      "Ganho de performance",
+      "Menos JOINs"
+     ],
+     [
+      "Custo: anomalias",
+      "Redundância de dados"
+     ]
+    ]
+   }
+  ],
+  "phrases": [
+   [
+    "Normalizar planilha suja até 3NF",
+    "Processo prático"
+   ],
+   [
+    "Desnormalizar intencionalmente para cache",
+    "Cache table pattern"
+   ]
+  ],
+  "codeExamples": [
+   "-- Antes (não normalizado): Pedido.cliente_nome / Depois (3NF): Pedido.cliente_id -> Clientes.id",
+   "-- Desnormalizar: Adicionar preco_snapshot em Vendas para auditoria histórica"
+  ]
+ },
+ "SQL::4::0": {
+  "description": "CTEs (WITH) e CTEs recursivas",
+  "words": [
+   {
+    "cat": "CTEs básicas (2)",
+    "items": [
+     [
+      "WITH nome AS (SELECT ...)",
+      "Cria temporária nomeada"
+     ],
+     [
+      "Refatora subqueries",
+      "Mais legível"
+     ]
+    ]
+   },
+   {
+    "cat": "CTEs recursivas (2)",
+    "items": [
+     [
+      "UNION ALL com anchor",
+      "Base + recursão"
+     ],
+     [
+      "Hierarquias",
+      "Árvores de categorias"
+     ]
+    ]
+   }
+  ],
+  "phrases": [
+   [
+    "WITH vendedores_top AS (SELECT id, nome, SUM(valor) as total FROM vendas GROUP BY id ORDER BY total DESC LIMIT 10) SELECT * FROM vendedores_top",
+    "Top 10 vendedores"
+   ],
+   [
+    "WITH RECURSIVE num AS (SELECT 1 as n UNION ALL SELECT n+1 FROM num WHERE n < 100) SELECT * FROM num",
+    "Números 1-100"
+   ]
+  ],
+  "codeExamples": [
+   "WITH cte_pedidos_recentes AS (SELECT cliente_id, COUNT(*) as num_pedidos FROM pedidos WHERE data > DATE_SUB(NOW(), INTERVAL 30 DAY) GROUP BY cliente_id) SELECT * FROM cte_pedidos_recentes;"
+  ]
+ },
+ "SQL::4::1": {
+  "description": "Window functions I — ranking",
+  "words": [
+   {
+    "cat": "ROW_NUMBER, RANK, DENSE_RANK (3)",
+    "items": [
+     [
+      "ROW_NUMBER()",
+      "Número sequencial"
+     ],
+     [
+      "RANK()",
+      "Rank com gaps em empates"
+     ],
+     [
+      "DENSE_RANK()",
+      "Rank sem gaps"
+     ]
+    ]
+   }
+  ],
+  "phrases": [
+   [
+    "SELECT nome, salario, ROW_NUMBER() OVER (ORDER BY salario DESC) as rank FROM funcionarios",
+    "Ranking de salários"
+   ],
+   [
+    "SELECT produto_id, ROW_NUMBER() OVER (PARTITION BY categoria ORDER BY venda DESC) as rank FROM vendas",
+    "Top 1 por categoria"
+   ]
+  ],
+  "codeExamples": [
+   "SELECT id, nome, salario, ROW_NUMBER() OVER (ORDER BY salario DESC) as rank FROM funcionarios;",
+   "SELECT categoria, produto, venda, RANK() OVER (PARTITION BY categoria ORDER BY venda DESC) as rank FROM vendas;"
+  ]
+ },
+ "SQL::4::2": {
+  "description": "Window functions II — frames e médias móveis",
+  "words": [
+   {
+    "cat": "OVER (ROWS BETWEEN...) (3)",
+    "items": [
+     [
+      "ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW",
+      "Soma acumulada"
+     ],
+     [
+      "ROWS BETWEEN 6 PRECEDING AND CURRENT ROW",
+      "Últimas 7 linhas"
+     ],
+     [
+      "AVG() OVER",
+      "Média móvel"
+     ]
+    ]
+   }
+  ],
+  "phrases": [
+   [
+    "SELECT data, valor, SUM(valor) OVER (ORDER BY data ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) as total_acumulado FROM vendas",
+    "Soma acumulada"
+   ],
+   [
+    "SELECT data, valor, AVG(valor) OVER (ORDER BY data ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) as media_movel_7d FROM vendas",
+    "Média móvel 7 dias"
+   ]
+  ],
+  "codeExamples": [
+   "SELECT data, valor, SUM(valor) OVER (ORDER BY data) as cumulative_sum FROM vendas ORDER BY data;",
+   "SELECT mes, faturamento, AVG(faturamento) OVER (ORDER BY mes ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) as media_3m FROM vendas_mensais;"
+  ]
+ },
+ "SQL::4::3": {
+  "description": "Self-join, anti-join e semi-join",
+  "words": [
+   {
+    "cat": "Self-join (2)",
+    "items": [
+     [
+      "JOIN tabela a COM tabela a (alias b)",
+      "Mesma tabela 2 vezes"
+     ],
+     [
+      "Encontrar relações",
+      "Gerente-subordinado"
+     ]
+    ]
+   }
+  ],
+  "phrases": [
+   [
+    "SELECT a.nome as gerente, b.nome as subordinado FROM funcionarios a INNER JOIN funcionarios b ON a.id = b.gerente_id",
+    "Subordinados por gerente"
+   ]
+  ],
+  "codeExamples": [
+   "SELECT DISTINCT e1.id FROM employees e1 INNER JOIN employees e2 ON e1.manager_id = e2.id;",
+   "SELECT DISTINCT a.customer_id FROM orders a LEFT JOIN orders b ON a.customer_id = b.customer_id AND a.order_date < b.order_date WHERE b.order_id IS NULL;"
+  ]
+ },
+ "SQL::4::4": {
+  "description": "Índices I — B-tree, composto e covering",
+  "words": [
+   {
+    "cat": "Tipos de índice (3)",
+    "items": [
+     [
+      "B-tree",
+      "Padrão para WHERE/ORDER BY"
+     ],
+     [
+      "Índice composto",
+      "Múltiplas colunas"
+     ],
+     [
+      "Covering index",
+      "Contém todas as colunas da query"
+     ]
+    ]
+   }
+  ],
+  "phrases": [
+   [
+    "CREATE INDEX idx_email ON clientes(email)",
+    "Índice simples"
+   ],
+   [
+    "CREATE INDEX idx_cliente_data ON pedidos(cliente_id, data_pedido)",
+    "Índice composto"
+   ]
+  ],
+  "codeExamples": [
+   "CREATE INDEX idx_vendedor_data ON vendas(vendedor_id, data) INCLUDE (valor);",
+   "EXPLAIN SELECT * FROM clientes WHERE email = 'test@example.com';"
+  ]
+ },
+ "SQL::4::5": {
+  "description": "Transações e ACID",
+  "words": [
+   {
+    "cat": "ACID (4)",
+    "items": [
+     [
+      "Atomicity",
+      "Tudo ou nada"
+     ],
+     [
+      "Consistency",
+      "Estado válido"
+     ],
+     [
+      "Isolation",
+      "Sem leitura suja"
+     ],
+     [
+      "Durability",
+      "Persiste após commit"
+     ]
+    ]
+   }
+  ],
+  "phrases": [
+   [
+    "BEGIN; UPDATE saldo SET valor = valor - 100 WHERE conta = 'A'; UPDATE saldo SET valor = valor + 100 WHERE conta = 'B'; COMMIT;",
+    "Transferência atômica"
+   ],
+   [
+    "BEGIN; ... ROLLBACK;",
+    "Desfaz transação"
+   ]
+  ],
+  "codeExamples": [
+   "BEGIN TRANSACTION; UPDATE contas SET saldo = saldo - 100 WHERE id = 1; UPDATE contas SET saldo = saldo + 100 WHERE id = 2; COMMIT;"
+  ]
+ },
+ "SQL::5::0": {
+  "description": "Planos de execução (EXPLAIN ANALYZE)",
+  "words": [
+   {
+    "cat": "EXPLAIN (2)",
+    "items": [
+     [
+      "EXPLAIN SELECT...",
+      "Mostra plano sem executar"
+     ],
+     [
+      "EXPLAIN ANALYZE",
+      "Executa e mostra tempo real"
+     ]
+    ]
+   }
+  ],
+  "phrases": [
+   [
+    "EXPLAIN SELECT * FROM clientes WHERE email = 'test@example.com'",
+    "Ver plano"
+   ],
+   [
+    "EXPLAIN ANALYZE SELECT COUNT(*) FROM vendas WHERE data > '2024-01-01'",
+    "Plano com execução"
+   ]
+  ],
+  "codeExamples": [
+   "EXPLAIN ANALYZE SELECT c.nome, COUNT(p.id) FROM clientes c LEFT JOIN pedidos p ON c.id = p.cliente_id GROUP BY c.id;"
+  ]
+ },
+ "SQL::5::1": {
+  "description": "Otimização de queries (sargability)",
+  "words": [
+   {
+    "cat": "Sargability (3)",
+    "items": [
+     [
+      "Usar índices",
+      "WHERE coluna = valor"
+     ],
+     [
+      "Evitar funções em WHERE",
+      "SELECT * WHERE YEAR(data) = 2024 ❌"
+     ],
+     [
+      "Pushdown predicates",
+      "Filtrar cedo"
+     ]
+    ]
+   }
+  ],
+  "phrases": [
+   [
+    "SELECT * FROM vendas WHERE data >= '2024-01-01' AND data < '2024-01-02'",
+    "Sargable: usa índice"
+   ],
+   [
+    "SELECT * FROM vendas WHERE YEAR(data) = 2024",
+    "Não-sargable: função em coluna"
+   ]
+  ],
+  "codeExamples": [
+   "-- Slow: SELECT * FROM logs WHERE DATE(created_at) = '2024-01-01';",
+   "-- Fast: SELECT * FROM logs WHERE created_at >= '2024-01-01' AND created_at < '2024-01-02';"
+  ]
+ },
+ "SQL::5::2": {
+  "description": "Índices II — estatísticas, seletividade, parciais",
+  "words": [
+   {
+    "cat": "Índices avançados (3)",
+    "items": [
+     [
+      "Índice parcial",
+      "WHERE col = 'ativo'"
+     ],
+     [
+      "Índice funcional",
+      "UPPER(nome)"
+     ],
+     [
+      "Seletividade",
+      "% de linhas retornadas"
+     ]
+    ]
+   }
+  ],
+  "phrases": [
+   [
+    "CREATE INDEX idx_ativos ON clientes(id) WHERE status = 'ativo'",
+    "Índice parcial para ativos"
+   ]
+  ],
+  "codeExamples": [
+   "CREATE INDEX idx_upper_email ON users(UPPER(email));",
+   "CREATE INDEX idx_logs_recent ON logs(id) WHERE created_at > CURRENT_DATE - INTERVAL 30 DAY;"
+  ]
+ },
+ "SQL::5::3": {
+  "description": "Isolamento, MVCC, locks e deadlocks",
+  "words": [
+   {
+    "cat": "Níveis de isolamento (4)",
+    "items": [
+     [
+      "READ UNCOMMITTED",
+      "Leitura suja"
+     ],
+     [
+      "READ COMMITTED",
+      "Padrão: leitura confirmada"
+     ],
+     [
+      "REPEATABLE READ",
+      "Sem phantom reads"
+     ],
+     [
+      "SERIALIZABLE",
+      "Serialização total"
+     ]
+    ]
+   }
+  ],
+  "phrases": [
+   [
+    "SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;",
+    "Define nível de isolamento"
+   ]
+  ],
+  "codeExamples": [
+   "-- Simular dirty read (READ UNCOMMITTED):",
+   "-- Session 1: BEGIN; UPDATE conta SET saldo = -100 WHERE id = 1; -- não commitou",
+   "-- Session 2: SELECT saldo FROM conta WHERE id = 1; -- vê -100"
+  ]
+ },
+ "SQL::5::4": {
+  "description": "Stored procedures, funções e triggers",
+  "words": [
+   {
+    "cat": "Stored procedures (2)",
+    "items": [
+     [
+      "CREATE PROCEDURE",
+      "Lógica armazenada no BD"
+     ],
+     [
+      "CALL procedimento()",
+      "Executa procedure"
+     ]
+    ]
+   },
+   {
+    "cat": "Triggers (2)",
+    "items": [
+     [
+      "AFTER INSERT/UPDATE/DELETE",
+      "Ação automática"
+     ],
+     [
+      "Auditoria e validação",
+      "Casos de uso"
+     ]
+    ]
+   }
+  ],
+  "phrases": [
+   [
+    "CREATE PROCEDURE transfir_saldo(conta_origem INT, conta_destino INT, valor DECIMAL) BEGIN ... END;",
+    "Procedure de transferência"
+   ]
+  ],
+  "codeExamples": [
+   "CREATE PROCEDURE sp_criar_user(p_email VARCHAR(255), p_nome VARCHAR(255)) BEGIN INSERT INTO users (email, name) VALUES (p_email, p_nome); END;",
+   "CREATE TRIGGER tr_log_delete AFTER DELETE ON clientes FOR EACH ROW BEGIN INSERT INTO log_deletes VALUES (OLD.id, OLD.nome, NOW()); END;"
+  ]
+ },
+ "SQL::5::5": {
+  "description": "Particionamento (range/list/hash)",
+  "words": [
+   {
+    "cat": "Particionamento (3)",
+    "items": [
+     [
+      "RANGE",
+      "Por intervalo (datas)"
+     ],
+     [
+      "LIST",
+      "Por valores (status)"
+     ],
+     [
+      "HASH",
+      "Por função hash"
+     ]
+    ]
+   }
+  ],
+  "phrases": [
+   [
+    "CREATE TABLE vendas (...) PARTITION BY RANGE (YEAR(data)) (PARTITION p2023 VALUES LESS THAN (2024), PARTITION p2024 VALUES LESS THAN (2025))",
+    "Partição por data"
+   ]
+  ],
+  "codeExamples": [
+   "CREATE TABLE logs (id INT, data DATE) PARTITION BY RANGE (YEAR(data)) (PARTITION p2023 VALUES LESS THAN (2024), PARTITION p2024 VALUES LESS THAN (2025));"
+  ]
+ },
+ "SQL::5::6": {
+  "description": "Materialized views e refresh",
+  "words": [
+   {
+    "cat": "Materialized views (2)",
+    "items": [
+     [
+      "Armazena resultado",
+      "Vs view: não recalcula"
+     ],
+     [
+      "Refresh periodicamente",
+      "Dados podem ficar antigos"
+     ]
+    ]
+   }
+  ],
+  "phrases": [
+   [
+    "CREATE MATERIALIZED VIEW mv_vendas_mensais AS SELECT DATE_TRUNC('month', data) as mes, SUM(valor) FROM vendas GROUP BY mes;",
+    "Cria view materializada"
+   ],
+   [
+    "REFRESH MATERIALIZED VIEW mv_vendas_mensais;",
+    "Atualiza dados"
+   ]
+  ],
+  "codeExamples": [
+   "CREATE MATERIALIZED VIEW mv_top_products AS SELECT product_id, SUM(quantity) as total FROM orders GROUP BY product_id ORDER BY total DESC;"
+  ]
+ },
+ "SQL::6::0": {
+  "description": "Modelagem dimensional (star/snowflake)",
+  "words": [
+   {
+    "cat": "Star schema (2)",
+    "items": [
+     [
+      "Fato centralizada",
+      "Métricas numeráveis"
+     ],
+     [
+      "Dimensões ao redor",
+      "Contexto: tempo, produto, cliente"
+     ]
+    ]
+   },
+   {
+    "cat": "Snowflake (2)",
+    "items": [
+     [
+      "Dimensões normalizadas",
+      "Menos redundância"
+     ],
+     [
+      "Mais JOINs",
+      "Leitura mais lenta"
+     ]
+    ]
+   }
+  ],
+  "phrases": [
+   [
+    "Modelar: fato_vendas com dimensões (dim_data, dim_produto, dim_cliente)",
+    "Design star schema"
+   ]
+  ],
+  "codeExamples": [
+   "-- Star schema: fato_vendas (date_id, produto_id, cliente_id, valor_venda)",
+   "-- Snowflake: dim_produto dividida em dim_categoria, dim_fabricante"
+  ]
+ },
+ "SQL::6::1": {
+  "description": "Slowly Changing Dimensions (SCD 1/2/3)",
+  "words": [
+   {
+    "cat": "SCD tipos (3)",
+    "items": [
+     [
+      "SCD 1",
+      "Sobrescreve histórico"
+     ],
+     [
+      "SCD 2",
+      "Versionamento histórico"
+     ],
+     [
+      "SCD 3",
+      "Anterior + atual"
+     ]
+    ]
+   }
+  ],
+  "phrases": [
+   [
+    "SCD 2: adicionar valid_from, valid_to, is_current",
+    "Rastrear mudanças"
+   ]
+  ],
+  "codeExamples": [
+   "-- SCD 2: INSERT novo registro com valid_from = NOW(), valid_to = NULL; UPDATE anterior com valid_to = NOW(), is_current = 0;"
+  ]
+ },
+ "SQL::6::2": {
+  "description": "OLTP × OLAP e engines colunares",
+  "words": [
+   {
+    "cat": "OLTP (2)",
+    "items": [
+     [
+      "Online Transaction Processing",
+      "Muitas transações pequenas"
+     ],
+     [
+      "Row-oriented",
+      "Um registro por vez"
+     ]
+    ]
+   },
+   {
+    "cat": "OLAP (2)",
+    "items": [
+     [
+      "Online Analytic Processing",
+      "Poucas queries grandes"
+     ],
+     [
+      "Column-oriented",
+      "Todos valores de 1 coluna"
+     ]
+    ]
+   }
+  ],
+  "phrases": [
+   [
+    "OLTP: INSERT/UPDATE/DELETE frequentes",
+    "Normalizado"
+   ],
+   [
+    "OLAP: agregações massivas",
+    "Star schema desnormalizado"
+   ]
+  ],
+  "codeExamples": [
+   "-- OLTP: UPDATE clientes SET email = ? WHERE id = ?",
+   "-- OLAP: SELECT SUM(valor) FROM vendas WHERE ano = 2024 GROUP BY categoria"
+  ]
+ },
+ "SQL::6::3": {
+  "description": "SQL em escala (BigQuery / Snowflake / Spark SQL)",
+  "words": [
+   {
+    "cat": "Data warehouses (3)",
+    "items": [
+     [
+      "BigQuery (Google)",
+      "Sem infraestrutura"
+     ],
+     [
+      "Snowflake",
+      "Separação storage/compute"
+     ],
+     [
+      "Spark SQL",
+      "Distributed processing"
+     ]
+    ]
+   }
+  ],
+  "phrases": [
+   [
+    "SELECT * FROM `project.dataset.table` WHERE data > '2024-01-01'",
+    "BigQuery syntax"
+   ],
+   [
+    "SELECT * FROM database.schema.table WHERE created_date > '2024-01-01'",
+    "Snowflake syntax"
+   ]
+  ],
+  "codeExamples": [
+   "-- BigQuery: SELECT SUM(value) FROM `myproject.mydataset.mypage` WHERE DATE(timestamp) = CURRENT_DATE();"
+  ]
+ },
+ "SQL::6::4": {
+  "description": "Tuning distribuído (skew, shuffle, broadcast)",
+  "words": [
+   {
+    "cat": "Problemas distribuídos (3)",
+    "items": [
+     [
+      "Skew",
+      "Alguns nós ficam sobrecarregados"
+     ],
+     [
+      "Shuffle",
+      "Redistribui dados entre nós"
+     ],
+     [
+      "Broadcast",
+      "Replica tabela pequena"
+     ]
+    ]
+   }
+  ],
+  "phrases": [
+   [
+    "Evitar skew em GROUP BY",
+    "Salt the key"
+   ],
+   [
+    "Usar broadcast para tabelas pequenas",
+    "Reduz shuffle"
+   ]
+  ],
+  "codeExamples": [
+   "-- Spark: .coalesce(1) junta em 1 partição (cuidado com OOM)",
+   "-- BigQuery: Usa clustering automático para otimizar"
+  ]
+ },
+ "SQL::6::5": {
+  "description": "Replicação, sharding e alta disponibilidade",
+  "words": [
+   {
+    "cat": "Replicação (2)",
+    "items": [
+     [
+      "Master-Slave",
+      "1 mestre, N cópias"
+     ],
+     [
+      "Master-Master",
+      "Múltiplos mestres"
+     ]
+    ]
+   }
+  ],
+  "phrases": [
+   [
+    "Replicação master-slave: writes no master, reads balanceados",
+    "HA padrão"
+   ],
+   [
+    "Sharding: chave de hash determina shard",
+    "Scale horizontal"
+   ]
+  ],
+  "codeExamples": [
+   "-- Sharding por cliente_id: SELECT * FROM vendas_shard_1 WHERE cliente_id = ? (hash % n_shards)"
+  ]
+ },
+ "SQL::6::6": {
+  "description": "Dialetos: T-SQL, PL/pgSQL, PL/SQL",
+  "words": [
+   {
+    "cat": "Dialetos SQL (3)",
+    "items": [
+     [
+      "T-SQL (SQL Server)",
+      "IF/WHILE/DECLARE"
+     ],
+     [
+      "PL/pgSQL (PostgreSQL)",
+      "PERFORM/RAISE"
+     ],
+     [
+      "PL/SQL (Oracle)",
+      "BEGIN/END/EXCEPTION"
+     ]
+    ]
+   }
+  ],
+  "phrases": [
+   [
+    "T-SQL: DECLARE @var INT; SET @var = 10;",
+    "Variáveis e tipos"
+   ],
+   [
+    "PL/pgSQL: IF condition THEN ... END IF;",
+    "Controle de fluxo"
+   ]
+  ],
+  "codeExamples": [
+   "-- T-SQL: DECLARE @total INT = 0; SELECT @total = SUM(valor) FROM vendas;",
+   "-- PL/pgSQL: CREATE FUNCTION calc_total() RETURNS INT AS $$ BEGIN RETURN (SELECT SUM(valor) FROM vendas); END; $$ LANGUAGE plpgsql;"
+  ]
+ },
+ "SQL::6::7": {
+  "description": "Segurança: roles, RLS, SQL injection",
+  "words": [
+   {
+    "cat": "Segurança (3)",
+    "items": [
+     [
+      "Roles e permissões",
+      "GRANT/REVOKE"
+     ],
+     [
+      "Row-Level Security (RLS)",
+      "Filtro por usuário"
+     ],
+     [
+      "SQL Injection",
+      "Prevenir com prepared statements"
+     ]
+    ]
+   }
+  ],
+  "phrases": [
+   [
+    "CREATE ROLE analyst; GRANT SELECT ON schema:* TO analyst;",
+    "Criar role e permissões"
+   ],
+   [
+    "ALTER POLICY rls_clientes ON vendas USING (cliente_id = current_user_id());",
+    "RLS: cada usuário vê seus dados"
+   ]
+  ],
+  "codeExamples": [
+   "-- Seguro: SELECT * FROM clientes WHERE id = ? (prepared statement)",
+   "-- Inseguro: SELECT * FROM clientes WHERE id = ' + id + ' (SQL injection)"
+  ]
+ }
+}
