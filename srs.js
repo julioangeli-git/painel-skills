@@ -47,16 +47,16 @@ var FLAG_BR='<img src="https://flagcdn.com/w40/br.png" alt="BR" style="position:
 function bigPair(it){
   var vis=it.img||matImg(it.f);
   var visHtml=vis?(String(vis).indexOf('http')===0
-     ?'<img src="'+srsEsc(vis)+'" alt="" style="width:140px;height:140px;object-fit:cover;border-radius:16px;margin-bottom:14px">'
-     :'<div style="font-size:104px;line-height:1;margin-bottom:10px">'+vis+'</div>'):'';
-  var pron=it.pron?'<div id="karaoke" style="font-size:18px;color:#7a8aa0;letter-spacing:.6px;margin-top:8px">'+String(it.pron).split('-').map(function(s,i){return '<span id="ks'+i+'">'+srsEsc(s)+'</span>';}).join('-')+'</div>':'';
+     ?'<img src="'+srsEsc(vis)+'" alt="" style="width:110px;height:110px;object-fit:cover;border-radius:16px;margin-bottom:12px">'
+     :'<div style="font-size:80px;line-height:1;margin-bottom:8px">'+vis+'</div>'):'';
+  var pron=it.pron?'<div id="karaoke" style="font-size:16px;color:#7a8aa0;letter-spacing:.6px;margin-top:6px">'+String(it.pron).split('-').map(function(s,i){return '<span id="ks'+i+'">'+srsEsc(s)+'</span>';}).join('-')+'</div>':'';
   return '<div style="display:flex;gap:22px;align-items:stretch;max-width:1000px;margin:0 auto">'
-    +'<div style="position:relative;flex:1;background:linear-gradient(135deg,#eaf4fb,#d4e9f5);border:2px solid #1c6b8c;border-radius:22px;padding:46px 24px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:380px">'
+    +'<div style="position:relative;flex:1;background:linear-gradient(135deg,#eaf4fb,#d4e9f5);border:2px solid #1c6b8c;border-radius:22px;padding:28px 22px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:290px">'
       +FLAG_IT+visHtml
-      +'<div style="font-size:42px;font-weight:800;color:#0f3d52">'+srsEsc(it.f)+'</div>'+pron
-      +'<button class="btn" style="margin-top:20px;font-size:15px" onclick="srsSpeakKaraoke(\''+srsJsq(it.f)+'\',\''+srsJsq(it.pron||'')+'\')">🔊 ouvir</button>'
+      +'<div style="font-size:34px;font-weight:800;color:#0f3d52">'+srsEsc(it.f)+'</div>'+pron
+      +'<button class="btn" style="margin-top:14px;font-size:15px" onclick="srsSpeakKaraoke(\''+srsJsq(it.f)+'\',\''+srsJsq(it.pron||'')+'\')">🔊 ouvir</button>'
     +'</div>'
-    +'<div style="position:relative;flex:1;background:linear-gradient(135deg,#eef7ea,#d8efcf);border:2px solid #4f7a3a;border-radius:22px;padding:46px 24px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:34px;font-weight:800;color:#234a18;min-height:380px">'
+    +'<div style="position:relative;flex:1;background:linear-gradient(135deg,#eef7ea,#d8efcf);border:2px solid #4f7a3a;border-radius:22px;padding:28px 22px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:28px;font-weight:800;color:#234a18;min-height:290px">'
       +FLAG_BR+srsEsc(it.b)+'</div></div>';
 }
 
@@ -69,9 +69,13 @@ function openMaterial(id,k){
   var t=(APP.skills[curIdx]?APP.skills[curIdx].topics.find(function(x){return x.id===id;}):null);
   document.getElementById('matTitle').textContent=(names[k]||'Material')+' · '+(t?t.t:id);
   renderCatCarousel(id,k);
-  document.getElementById('detail').style.display='none';
+  var detail=document.getElementById('detail');detail.style.display='none';
   var ov=document.getElementById('overview');if(ov)ov.style.display='none';
-  document.getElementById('matView').style.display='block';
+  var mv=document.getElementById('matView');
+  // coloca a página de material no fluxo do conteúdo (dentro do .wrap, sob o cabeçalho)
+  if(detail&&detail.parentNode&&mv.parentNode!==detail.parentNode){detail.parentNode.appendChild(mv);}
+  ['position','top','left','right','bottom','overflow','zIndex','background'].forEach(function(p){mv.style[p]='';});
+  mv.style.display='block';
   window.scrollTo({top:0,behavior:'smooth'});
 }
 function renderCatCarousel(id,k){
@@ -163,3 +167,46 @@ function detalharHtml(id,rich){
     +'<div id="det-'+safe+'" style="display:none;margin-top:8px">'+rich+'</div></div>';
 }
 function toggleDetalhe(safe,btn){var e=document.getElementById('det-'+safe);if(!e)return;var open=e.style.display==='none';e.style.display=open?'block':'none';if(btn)btn.textContent=open?'▴ Ocultar detalhes':'▾ Detalhar';}
+
+/* ===== Configurações: paleta de cores e título ===== */
+var THEMES={
+  'Itália (padrão)':{},
+  'Noite':{'--bg':'#1e1b16','--bg2':'#26221b','--surface':'#2a261e','--surface2':'#332e24','--ink':'#f2ecdd','--ink2':'#cdbf9f','--ink3':'#9a8a66','--border':'rgba(255,240,210,.12)','--border2':'rgba(255,240,210,.2)'},
+  'Oceano':{'--bg':'#eaf2f7','--bg2':'#dde9f1','--surface':'#f7fbfe','--surface2':'#eef5fa','--terra':'#1c6b8c','--terra-g':'#2e8bb0','--gold':'#3a7ca5','--ink':'#10222c','--ink2':'#33586b'},
+  'Floresta':{'--bg':'#eef3e7','--bg2':'#e2ead6','--surface':'#f8fbf3','--surface2':'#eef4e6','--terra':'#4f7a3a','--terra-g':'#67995a','--gold':'#7a9a3a','--ink':'#16240f','--ink2':'#33502a'},
+  'Rosé':{'--bg':'#f7ecec','--bg2':'#f1dede','--surface':'#fdf6f6','--surface2':'#f8eaea','--terra':'#b8485f','--terra-g':'#d46a80','--gold':'#c4708a','--ink':'#2a1218','--ink2':'#6b3340'}
+};
+var THEME_VARS=['--bg','--bg2','--surface','--surface2','--ink','--ink2','--ink3','--terra','--terra-g','--gold','--border','--border2'];
+function srsApplyTheme(name){
+  var t=THEMES[name]||{};var r=document.documentElement;
+  THEME_VARS.forEach(function(v){r.style.removeProperty(v);});
+  Object.keys(t).forEach(function(v){r.style.setProperty(v,t[v]);});
+  try{localStorage.setItem('painelTheme',name);}catch(e){}
+}
+function srsApplyTitle(t){
+  var h=document.querySelector('.top h1');if(!h)return;
+  if(window._origTitleHTML===undefined)window._origTitleHTML=h.innerHTML;
+  if(t&&String(t).trim()){h.textContent=t;}else{h.innerHTML=window._origTitleHTML;}
+  try{localStorage.setItem('painelTitle',t||'');}catch(e){}
+}
+function srsOpenConfig(){
+  var ov=document.getElementById('cfgOverlay');
+  if(!ov){ov=document.createElement('div');ov.id='cfgOverlay';ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:3000;display:flex;align-items:center;justify-content:center';ov.onclick=function(e){if(e.target===ov)ov.style.display='none';};document.body.appendChild(ov);}
+  var cur='';try{cur=localStorage.getItem('painelTitle')||'';}catch(e){}
+  var sw=Object.keys(THEMES).map(function(n){var c=THEMES[n]['--bg']||'#f2ead8';var a=THEMES[n]['--terra']||'#b85a28';return '<button onclick="srsApplyTheme(\''+srsJsq(n)+'\')" style="cursor:pointer;border:1px solid #ccc;border-radius:10px;padding:8px 10px;margin:4px;background:'+c+';color:'+(n==='Noite'?'#f2ecdd':'#1c1408')+';font-weight:600;font-size:13px"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+a+';margin-right:6px"></span>'+srsEsc(n)+'</button>';}).join('');
+  ov.innerHTML='<div onclick="event.stopPropagation()" style="background:var(--surface,#fdf9f2);color:var(--ink,#1c1408);border-radius:16px;padding:24px;max-width:440px;width:90%;box-shadow:0 12px 44px rgba(0,0,0,.3)">'
+    +'<div style="font-weight:700;font-size:18px;margin-bottom:16px">⚙ Configurações</div>'
+    +'<label style="font-size:13px;font-weight:600">Título do painel</label>'
+    +'<input id="cfgTitle" value="'+srsEsc(cur)+'" placeholder="Mudança para a Itália" style="width:100%;padding:9px;margin:6px 0 6px;border:1px solid #ccc;border-radius:8px;font-size:14px">'
+    +'<button class="btn" style="margin-bottom:18px" onclick="srsApplyTitle(document.getElementById(\'cfgTitle\').value)">Salvar título</button>'
+    +'<div style="font-size:13px;font-weight:600;margin-bottom:8px">Paleta de cores</div><div style="display:flex;flex-wrap:wrap">'+sw+'</div>'
+    +'<div style="text-align:right;margin-top:18px"><button class="btn" onclick="document.getElementById(\'cfgOverlay\').style.display=\'none\'">Fechar</button></div></div>';
+  ov.style.display='flex';
+}
+function srsInitUI(){
+  var anchor=document.getElementById('expBtn')||document.getElementById('logoutBtn');
+  if(anchor&&anchor.parentNode&&!document.getElementById('cfgBtn')){var b=document.createElement('button');b.id='cfgBtn';b.className='btn';b.textContent='⚙ Tema';b.onclick=srsOpenConfig;anchor.parentNode.insertBefore(b,anchor);}
+  try{var th=localStorage.getItem('painelTheme');if(th)srsApplyTheme(th);}catch(e){}
+  try{var ti=localStorage.getItem('painelTitle');if(ti)srsApplyTitle(ti);}catch(e){}
+}
+if(document.querySelector('.top h1')){srsInitUI();}else{document.addEventListener('DOMContentLoaded',srsInitUI);}
