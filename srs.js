@@ -5,6 +5,7 @@
 if(!state.started)state.started={};
 if(!state.srs)state.srs={};
 if(!state.pos)state.pos={};
+if(!state.theoryDone)state.theoryDone={};
 
 function srsEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function srsJsq(s){return String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,' ');}
@@ -135,7 +136,18 @@ function renderWord(catName){
   var catKey=_catId+'::'+_catK+'::'+_catCi;
   state.pos[catKey]=Math.max(state.pos[catKey]||0,_wordPos+1);
   var d=RICH[_catId]||{};
-  if(blockSeen(_catId,_catK,d)>=blockTotal(d,_catK)){state.done[_catId+'::'+_catK]=true;var bl=['v','f','m','i'];if(bl.every(function(x){return state.done[_catId+'::'+x];}))state.done[_catId]=true;}
+  if(blockSeen(_catId,_catK,d)>=blockTotal(d,_catK)){
+    state.done[_catId+'::'+_catK]=true;
+    var bl=['v','f','m','i'];
+    var allMat=bl.every(function(x){return state.done[_catId+'::'+x];});
+    if(allMat){
+      if(!state.theoryDone)state.theoryDone={};
+      state.theoryDone[_catId]=true;
+      // Fecha o tópico se SRS ≥ 50% OU se já estava concluido antes (migração)
+      var srsPct=typeof srsTopicPct==='function'?srsTopicPct(_catId):0;
+      if(state.done[_catId]||srsPct>=0.5)state.done[_catId]=true;
+    }
+  }
   save();
   var isLast=_wordPos>=n-1;
   var nav='<div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-top:22px">'
@@ -182,8 +194,24 @@ function matSubcardsHtml(t,lang){
     else if(started){btns='<button class="btn" style="background:#2e7fa8;color:#fff;border:none" onclick="matStart(\''+id+'\',\''+k+'\')">▸ Continuar</button>'
       +'<button class="btn" style="background:#4f7a3a;color:#fff;border:none" onclick="matConcluir(\''+id+'\',\''+k+'\')">✓ Concluir</button>';}
     else{btns='<button class="btn" style="background:#1c6b8c;color:#fff;border:none;font-weight:700" onclick="matStart(\''+id+'\',\''+k+'\')">▶ Iniciar</button>';}
+    // progress visual: barra dupla teoria+SRS para skills de idioma
+    var dualBar='';
+    if(lang&&idx===0&&!done){
+      var srsPctTopic=typeof srsTopicPct==='function'?Math.round(srsTopicPct(id)*100):0;
+      var theoryDone=!!(state.theoryDone&&state.theoryDone[id]);
+      var theoryPct=theoryDone?100:Math.round(pct/2);// approximation
+      dualBar='<div style="margin-top:4px">'
+        +'<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--ink3,#666);margin-bottom:2px">'
+        +'<span>Teoria '+(theoryDone?'✓':theoryPct+'%')+'</span>'
+        +'<span>Revisão '+srsPctTopic+'%</span></div>'
+        +'<div style="display:flex;gap:3px;height:5px">'
+        +'<div style="flex:1;background:#eee;border-radius:3px;overflow:hidden"><div style="height:100%;width:'+(theoryDone?100:theoryPct)+'%;background:#1c6b8c"></div></div>'
+        +'<div style="flex:1;background:#eee;border-radius:3px;overflow:hidden"><div style="height:100%;width:'+srsPctTopic+'%;background:#4f7a3a"></div></div>'
+        +'</div></div>';
+    }
     return '<div class="sub-card'+(done?' sub-done':'')+'" style="border:1px solid '+(done?'#9ec79a':'var(--border2,#e0d6c6)')+';border-radius:14px;background:'+(done?'var(--sub-done-bg,#eef7ea)':'var(--surface,#fff)')+';padding:16px;display:flex;flex-direction:column;gap:10px;min-height:120px">'
       +'<div style="font-weight:700;font-size:15px;color:var(--ink,#1c1408)">'+(done?'✓ ':'')+srsEsc(names[idx])+prog+'</div>'
+      +dualBar
       +(crit?'<div style="font-size:12px;color:var(--ink3,#666);line-height:1.45">'+srsEsc(crit)+'</div>':'')
       +'<div style="margin-top:auto;display:flex;gap:8px;flex-wrap:wrap">'+btns+'</div></div>';
   }).join('')+'</div>';
@@ -260,31 +288,51 @@ function miniCard(s,i){
 
 /* ===== Avatares (personagens retrô) ===== */
 var AVATARS=[
-  {id:'wizard',  label:'Mago',      icon:'🧙'},
-  {id:'warrior', label:'Guerreiro', icon:'⚔️'},
-  {id:'elf',     label:'Elfo',      icon:'🧝'},
-  {id:'robot',   label:'Robô',      icon:'🤖'},
-  {id:'hero',    label:'Herói',     icon:'🦸'},
-  {id:'pirate',  label:'Pirata',    icon:'🏴‍☠️'},
-  {id:'dragon',  label:'Dragão',    icon:'🐉'},
-  {id:'ninja',   label:'Ninja',     icon:'🥷'},
-  {id:'vampire', label:'Vampiro',   icon:'🧛'},
-  {id:'witch',   label:'Bruxa',     icon:'🔮'}
+  {id:'wizard',    label:'Mago',       icon:'🧙'},
+  {id:'warrior',   label:'Guerreiro',  icon:'⚔️'},
+  {id:'elf',       label:'Elfo',       icon:'🧝'},
+  {id:'robot',     label:'Robô',       icon:'🤖'},
+  {id:'hero',      label:'Herói',      icon:'🦸'},
+  {id:'pirate',    label:'Pirata',     icon:'🏴‍☠️'},
+  {id:'dragon',    label:'Dragão',     icon:'🐉'},
+  {id:'ninja',     label:'Ninja',      icon:'🥷'},
+  {id:'vampire',   label:'Vampiro',    icon:'🧛'},
+  {id:'princess',  label:'Princesa',   icon:'👸'},
+  {id:'fairy',     label:'Fada',       icon:'🧚'},
+  {id:'mermaid',   label:'Sereia',     icon:'🧜'},
+  {id:'heroine',   label:'Heroína',    icon:'🦸‍♀️'},
+  {id:'witch',     label:'Bruxa',      icon:'🧙‍♀️'},
+  {id:'elf_f',     label:'Elfa',       icon:'🧝‍♀️'},
+  {id:'oracle',    label:'Oráculo',    icon:'🔮'}
 ];
 function srsApplyAvatar(id){
   var av=AVATARS.find(function(a){return a.id===id;})||null;
-  var w=document.getElementById('whoami');
-  if(w&&av){
-    var cur=w.textContent.replace(/^\S+\s*/,'');  // remove avatar anterior
-    w.innerHTML=av.icon+' <span style="font-size:.9em">'+srsEsc(cur||w.textContent)+'</span>';
-  }
+  if(!av)return;
   try{localStorage.setItem('painelAvatar',id);}catch(e){}
+  // Atualiza o botão de Ajustes (visível em todos os dispositivos)
+  var btn=document.getElementById('cfgBtn');
+  if(btn)btn.innerHTML=av.icon+' Ajustes';
+  // Atualiza whoami no header (desktop)
+  var w=document.getElementById('whoami');
+  if(w){
+    var nome=w.dataset.nome||(typeof currentUser!=='undefined'&&currentUser?currentUser.nome:'')||w.textContent.replace(/^\S+\s*/,'').trim();
+    w.dataset.nome=nome;
+    w.innerHTML=av.icon+(nome?' <b>'+srsEsc(nome)+'</b>':'');
+  }
+  // Atualiza a grade de avatares se o painel estiver aberto
+  var grid=document.getElementById('avatarGrid');
+  if(grid)grid.innerHTML=srsAvatarHtml();
 }
 function srsAvatarHtml(){
   var cur='';try{cur=localStorage.getItem('painelAvatar')||'';}catch(e){}
   return AVATARS.map(function(a){
     var sel=a.id===cur;
-    return '<button onclick="srsApplyAvatar(\''+a.id+'\')" title="'+srsEsc(a.label)+'" style="cursor:pointer;border:'+(sel?'2px solid var(--terra,#b85a28)':'1px solid #ccc')+';border-radius:10px;padding:6px 8px;margin:3px;background:'+(sel?'rgba(184,90,40,.1)':'transparent')+';font-size:22px;line-height:1">'+a.icon+'</button>';
+    return '<button onclick="srsApplyAvatar(\''+a.id+'\')" title="'+srsEsc(a.label)+'"'
+      +' style="cursor:pointer;border:'+(sel?'2px solid var(--terra,#b85a28)':'1px solid #ddd')
+      +';border-radius:12px;padding:8px 6px;margin:3px;background:'+(sel?'rgba(184,90,40,.1)':'transparent')
+      +';font-size:28px;line-height:1;min-width:52px;text-align:center">'
+      +a.icon+'<div style="font-size:9px;color:var(--ink3,#666);margin-top:3px;font-family:monospace">'+srsEsc(a.label)+'</div>'
+      +'</button>';
   }).join('');
 }
 
@@ -322,16 +370,90 @@ function srsOpenConfig(){
   if(!ov){ov=document.createElement('div');ov.id='cfgOverlay';ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:3000;display:flex;align-items:center;justify-content:center';ov.onclick=function(e){if(e.target===ov)ov.style.display='none';};document.body.appendChild(ov);}
   var cur='';try{cur=localStorage.getItem('painelTitle')||'';}catch(e){}
   var sw=Object.keys(THEMES).map(function(n){var c=THEMES[n]['--bg']||'#f2ead8';var a=THEMES[n]['--terra']||'#b85a28';return '<button onclick="srsApplyTheme(\''+srsJsq(n)+'\')" style="cursor:pointer;border:1px solid #ccc;border-radius:10px;padding:8px 10px;margin:4px;background:'+c+';color:'+(n==='Noite'?'#f2ecdd':'#1c1408')+';font-weight:600;font-size:13px"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+a+';margin-right:6px"></span>'+srsEsc(n)+'</button>';}).join('');
-  ov.innerHTML='<div onclick="event.stopPropagation()" style="background:var(--surface,#fdf9f2);color:var(--ink,#1c1408);border-radius:16px;padding:24px;max-width:460px;width:92%;max-height:90vh;overflow-y:auto;box-shadow:0 12px 44px rgba(0,0,0,.3)">'
+  var isFirst=!localStorage.getItem('painelAjustesShown');
+  ov.innerHTML='<div onclick="event.stopPropagation()" style="background:var(--surface,#fdf9f2);color:var(--ink,#1c1408);border-radius:16px;padding:24px;max-width:480px;width:94%;max-height:92vh;overflow-y:auto;box-shadow:0 12px 44px rgba(0,0,0,.3)">'
+    +(isFirst?'<div style="font-size:13px;color:var(--terra,#b85a28);margin-bottom:14px;padding:10px 14px;background:rgba(184,90,40,.08);border-radius:10px;border-left:3px solid var(--terra,#b85a28)">👋 Bem-vindo! Personalize o painel antes de começar.</div>':'')
     +'<div style="font-weight:700;font-size:18px;margin-bottom:16px">⚙ Ajustes</div>'
-    +'<label style="font-size:13px;font-weight:600">Título do painel</label>'
+    +'<label style="font-size:13px;font-weight:600">Nome do seu projeto</label>'
     +'<input id="cfgTitle" value="'+srsEsc(cur)+'" placeholder="Mudança para a Itália" style="width:100%;padding:9px;margin:6px 0 6px;border:1px solid #ccc;border-radius:8px;font-size:14px">'
-    +'<button class="btn" style="margin-bottom:18px" onclick="srsApplyTitle(document.getElementById(\'cfgTitle\').value)">Salvar título</button>'
-    +'<div style="font-size:13px;font-weight:600;margin-bottom:8px">Personagem</div>'
-    +'<div style="display:flex;flex-wrap:wrap;margin-bottom:16px">'+srsAvatarHtml()+'</div>'
-    +'<div style="font-size:13px;font-weight:600;margin-bottom:8px">Tema de cores</div><div style="display:flex;flex-wrap:wrap">'+sw+'</div>'
-    +'<div style="text-align:right;margin-top:18px"><button class="btn" onclick="document.getElementById(\'cfgOverlay\').style.display=\'none\'">Fechar</button></div></div>';
+    +'<button class="btn" style="margin-bottom:18px" onclick="srsApplyTitle(document.getElementById(\'cfgTitle\').value)">Salvar nome</button>'
+    +'<div style="font-size:13px;font-weight:600;margin-bottom:8px">Escolha seu personagem</div>'
+    +'<div id="avatarGrid" style="display:flex;flex-wrap:wrap;margin-bottom:16px">'+srsAvatarHtml()+'</div>'
+    +'<div style="font-size:13px;font-weight:600;margin-bottom:8px">Tema de cores</div>'
+    +'<div style="display:flex;flex-wrap:wrap;margin-bottom:4px">'+sw+'</div>'
+    +'<div style="text-align:right;margin-top:18px">'
+    +'<button class="btn" style="background:var(--terra,#b85a28);color:#fff;border:none;font-weight:700" onclick="srsCloseAjustes()">Pronto ✓</button>'
+    +'</div></div>';
   ov.style.display='flex';
+}
+/* ===== SRS detalhado: override de srsCardHtml e openReview ===== */
+function srsCardHtml(id){
+  var cards=srsCardsForTopic(id);if(!cards.length)return '';
+  var cnt={new:0,learning:0,young:0,mature:0,due:0};
+  cards.forEach(function(c){
+    var m=srsMaturity(c.key);cnt[m]=(cnt[m]||0)+1;
+    if(srsDue(c.key)&&m!=='new')cnt.due++;
+  });
+  var pct=Math.round(srsTopicPct(id)*100);
+  var total=cards.length;
+  // barra composta
+  var bar='<div style="display:flex;height:8px;border-radius:4px;overflow:hidden;margin:8px 0">'
+    +(cnt.mature ?'<div style="flex:'+cnt.mature +';background:#4f7a3a" title="Maduras: '+cnt.mature+'"></div>':'')
+    +(cnt.young  ?'<div style="flex:'+cnt.young  +';background:#2e7fa8" title="Jovens: '+cnt.young+'"></div>':'')
+    +(cnt.learning?'<div style="flex:'+cnt.learning+';background:#e8a020" title="Aprendendo: '+cnt.learning+'"></div>':'')
+    +(cnt.new    ?'<div style="flex:'+cnt.new    +';background:#ddd"    title="Novas: '+cnt.new+'"></div>':'')
+    +'</div>';
+  var tags=[
+    cnt.mature   ?'<span style="color:#4f7a3a">●</span> '+cnt.mature+' maduras':'',
+    cnt.young    ?'<span style="color:#2e7fa8">●</span> '+cnt.young+' jovens':'',
+    cnt.learning ?'<span style="color:#e8a020">●</span> '+cnt.learning+' aprendendo':'',
+    cnt.new      ?'<span style="color:#aaa">●</span> '+cnt.new+' novas':''
+  ].filter(Boolean).join(' &nbsp; ');
+  var dueMsg=cnt.due>0
+    ?'<div style="margin-top:6px;font-size:12px;font-weight:700;color:#c0212e">⏰ '+cnt.due+' palavra'+(cnt.due>1?'s':'')+' pedindo revisão agora</div>'
+    :'<div style="margin-top:6px;font-size:11px;color:#4f7a3a">✓ Em dia — o sistema te avisará quando revisar</div>';
+  return '<div class="srs-card" onclick="openReview(\''+id+'\')" style="margin:10px 0;padding:14px;border:1px solid #d9c7b0;border-radius:12px;background:#fbf6ee;cursor:pointer">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;gap:12px">'
+    +'<div><div style="font-weight:700;font-size:14px">🎴 Revisão por cartões</div>'
+    +'<div style="font-size:11px;opacity:.65;margin-top:2px">'+total+' palavras no total</div></div>'
+    +'<div style="text-align:right;flex:0 0 auto">'
+    +'<div style="font-weight:700;font-size:22px;color:'+(pct>=60?'#4f7a3a':pct>=30?'#e8a020':'#c0212e')+'">'+pct+'%</div>'
+    +'<div style="font-size:10px;opacity:.6">dominado</div></div></div>'
+    +bar
+    +'<div style="font-size:11px;color:var(--ink3,#666)">'+tags+'</div>'
+    +dueMsg
+    +'<div style="font-size:10px;opacity:.5;margin-top:6px">💡 Ver fácil 1× não é aprendizado — palavras maduras precisam de revisões ao longo de dias</div>'
+    +'</div>';
+}
+
+/* Revisão em lotes de 20: prioriza vencidas, depois novas */
+function openReview(id){
+  if(typeof ensureSrsView==='function')ensureSrsView();
+  _srsTopic=id;
+  var cs=srsCardsForTopic(id);
+  var due=cs.filter(function(c){return srsDue(c.key)&&srsMaturity(c.key)!=='new';});
+  var newCards=cs.filter(function(c){return srsMaturity(c.key)==='new';});
+  var BATCH=20;
+  _srsQueue=due.slice(0,BATCH);
+  if(_srsQueue.length<BATCH)_srsQueue=_srsQueue.concat(newCards.slice(0,BATCH-_srsQueue.length));
+  if(!_srsQueue.length)_srsQueue=cs.slice(0,BATCH);
+  _srsIdx=0;
+  var detail=document.getElementById('detail');if(detail)detail.style.display='none';
+  var ov=document.getElementById('overview');if(ov)ov.style.display='none';
+  document.getElementById('srsView').style.display='block';
+  var t=(APP.skills[curIdx]?APP.skills[curIdx].topics.find(function(x){return x.id===id;}):null);
+  var dueCount=due.length;
+  document.getElementById('srsTitle').textContent='Revisão · '+(t?t.t:id);
+  document.getElementById('srsCounts').textContent=
+    'Lote: '+_srsQueue.length+' de '+cs.length
+    +(dueCount?' · '+dueCount+' vencida'+(dueCount>1?'s':''):'');
+  window.scrollTo({top:0,behavior:'smooth'});
+  if(typeof srsRender==='function')srsRender();
+}
+
+function srsCloseAjustes(){
+  try{localStorage.setItem('painelAjustesShown','1');}catch(e){}
+  var ov=document.getElementById('cfgOverlay');if(ov)ov.style.display='none';
 }
 function srsInitUI(){
   var anchor=document.getElementById('expBtn')||document.getElementById('logoutBtn');
@@ -339,6 +461,17 @@ function srsInitUI(){
   try{var th=localStorage.getItem('painelTheme');if(th)srsApplyTheme(th);}catch(e){}
   try{var ti=localStorage.getItem('painelTitle');if(ti)srsApplyTitle(ti);}catch(e){}
   try{var av=localStorage.getItem('painelAvatar');if(av)srsApplyAvatar(av);}catch(e){}
+  // First-time: mostrar Ajustes após login (uma vez só)
+  if(!localStorage.getItem('painelAjustesShown')){
+    var _roOrig=typeof renderOverview==='function'?renderOverview:null;
+    if(_roOrig&&!window._srsFirstTimeHooked){
+      window._srsFirstTimeHooked=true;
+      window.renderOverview=function(){
+        _roOrig();
+        if(!localStorage.getItem('painelAjustesShown')){setTimeout(srsOpenConfig,400);}
+      };
+    }
+  }
 
   // Injetar CSS global para: tema escuro, sec-flags ocultas, tricolore condicional
   if(!document.getElementById('srsGlobalStyles')){
