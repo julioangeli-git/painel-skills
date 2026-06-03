@@ -71,7 +71,7 @@ function bigPair(it){
      ?'<img src="'+srsEsc(vis)+'" alt="" style="width:110px;height:110px;object-fit:cover;border-radius:16px;margin-bottom:12px">'
      :'<div style="font-size:80px;line-height:1;margin-bottom:8px">'+vis+'</div>'):'';
   var pron=it.pron?'<div id="karaoke" style="font-size:16px;letter-spacing:.6px;margin-top:6px;color:var(--ink3,#7a8aa0)">'+String(it.pron).split('-').map(function(s,i){return '<span id="ks'+i+'">'+srsEsc(s)+'</span>';}).join(' ')+'</div>':'';
-  return '<div style="display:flex;gap:22px;align-items:stretch;max-width:1000px;margin:0 auto">'
+  return '<div class="mat-pair" style="display:flex;gap:22px;align-items:stretch;max-width:1000px;margin:0 auto">'
     +'<div class="mat-card-front" style="position:relative;flex:1;background:linear-gradient(135deg,#eaf4fb,#d4e9f5);border:2px solid #1c6b8c;border-radius:22px;padding:28px 22px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:290px">'
       +FLAG_IT+visHtml
       +'<div class="mat-word" style="font-size:34px;font-weight:800;color:#0f3d52">'+srsEsc(it.f)+'</div>'+pron
@@ -318,6 +318,9 @@ function srsInitUI(){
       +'[data-theme=noite] .sub-card.sub-done{background:#1a2e19!important}'
       +'[data-theme=noite] #matWhy{background:#332e24!important;color:#cdbf9f!important}'
       +'[data-theme=noite] #matView{color:#f2ecdd}'
+      /* Salvar e status de nuvem: ocultados (auto-save mantido em background) */
+      +'#saveBtn{display:none!important}'
+      +'#cloudStatus{display:none!important}'
       /* Header mobile: esconde elementos secundários, mantém brand + botões essenciais */
       +'@media(max-width:600px){'
       +'header.top{margin:6px 8px 0;border-radius:12px}'
@@ -327,10 +330,12 @@ function srsInitUI(){
       +'.date-field{display:none!important}'
       +'#expBtn{display:none!important}'
       +'.whoami-wrap{display:none!important}'
-      +'#cloudStatus{display:none!important}'
       +'.tools{gap:4px;flex-wrap:nowrap}'
       +'.btn{padding:5px 9px!important;font-size:8.5px!important}'
       +'.wrap{padding:8px 10px 80px!important}'
+      /* Flashcards mobile: empilhados, altura proporcional à tela */
+      +'.mat-pair{flex-direction:column!important;gap:10px!important}'
+      +'.mat-card-front,.mat-card-back{min-height:38vh!important;font-size:22px!important}'
       +'}';
     document.head.appendChild(css);
   }
