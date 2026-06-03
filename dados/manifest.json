@@ -2,6 +2,7 @@
   "_doc": "Manifesto de dados do painel. O Gerente lista aqui os rich-<tema>.json a carregar. O Tutor SO entrega arquivos rich-<tema>.json nesta pasta; nunca edita o HTML.",
   "richFiles": [
     "dados/rich-italiano.json",
-    "dados/rich-sql.json"
+    "dados/rich-sql.json",
+    "dados/rich-inglês.json"
   ]
 }

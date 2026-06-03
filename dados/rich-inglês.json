@@ -1,0 +1,383 @@
+{
+  "Inglês::1::0": {
+    "why": "Semana 1 — Verbo to be e pronomes: a base de qualquer frase em inglês. Com isso você já consegue se apresentar, descrever pessoas e fazer perguntas simples.",
+    "words": [
+      {
+        "cat": "Pronomes pessoais",
+        "items": [
+          ["I", "eu", "AI"],
+          ["you", "você / vocês", "IÚ"],
+          ["he", "ele", "RÍ"],
+          ["she", "ela", "XÍ"],
+          ["it", "isso / ele/ela (neutro)", "IT"],
+          ["we", "nós", "UÍ"],
+          ["they", "eles / elas", "DHEI"]
+        ]
+      },
+      {
+        "cat": "Verbo to be — presente",
+        "items": [
+          ["am", "sou / estou (I)", "AM"],
+          ["is", "é / está (he/she/it)", "IZ"],
+          ["are", "são / estão (you/we/they)", "ÁR"],
+          ["I'm", "eu sou / estou", "AIM"],
+          ["you're", "você é / está", "IÚR"],
+          ["he's", "ele é / está", "RÍZ"],
+          ["she's", "ela é / está", "XÍZ"],
+          ["we're", "nós somos / estamos", "UÍR"],
+          ["they're", "eles são / estão", "DHÉIR"]
+        ]
+      },
+      {
+        "cat": "Negação e pergunta",
+        "items": [
+          ["not", "não (negação)", "NÓT"],
+          ["isn't", "não é / não está", "ÍZ-nt"],
+          ["aren't", "não são / não estão", "ÁR-nt"],
+          ["am I?", "sou eu?", "AM AI"],
+          ["is he?", "ele é?", "IZ RÍ"],
+          ["are you?", "você é?", "ÁR IÚ"]
+        ]
+      },
+      {
+        "cat": "Adjetivos básicos",
+        "items": [
+          ["happy", "feliz", "RÁ-pi"],
+          ["sad", "triste", "SÁD"],
+          ["tired", "cansado/a", "TÁIRD"],
+          ["hungry", "com fome", "RÂN-gri"],
+          ["ready", "pronto/a", "RÉ-di"],
+          ["here", "aqui", "RÍR"],
+          ["there", "lá / ali", "DHÉR"]
+        ]
+      }
+    ],
+    "phrases": [
+      ["I'm [nome].", "Eu sou [nome]."],
+      ["I'm from Brazil.", "Eu sou do Brasil."],
+      ["I'm a data analyst.", "Eu sou analista de dados."],
+      ["He is my friend.", "Ele é meu amigo."],
+      ["She is not here.", "Ela não está aqui."],
+      ["We are ready.", "Nós estamos prontos."],
+      ["Are you okay?", "Você está bem?"],
+      ["Is it true?", "É verdade?"],
+      ["They aren't tired.", "Eles não estão cansados."],
+      ["Where are you from?", "De onde você é?"]
+    ],
+    "phraseWords": [
+      ["from", "de / de onde"],
+      ["okay", "bem / tudo bem"],
+      ["true", "verdadeiro / verdade"],
+      ["friend", "amigo/a"],
+      ["analyst", "analista"]
+    ],
+    "songLines": [],
+    "songLinesTr": [],
+    "songWords": []
+  },
+
+  "Inglês::1::1": {
+    "why": "Semana 2 — Presente simples: como falar sobre rotinas, hábitos e fatos. É o tempo verbal mais usado no inglês cotidiano e profissional.",
+    "words": [
+      {
+        "cat": "Verbos regulares frequentes",
+        "items": [
+          ["work", "trabalhar", "UÉRK"],
+          ["live", "morar / viver", "LÍV"],
+          ["study", "estudar", "STÂ-di"],
+          ["speak", "falar", "SPÍK"],
+          ["know", "saber / conhecer", "NÓU"],
+          ["think", "pensar / achar", "THÍNK"],
+          ["need", "precisar", "NÍD"],
+          ["want", "querer", "UÓNT"],
+          ["like", "gostar", "LÁIK"],
+          ["use", "usar", "IÚZ"],
+          ["have", "ter / tomar", "RÁV"],
+          ["make", "fazer / criar", "MÉIK"],
+          ["go", "ir", "GÓU"],
+          ["come", "vir", "KÂM"],
+          ["get", "conseguir / pegar", "GÉT"]
+        ]
+      },
+      {
+        "cat": "Advérbios de frequência",
+        "items": [
+          ["always", "sempre", "ÔL-uéiz"],
+          ["usually", "geralmente", "IÚ-jual-i"],
+          ["often", "frequentemente", "Ó-fn"],
+          ["sometimes", "às vezes", "SÂM-taimz"],
+          ["rarely", "raramente", "RÉR-li"],
+          ["never", "nunca", "NÉ-vr"]
+        ]
+      },
+      {
+        "cat": "Marcadores de tempo",
+        "items": [
+          ["every day", "todo dia", "ÉV-ri-dei"],
+          ["in the morning", "de manhã", "in-dhə-MÔR-ning"],
+          ["at night", "à noite", "at-NÁIT"],
+          ["on weekdays", "nos dias úteis", "on-UÍK-deiz"],
+          ["on weekends", "nos fins de semana", "on-UÍK-endz"],
+          ["at work", "no trabalho", "at-UÉRK"]
+        ]
+      }
+    ],
+    "phrases": [
+      ["I work with data.", "Eu trabalho com dados."],
+      ["I live in [cidade].", "Eu moro em [cidade]."],
+      ["I speak Portuguese.", "Eu falo português."],
+      ["She studies English every day.", "Ela estuda inglês todo dia."],
+      ["He doesn't work on weekends.", "Ele não trabalha nos fins de semana."],
+      ["Do you speak English?", "Você fala inglês?"],
+      ["I usually wake up at 7.", "Geralmente acordo às 7."],
+      ["We need more data.", "Precisamos de mais dados."],
+      ["What do you do?", "O que você faz? / Qual é sua profissão?"],
+      ["I always have coffee in the morning.", "Eu sempre tomo café de manhã."]
+    ],
+    "phraseWords": [
+      ["doesn't", "não (he/she/it)"],
+      ["wake up", "acordar"],
+      ["coffee", "café"],
+      ["data", "dados"],
+      ["Portuguese", "português"]
+    ],
+    "songLines": [],
+    "songLinesTr": [],
+    "songWords": []
+  },
+
+  "Inglês::1::2": {
+    "why": "Semana 3 — Vocabulário básico do dia a dia: as palavras que aparecem em toda conversa, e-mail e reunião. Dominar este núcleo de 60 palavras desbrava 80% do vocabulário cotidiano.",
+    "words": [
+      {
+        "cat": "Casa e família",
+        "items": [
+          ["house", "casa", "RÁUS"],
+          ["home", "lar / em casa", "RÓUM"],
+          ["family", "família", "FÁ-mi-li"],
+          ["husband", "marido", "RÂZ-bnd"],
+          ["wife", "esposa", "UÁIF"],
+          ["son", "filho", "SÂN"],
+          ["daughter", "filha", "DÔ-tr"],
+          ["child", "criança / filho", "TCHÁILD"],
+          ["parent", "pai ou mãe", "PÉR-nt"]
+        ]
+      },
+      {
+        "cat": "Trabalho e tecnologia",
+        "items": [
+          ["job", "emprego / trabalho", "DJÓB"],
+          ["office", "escritório", "Ó-fis"],
+          ["meeting", "reunião", "MÍ-ting"],
+          ["computer", "computador", "kəm-PIÚ-tr"],
+          ["email", "e-mail", "Í-meil"],
+          ["report", "relatório", "ri-PÔRT"],
+          ["team", "equipe", "TÍM"],
+          ["manager", "gerente", "MÁ-ni-djr"],
+          ["project", "projeto", "PRÓD-jekt"],
+          ["deadline", "prazo final", "DÉD-lain"]
+        ]
+      },
+      {
+        "cat": "Lugares",
+        "items": [
+          ["city", "cidade", "SÍ-ti"],
+          ["country", "país / campo", "KÂN-tri"],
+          ["street", "rua", "STRÍT"],
+          ["store", "loja", "STÔR"],
+          ["school", "escola", "SKÚL"],
+          ["hospital", "hospital", "RÓS-pi-tl"],
+          ["airport", "aeroporto", "ÉR-port"],
+          ["hotel", "hotel", "rou-TÉL"]
+        ]
+      },
+      {
+        "cat": "Comida e bebida",
+        "items": [
+          ["food", "comida", "FÚD"],
+          ["water", "água", "UÔ-tr"],
+          ["coffee", "café", "KÓ-fi"],
+          ["bread", "pão", "BRÉD"],
+          ["lunch", "almoço", "LÂNTCH"],
+          ["dinner", "jantar", "DÍ-nr"],
+          ["restaurant", "restaurante", "RÉS-tə-rant"]
+        ]
+      }
+    ],
+    "phrases": [
+      ["My family lives in Brazil.", "Minha família mora no Brasil."],
+      ["I work in an office.", "Eu trabalho em um escritório."],
+      ["The meeting is at 3 PM.", "A reunião é às 15h."],
+      ["Can I have the report?", "Posso ter o relatório?"],
+      ["I need a coffee.", "Preciso de um café."],
+      ["Where is the restaurant?", "Onde fica o restaurante?"],
+      ["My deadline is tomorrow.", "Meu prazo é amanhã."],
+      ["This is my team.", "Esta é minha equipe."],
+      ["I live in the city.", "Eu moro na cidade."],
+      ["Let's have lunch together.", "Vamos almoçar juntos."]
+    ],
+    "phraseWords": [
+      ["together", "juntos"],
+      ["tomorrow", "amanhã"],
+      ["let's", "vamos"],
+      ["PM", "tarde (horário)"],
+      ["can I", "posso eu / posso"]
+    ],
+    "songLines": [],
+    "songLinesTr": [],
+    "songWords": []
+  },
+
+  "Inglês::1::3": {
+    "why": "Semana 4 — Perguntas e respostas simples: a habilidade de fazer e responder perguntas é o que transforma vocabulário passivo em conversa real. Essencial para reuniões e entrevistas.",
+    "words": [
+      {
+        "cat": "Palavras interrogativas",
+        "items": [
+          ["what", "o que / qual", "UỐT"],
+          ["where", "onde", "UÉR"],
+          ["when", "quando", "UÉN"],
+          ["who", "quem", "RÚ"],
+          ["why", "por que", "UUÁI"],
+          ["how", "como", "RÁU"],
+          ["how much", "quanto (incontável)", "rau-MÁTCH"],
+          ["how many", "quantos (contável)", "rau-MÉ-ni"],
+          ["how long", "por quanto tempo", "rau-LÓNG"],
+          ["which", "qual (escolha)", "UÍTCH"]
+        ]
+      },
+      {
+        "cat": "Verbos auxiliares",
+        "items": [
+          ["do", "fazer / auxiliar", "DÚ"],
+          ["does", "faz / auxiliar (he/she)", "DÂZ"],
+          ["can", "poder / conseguir", "KÁN"],
+          ["could", "poderia", "KUD"],
+          ["would", "gostaria / iria", "UUD"],
+          ["should", "deveria", "XUD"],
+          ["will", "vai (futuro)", "UIL"],
+          ["must", "deve (obrigação)", "MÂST"]
+        ]
+      },
+      {
+        "cat": "Respostas curtas",
+        "items": [
+          ["yes", "sim", "IÉS"],
+          ["no", "não", "NÓU"],
+          ["sure", "claro / com certeza", "XÚR"],
+          ["of course", "claro que sim", "əv-CÓRS"],
+          ["I think so", "acho que sim", "ai-THÍNK-sou"],
+          ["I don't know", "não sei", "ai-DÓNT-nóu"],
+          ["I'm not sure", "não tenho certeza", "aim-not-XÚR"]
+        ]
+      }
+    ],
+    "phrases": [
+      ["What do you do for work?", "O que você faz no trabalho?"],
+      ["Where are you from?", "De onde você é?"],
+      ["When is the meeting?", "Quando é a reunião?"],
+      ["Who is your manager?", "Quem é seu gerente?"],
+      ["Why do you study English?", "Por que você estuda inglês?"],
+      ["How do you say this in English?", "Como se diz isso em inglês?"],
+      ["Can you help me?", "Você pode me ajudar?"],
+      ["Could you repeat that?", "Você poderia repetir?"],
+      ["How long have you worked here?", "Há quanto tempo você trabalha aqui?"],
+      ["I don't know, sorry.", "Não sei, desculpe."]
+    ],
+    "phraseWords": [
+      ["repeat", "repetir"],
+      ["help", "ajudar / ajuda"],
+      ["sorry", "desculpe"],
+      ["say", "dizer / falar"],
+      ["worked", "trabalhou / trabalhado"]
+    ],
+    "songLines": [],
+    "songLinesTr": [],
+    "songWords": []
+  },
+
+  "Inglês::1::4": {
+    "why": "Semana 5 — Artigos, plurais e números: detalhes que diferenciam inglês básico de inglês preciso. Números são fundamentais para reuniões, métricas e datas.",
+    "words": [
+      {
+        "cat": "Artigos e determinantes",
+        "items": [
+          ["a", "um / uma (indefinido)", "Ə"],
+          ["an", "um / uma (antes de vogal)", "ÁN"],
+          ["the", "o / a / os / as", "DHƏ"],
+          ["this", "este / esta", "DHÍS"],
+          ["that", "aquele / aquela", "DHÁT"],
+          ["these", "estes / estas", "DHÍZ"],
+          ["those", "aqueles / aquelas", "DHÓUZ"],
+          ["some", "alguns / um pouco de", "SÂM"],
+          ["any", "algum / nenhum", "É-ni"]
+        ]
+      },
+      {
+        "cat": "Números 1–20",
+        "items": [
+          ["one", "um", "UÂN"],
+          ["two", "dois", "TÚ"],
+          ["three", "três", "THRÍ"],
+          ["four", "quatro", "FÔR"],
+          ["five", "cinco", "FÁIV"],
+          ["six", "seis", "SÍKS"],
+          ["seven", "sete", "SÉ-vn"],
+          ["eight", "oito", "ÉIT"],
+          ["nine", "nove", "NÁIN"],
+          ["ten", "dez", "TÉN"],
+          ["fifteen", "quinze", "fif-TÍN"],
+          ["twenty", "vinte", "TUÉN-ti"]
+        ]
+      },
+      {
+        "cat": "Números úteis",
+        "items": [
+          ["thirty", "trinta", "THÉR-ti"],
+          ["fifty", "cinquenta", "FÍF-ti"],
+          ["hundred", "cem / cento", "RÂN-drd"],
+          ["thousand", "mil", "THÁU-znd"],
+          ["million", "milhão", "MÍ-liən"],
+          ["percent", "por cento", "pr-SÉNT"],
+          ["first", "primeiro/a", "FÉRST"],
+          ["second", "segundo/a", "SÉ-knd"],
+          ["third", "terceiro/a", "THÉRD"]
+        ]
+      },
+      {
+        "cat": "Plural — regras",
+        "items": [
+          ["cats", "gatos (+ s)", "KÁTS"],
+          ["boxes", "caixas (+ es)", "BÓK-siz"],
+          ["cities", "cidades (y→ies)", "SÍ-tiz"],
+          ["men", "homens (irregular)", "MÉN"],
+          ["women", "mulheres (irregular)", "UÍ-min"],
+          ["children", "crianças (irregular)", "TCHÍL-drn"],
+          ["data", "dados (já plural em latim)", "DÉI-tə"]
+        ]
+      }
+    ],
+    "phrases": [
+      ["I need a pen.", "Preciso de uma caneta."],
+      ["Can I have an apple?", "Posso pegar uma maçã?"],
+      ["The report has fifty pages.", "O relatório tem cinquenta páginas."],
+      ["There are three meetings today.", "Há três reuniões hoje."],
+      ["This is the second version.", "Esta é a segunda versão."],
+      ["We grew by thirty percent.", "Crescemos trinta por cento."],
+      ["I have two children.", "Tenho dois filhos."],
+      ["Those are the key data points.", "Esses são os pontos de dados principais."],
+      ["Is there any coffee left?", "Tem café sobrando?"],
+      ["The first step is to define the goal.", "O primeiro passo é definir o objetivo."]
+    ],
+    "phraseWords": [
+      ["pages", "páginas"],
+      ["version", "versão"],
+      ["grew", "cresceu (passado de grow)"],
+      ["step", "passo / etapa"],
+      ["goal", "objetivo / meta"]
+    ],
+    "songLines": [],
+    "songLinesTr": [],
+    "songWords": []
+  }
+}
