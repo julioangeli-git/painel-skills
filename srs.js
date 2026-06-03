@@ -150,6 +150,13 @@ function renderWord(catName){
     +'<span style="font-weight:700;text-transform:uppercase;letter-spacing:.5px;font-size:12px;color:var(--ink3,#888)">'+srsEsc(catName)+'</span><span></span></div>'
     +bigPair(it)+nav;
   setTimeout(function(){srsSpeakKaraoke(it.f,it.pron);},250);
+  // Mobile: centralizar na tela mostrando os 2 cartões + botões nav
+  if(window.innerWidth<=600){
+    setTimeout(function(){
+      var mb=document.getElementById('matBody');
+      if(mb){var top=mb.getBoundingClientRect().top+window.scrollY-56;window.scrollTo({top:Math.max(0,top),behavior:'smooth'});}
+    },80);
+  }
 }
 function wordPrev(){if(_wordPos>0){_wordPos--;renderWordKeep();}}
 function wordNext(){if(_wordPos<_wordItems.length-1){_wordPos++;renderWordKeep();}}
@@ -251,6 +258,36 @@ function miniCard(s,i){
     +'</div>';
 }
 
+/* ===== Avatares (personagens retrô) ===== */
+var AVATARS=[
+  {id:'wizard',  label:'Mago',      icon:'🧙'},
+  {id:'warrior', label:'Guerreiro', icon:'⚔️'},
+  {id:'elf',     label:'Elfo',      icon:'🧝'},
+  {id:'robot',   label:'Robô',      icon:'🤖'},
+  {id:'hero',    label:'Herói',     icon:'🦸'},
+  {id:'pirate',  label:'Pirata',    icon:'🏴‍☠️'},
+  {id:'dragon',  label:'Dragão',    icon:'🐉'},
+  {id:'ninja',   label:'Ninja',     icon:'🥷'},
+  {id:'vampire', label:'Vampiro',   icon:'🧛'},
+  {id:'witch',   label:'Bruxa',     icon:'🔮'}
+];
+function srsApplyAvatar(id){
+  var av=AVATARS.find(function(a){return a.id===id;})||null;
+  var w=document.getElementById('whoami');
+  if(w&&av){
+    var cur=w.textContent.replace(/^\S+\s*/,'');  // remove avatar anterior
+    w.innerHTML=av.icon+' <span style="font-size:.9em">'+srsEsc(cur||w.textContent)+'</span>';
+  }
+  try{localStorage.setItem('painelAvatar',id);}catch(e){}
+}
+function srsAvatarHtml(){
+  var cur='';try{cur=localStorage.getItem('painelAvatar')||'';}catch(e){}
+  return AVATARS.map(function(a){
+    var sel=a.id===cur;
+    return '<button onclick="srsApplyAvatar(\''+a.id+'\')" title="'+srsEsc(a.label)+'" style="cursor:pointer;border:'+(sel?'2px solid var(--terra,#b85a28)':'1px solid #ccc')+';border-radius:10px;padding:6px 8px;margin:3px;background:'+(sel?'rgba(184,90,40,.1)':'transparent')+';font-size:22px;line-height:1">'+a.icon+'</button>';
+  }).join('');
+}
+
 /* ===== Configurações: paleta de cores e título ===== */
 var THEMES={
   'Itália (padrão)':{},
@@ -285,20 +322,23 @@ function srsOpenConfig(){
   if(!ov){ov=document.createElement('div');ov.id='cfgOverlay';ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:3000;display:flex;align-items:center;justify-content:center';ov.onclick=function(e){if(e.target===ov)ov.style.display='none';};document.body.appendChild(ov);}
   var cur='';try{cur=localStorage.getItem('painelTitle')||'';}catch(e){}
   var sw=Object.keys(THEMES).map(function(n){var c=THEMES[n]['--bg']||'#f2ead8';var a=THEMES[n]['--terra']||'#b85a28';return '<button onclick="srsApplyTheme(\''+srsJsq(n)+'\')" style="cursor:pointer;border:1px solid #ccc;border-radius:10px;padding:8px 10px;margin:4px;background:'+c+';color:'+(n==='Noite'?'#f2ecdd':'#1c1408')+';font-weight:600;font-size:13px"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+a+';margin-right:6px"></span>'+srsEsc(n)+'</button>';}).join('');
-  ov.innerHTML='<div onclick="event.stopPropagation()" style="background:var(--surface,#fdf9f2);color:var(--ink,#1c1408);border-radius:16px;padding:24px;max-width:440px;width:90%;box-shadow:0 12px 44px rgba(0,0,0,.3)">'
-    +'<div style="font-weight:700;font-size:18px;margin-bottom:16px">⚙ Configurações</div>'
+  ov.innerHTML='<div onclick="event.stopPropagation()" style="background:var(--surface,#fdf9f2);color:var(--ink,#1c1408);border-radius:16px;padding:24px;max-width:460px;width:92%;max-height:90vh;overflow-y:auto;box-shadow:0 12px 44px rgba(0,0,0,.3)">'
+    +'<div style="font-weight:700;font-size:18px;margin-bottom:16px">⚙ Ajustes</div>'
     +'<label style="font-size:13px;font-weight:600">Título do painel</label>'
     +'<input id="cfgTitle" value="'+srsEsc(cur)+'" placeholder="Mudança para a Itália" style="width:100%;padding:9px;margin:6px 0 6px;border:1px solid #ccc;border-radius:8px;font-size:14px">'
     +'<button class="btn" style="margin-bottom:18px" onclick="srsApplyTitle(document.getElementById(\'cfgTitle\').value)">Salvar título</button>'
-    +'<div style="font-size:13px;font-weight:600;margin-bottom:8px">Paleta de cores</div><div style="display:flex;flex-wrap:wrap">'+sw+'</div>'
+    +'<div style="font-size:13px;font-weight:600;margin-bottom:8px">Personagem</div>'
+    +'<div style="display:flex;flex-wrap:wrap;margin-bottom:16px">'+srsAvatarHtml()+'</div>'
+    +'<div style="font-size:13px;font-weight:600;margin-bottom:8px">Tema de cores</div><div style="display:flex;flex-wrap:wrap">'+sw+'</div>'
     +'<div style="text-align:right;margin-top:18px"><button class="btn" onclick="document.getElementById(\'cfgOverlay\').style.display=\'none\'">Fechar</button></div></div>';
   ov.style.display='flex';
 }
 function srsInitUI(){
   var anchor=document.getElementById('expBtn')||document.getElementById('logoutBtn');
-  if(anchor&&anchor.parentNode&&!document.getElementById('cfgBtn')){var b=document.createElement('button');b.id='cfgBtn';b.className='btn';b.textContent='⚙ Tema';b.onclick=srsOpenConfig;anchor.parentNode.insertBefore(b,anchor);}
+  if(anchor&&anchor.parentNode&&!document.getElementById('cfgBtn')){var b=document.createElement('button');b.id='cfgBtn';b.className='btn';b.textContent='⚙ Ajustes';b.onclick=srsOpenConfig;anchor.parentNode.insertBefore(b,anchor);}
   try{var th=localStorage.getItem('painelTheme');if(th)srsApplyTheme(th);}catch(e){}
   try{var ti=localStorage.getItem('painelTitle');if(ti)srsApplyTitle(ti);}catch(e){}
+  try{var av=localStorage.getItem('painelAvatar');if(av)srsApplyAvatar(av);}catch(e){}
 
   // Injetar CSS global para: tema escuro, sec-flags ocultas, tricolore condicional
   if(!document.getElementById('srsGlobalStyles')){
@@ -318,9 +358,8 @@ function srsInitUI(){
       +'[data-theme=noite] .sub-card.sub-done{background:#1a2e19!important}'
       +'[data-theme=noite] #matWhy{background:#332e24!important;color:#cdbf9f!important}'
       +'[data-theme=noite] #matView{color:#f2ecdd}'
-      /* Salvar e status de nuvem: ocultados (auto-save mantido em background) */
-      +'#saveBtn{display:none!important}'
-      +'#cloudStatus{display:none!important}'
+      /* Botões de gestão de dados: ocultos da interface (auto-save em background) */
+      +'#saveBtn,#cloudStatus,#expBtn,#impBtn,#resetBtn{display:none!important}'
       /* Header mobile: esconde elementos secundários, mantém brand + botões essenciais */
       +'@media(max-width:600px){'
       +'header.top{margin:6px 8px 0;border-radius:12px}'
@@ -334,8 +373,8 @@ function srsInitUI(){
       +'.btn{padding:5px 9px!important;font-size:8.5px!important}'
       +'.wrap{padding:8px 10px 80px!important}'
       /* Flashcards mobile: empilhados, altura proporcional à tela */
-      +'.mat-pair{flex-direction:column!important;gap:10px!important}'
-      +'.mat-card-front,.mat-card-back{min-height:38vh!important;font-size:22px!important}'
+      +'.mat-pair{flex-direction:column!important;gap:8px!important}'
+      +'.mat-card-front,.mat-card-back{min-height:34vh!important;max-height:34vh!important;font-size:20px!important;overflow:auto}'
       +'}';
     document.head.appendChild(css);
   }
