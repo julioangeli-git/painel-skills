@@ -531,6 +531,7 @@ function srsApplyTitle(t){
   try{localStorage.setItem('painelTitle',t||'');}catch(e){}
 }
 function srsOpenConfig(){
+  loadEmailState();
   var ov=document.getElementById('cfgOverlay');
   if(!ov){ov=document.createElement('div');ov.id='cfgOverlay';ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:3000;display:flex;align-items:center;justify-content:center';ov.onclick=function(e){if(e.target===ov)ov.style.display='none';};document.body.appendChild(ov);}
   var cur='';try{cur=localStorage.getItem('painelTitle')||'';}catch(e){}
@@ -549,6 +550,13 @@ function srsOpenConfig(){
     +'<div id="avatarGrid" style="display:flex;flex-wrap:wrap;margin-bottom:16px">'+srsAvatarHtml()+'</div>'
     +'<div style="font-size:13px;font-weight:600;margin-bottom:8px">Tema de cores</div>'
     +'<div style="display:flex;flex-wrap:wrap;margin-bottom:4px">'+sw+'</div>'
+    +'<hr style="border:none;border-top:1px solid var(--border,#e0d0b0);margin:18px 0">'
+    +'<div style="font-size:13px;font-weight:600;margin-bottom:8px">E-mail e segurança</div>'
+    +'<div style="margin-bottom:10px">'+emailStatusHtml()+'</div>'
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px">'
+    +'<button class="btn" onclick="srsOpenEmailRegister()">📧 '+((_emailState.email&&_emailState.verified)?'Alterar e-mail':'Cadastrar e-mail')+'</button>'
+    +((_emailState.verified)?'<button class="btn" onclick="srsOpenChangePIN()">🔑 Trocar senha</button>':'')
+    +'</div>'
     +'<div style="text-align:right;margin-top:18px">'
     +'<button class="btn" style="background:var(--terra,#b85a28);color:#fff;border:none;font-weight:700" onclick="srsCloseAjustes()">Pronto ✓</button>'
     +'</div></div>';
@@ -1185,6 +1193,222 @@ function srsCardsForTopic(id){
   (d.phrases||[]).forEach(function(p){add(srsApplyPlaceholders(p[0]),srsApplyPlaceholders(p[1]));});
   return out;
 }
+
+/* ===== E-MAIL: registro, verificação e troca de senha =====
+   Requer:
+   1. SQL de migração: supabase-email.sql
+   2. Conta EmailJS em https://emailjs.com (gratuita):
+      - Service: conecte seu Gmail/Outlook
+      - Template: assunto "Código de verificação", corpo:
+          "Seu código: {{code}} — válido por 15 minutos."
+      - Preencha as 3 constantes abaixo
+   ============================================================ */
+var EMAILJS_SERVICE_ID  = 'service_nr171pe';
+var EMAILJS_TEMPLATE_ID = 'template_yvalbij';
+var EMAILJS_PUBLIC_KEY  = 'RbRbZ5sip0VGG4O2G';
+
+var _emailjsLoaded = false;
+function loadEmailJS(cb){
+  if(_emailjsLoaded){cb();return;}
+  var s=document.createElement('script');
+  s.src='https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
+  s.onload=function(){
+    try{emailjs.init({publicKey:EMAILJS_PUBLIC_KEY});}catch(e){}
+    _emailjsLoaded=true;cb();
+  };
+  document.head.appendChild(s);
+}
+
+function genCode(){return String(Math.floor(100000+Math.random()*900000));}
+
+async function sendEmailCode(toEmail, code, nome){
+  return new Promise(function(resolve,reject){
+    loadEmailJS(function(){
+      if(EMAILJS_SERVICE_ID==='service_nr171pe'){
+        // Modo dev: mostrar código na tela em vez de enviar
+        resolve('dev:'+code);return;
+      }
+      emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+        to_email: toEmail,
+        code: code,
+        nome: nome||'usuário',
+        reply_to: toEmail
+      }).then(function(){resolve('sent');}).catch(reject);
+    });
+  });
+}
+
+/* Estado local do e-mail (carregado ao abrir Ajustes) */
+var _emailState = {email:null, verified:false, loaded:false};
+
+async function loadEmailState(){
+  if(!currentUser||!sb)return;
+  try{
+    var r=await sb.rpc('get_user_email',{p_user_id:currentUser.id});
+    if(r.data&&r.data.length>0){
+      _emailState.email=r.data[0].email||null;
+      _emailState.verified=!!r.data[0].email_verified;
+    }
+    _emailState.loaded=true;
+  }catch(e){_emailState.loaded=true;}
+}
+
+function emailStatusHtml(){
+  if(!currentUser)return '<div style="font-size:12px;color:#888">Faça login para gerenciar e-mail.</div>';
+  if(!_emailState.loaded)return '<div style="font-size:12px;opacity:.6">Carregando…</div>';
+  if(_emailState.email&&_emailState.verified){
+    return '<div style="font-size:13px;color:#4f7a3a">✓ '+srsEsc(_emailState.email)+' verificado</div>';
+  } else if(_emailState.email&&!_emailState.verified){
+    return '<div style="font-size:13px;color:#e8a020">⚡ '+srsEsc(_emailState.email)+' — aguardando verificação</div>';
+  }
+  return '<div style="font-size:13px;color:#888">Nenhum e-mail cadastrado</div>';
+}
+
+/* ── Fluxo: cadastrar e-mail ── */
+function srsOpenEmailRegister(){
+  var cur=_emailState.email||'';
+  var ov=document.getElementById('cfgOverlay');if(!ov)return;
+  ov.innerHTML='<div onclick="event.stopPropagation()" style="background:var(--surface,#fdf9f2);color:var(--ink,#1c1408);border-radius:16px;padding:24px;max-width:420px;width:92%;box-shadow:0 12px 44px rgba(0,0,0,.3)">'
+    +'<div style="font-weight:700;font-size:17px;margin-bottom:14px">📧 Cadastrar e-mail</div>'
+    +'<label style="font-size:13px;font-weight:600">Seu e-mail</label>'
+    +'<input id="emailInput" type="email" value="'+srsEsc(cur)+'" placeholder="nome@email.com" style="width:100%;padding:9px;margin:6px 0 12px;border:1px solid #ccc;border-radius:8px;font-size:14px">'
+    +'<div id="emailMsg" style="font-size:12px;min-height:18px;margin-bottom:10px"></div>'
+    +'<div style="display:flex;gap:8px;justify-content:flex-end">'
+    +'<button class="btn" onclick="srsOpenConfig()">← Voltar</button>'
+    +'<button class="btn" style="background:#1c6b8c;color:#fff;border:none;font-weight:700" onclick="srsSubmitEmail()">Enviar código</button>'
+    +'</div></div>';
+  ov.style.display='flex';
+}
+
+async function srsSubmitEmail(){
+  var input=document.getElementById('emailInput');
+  var msg=document.getElementById('emailMsg');
+  if(!input||!msg)return;
+  var email=input.value.trim();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){msg.style.color='#c0212e';msg.textContent='E-mail inválido.';return;}
+  msg.style.color='#888';msg.textContent='Enviando código…';
+  var code=genCode();
+  var expires=new Date(Date.now()+15*60*1000).toISOString();
+  try{
+    await sb.rpc('set_email',{p_user_id:currentUser.id,p_email:email,p_code:code,p_expires:expires});
+    var result=await sendEmailCode(email,code,currentUser.nome);
+    if(result&&result.startsWith('dev:')){
+      // Dev mode: show code directly
+      msg.style.color='#e8a020';
+      msg.textContent='Modo dev — código: '+result.split(':')[1]+' (EmailJS não configurado)';
+    } else {
+      msg.style.color='#4f7a3a';msg.textContent='Código enviado para '+email;
+    }
+    setTimeout(function(){srsOpenEmailVerify(email,result&&result.startsWith('dev:')?result.split(':')[1]:null);},1200);
+  }catch(e){msg.style.color='#c0212e';msg.textContent='Erro ao salvar. Tente novamente.';}
+}
+
+function srsOpenEmailVerify(email, devCode){
+  var ov=document.getElementById('cfgOverlay');if(!ov)return;
+  var devHint=devCode?'<div style="background:#fff3cd;border-radius:8px;padding:8px;font-size:12px;margin-bottom:8px">Modo dev — código: <b>'+srsEsc(devCode)+'</b></div>':'';
+  ov.innerHTML='<div onclick="event.stopPropagation()" style="background:var(--surface,#fdf9f2);color:var(--ink,#1c1408);border-radius:16px;padding:24px;max-width:420px;width:92%;box-shadow:0 12px 44px rgba(0,0,0,.3)">'
+    +'<div style="font-weight:700;font-size:17px;margin-bottom:8px">🔐 Verificar e-mail</div>'
+    +'<div style="font-size:13px;opacity:.7;margin-bottom:14px">Insira o código de 6 dígitos enviado para <b>'+srsEsc(email)+'</b></div>'
+    +devHint
+    +'<input id="codeInput" type="number" inputmode="numeric" maxlength="6" placeholder="000000" style="width:100%;padding:12px;margin-bottom:12px;border:1px solid #ccc;border-radius:8px;font-size:20px;text-align:center;letter-spacing:4px">'
+    +'<div id="verifyMsg" style="font-size:12px;min-height:18px;margin-bottom:10px"></div>'
+    +'<div style="display:flex;gap:8px;justify-content:flex-end">'
+    +'<button class="btn" onclick="srsOpenEmailRegister()">← Voltar</button>'
+    +'<button class="btn" style="background:#4f7a3a;color:#fff;border:none;font-weight:700" onclick="srsVerifyCode()">Verificar</button>'
+    +'</div></div>';
+  ov.style.display='flex';
+  setTimeout(function(){var c=document.getElementById('codeInput');if(c)c.focus();},100);
+}
+
+async function srsVerifyCode(){
+  var input=document.getElementById('codeInput');
+  var msg=document.getElementById('verifyMsg');
+  if(!input||!msg)return;
+  var code=input.value.trim();
+  if(code.length!==6){msg.style.color='#c0212e';msg.textContent='Digite os 6 dígitos.';return;}
+  msg.style.color='#888';msg.textContent='Verificando…';
+  try{
+    var r=await sb.rpc('verify_email',{p_user_id:currentUser.id,p_code:code});
+    if(r.data===true){
+      _emailState.verified=true;
+      msg.style.color='#4f7a3a';msg.textContent='✓ E-mail verificado com sucesso!';
+      setTimeout(srsOpenConfig,1200);
+    } else {
+      msg.style.color='#c0212e';msg.textContent='Código incorreto ou expirado.';
+    }
+  }catch(e){msg.style.color='#c0212e';msg.textContent='Erro. Tente novamente.';}
+}
+
+/* ── Fluxo: trocar senha (PIN) ── */
+function srsOpenChangePIN(){
+  if(!_emailState.verified){alert('Cadastre e verifique um e-mail antes de trocar a senha.');return;}
+  var ov=document.getElementById('cfgOverlay');if(!ov)return;
+  ov.innerHTML='<div onclick="event.stopPropagation()" style="background:var(--surface,#fdf9f2);color:var(--ink,#1c1408);border-radius:16px;padding:24px;max-width:420px;width:92%;box-shadow:0 12px 44px rgba(0,0,0,.3)">'
+    +'<div style="font-weight:700;font-size:17px;margin-bottom:8px">🔑 Trocar senha</div>'
+    +'<div style="font-size:13px;opacity:.7;margin-bottom:14px">Enviaremos um código para <b>'+srsEsc(_emailState.email)+'</b></div>'
+    +'<div id="pinMsg" style="font-size:12px;min-height:18px;margin-bottom:10px"></div>'
+    +'<div style="display:flex;gap:8px;justify-content:flex-end">'
+    +'<button class="btn" onclick="srsOpenConfig()">← Voltar</button>'
+    +'<button class="btn" style="background:#1c6b8c;color:#fff;border:none;font-weight:700" onclick="srsSendPinCode()">Enviar código</button>'
+    +'</div></div>';
+  ov.style.display='flex';
+}
+
+async function srsSendPinCode(){
+  var msg=document.getElementById('pinMsg');if(!msg)return;
+  msg.style.color='#888';msg.textContent='Enviando código…';
+  var code=genCode();
+  var expires=new Date(Date.now()+15*60*1000).toISOString();
+  try{
+    var r=await sb.rpc('request_pin_change',{p_user_id:currentUser.id,p_code:code,p_expires:expires});
+    if(!r.data){msg.style.color='#c0212e';msg.textContent='Erro: e-mail não verificado.';return;}
+    var result=await sendEmailCode(_emailState.email,code,currentUser.nome);
+    var devCode=result&&result.startsWith('dev:')?result.split(':')[1]:null;
+    msg.style.color='#4f7a3a';msg.textContent='Código enviado!';
+    setTimeout(function(){srsOpenNewPIN(devCode);},900);
+  }catch(e){msg.style.color='#c0212e';msg.textContent='Erro. Tente novamente.';}
+}
+
+function srsOpenNewPIN(devCode){
+  var ov=document.getElementById('cfgOverlay');if(!ov)return;
+  var devHint=devCode?'<div style="background:#fff3cd;border-radius:8px;padding:8px;font-size:12px;margin-bottom:8px">Modo dev — código: <b>'+srsEsc(devCode)+'</b></div>':'';
+  ov.innerHTML='<div onclick="event.stopPropagation()" style="background:var(--surface,#fdf9f2);color:var(--ink,#1c1408);border-radius:16px;padding:24px;max-width:420px;width:92%;box-shadow:0 12px 44px rgba(0,0,0,.3)">'
+    +'<div style="font-weight:700;font-size:17px;margin-bottom:14px">🔑 Nova senha</div>'
+    +devHint
+    +'<label style="font-size:13px;font-weight:600">Código recebido</label>'
+    +'<input id="pinCode" type="number" inputmode="numeric" maxlength="6" placeholder="000000" style="width:100%;padding:10px;margin:6px 0 12px;border:1px solid #ccc;border-radius:8px;font-size:18px;text-align:center;letter-spacing:3px">'
+    +'<label style="font-size:13px;font-weight:600">Nova senha (mínimo 4 dígitos)</label>'
+    +'<input id="pinNew" type="password" inputmode="numeric" placeholder="••••" style="width:100%;padding:10px;margin:6px 0 12px;border:1px solid #ccc;border-radius:8px;font-size:16px">'
+    +'<label style="font-size:13px;font-weight:600">Confirmar nova senha</label>'
+    +'<input id="pinConfirm" type="password" inputmode="numeric" placeholder="••••" style="width:100%;padding:10px;margin:6px 0 12px;border:1px solid #ccc;border-radius:8px;font-size:16px">'
+    +'<div id="newPinMsg" style="font-size:12px;min-height:18px;margin-bottom:10px"></div>'
+    +'<div style="display:flex;gap:8px;justify-content:flex-end">'
+    +'<button class="btn" onclick="srsOpenConfig()">Cancelar</button>'
+    +'<button class="btn" style="background:#4f7a3a;color:#fff;border:none;font-weight:700" onclick="srsConfirmNewPIN()">Salvar senha</button>'
+    +'</div></div>';
+  ov.style.display='flex';
+}
+
+async function srsConfirmNewPIN(){
+  var code=document.getElementById('pinCode').value.trim();
+  var np=document.getElementById('pinNew').value.trim();
+  var nc=document.getElementById('pinConfirm').value.trim();
+  var msg=document.getElementById('newPinMsg');
+  if(code.length!==6){msg.style.color='#c0212e';msg.textContent='Código deve ter 6 dígitos.';return;}
+  if(np.length<4){msg.style.color='#c0212e';msg.textContent='Senha deve ter ao menos 4 dígitos.';return;}
+  if(np!==nc){msg.style.color='#c0212e';msg.textContent='As senhas não coincidem.';return;}
+  msg.style.color='#888';msg.textContent='Salvando…';
+  try{
+    var r=await sb.rpc('change_pin',{p_user_id:currentUser.id,p_code:code,p_new_pin:np});
+    if(r.data===true){
+      msg.style.color='#4f7a3a';msg.textContent='✓ Senha alterada com sucesso!';
+      setTimeout(srsCloseAjustes,1500);
+    } else {
+      msg.style.color='#c0212e';msg.textContent='Código incorreto ou expirado.';
+    }
+  }catch(e){msg.style.color='#c0212e';msg.textContent='Erro. Tente novamente.';}
+}
+
 /* ===== Hash routing: persiste a view atual na URL ===== */
 function srsHashSave(hash){
   try{history.replaceState(null,'',location.pathname+(hash?'#'+hash:''));}catch(e){}
