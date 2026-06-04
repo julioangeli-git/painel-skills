@@ -1229,10 +1229,13 @@ async function sendEmailCode(toEmail, code, nome){
   return new Promise(function(resolve,reject){
     loadEmailJS(function(loadErr){
       if(loadErr){console.error('EmailJS load error:',loadErr);reject(loadErr);return;}
+      var expires=new Date(Date.now()+15*60*1000);
+      var timeStr=expires.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
       emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-        to_email: toEmail,
-        code: code,
+        email: toEmail,
+        passcode: code,
         nome: nome||'usuário',
+        time: timeStr,
         reply_to: toEmail
       }).then(function(resp){
         console.log('EmailJS enviado com sucesso:', resp.status, resp.text);
