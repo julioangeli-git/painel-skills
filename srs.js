@@ -538,7 +538,7 @@ function srsApplyTheme(name){
       bar.innerHTML='<div class="squirrel-track"><span class="sq-mini">🐿</span><span class="sq-mini">🐿</span><span class="squirrel-run">🐿️</span></div>';
       document.body.insertBefore(bar,document.body.firstChild);
     }
-    document.querySelectorAll('.sec-flag').forEach(function(f){f.setAttribute('data-squilui','1');f.innerHTML='<span class="sqf-sq">🐿</span>';});
+    document.querySelectorAll('.sec-flag').forEach(function(f){f.setAttribute('data-squilui','1');f.innerHTML='<span class="sqf-sq"></span>';});
     document.querySelectorAll('.login-flag').forEach(function(f){f.style.cssText='display:flex;align-items:center;justify-content:center;width:64px;height:64px;margin:0 auto 10px;';f.innerHTML='<img src="img/mascote.png" style="width:64px;height:64px;object-fit:contain" alt="SquuiLui">';});
   // mascot badge in header
   var mascot=document.getElementById('squiluiMascot');
@@ -810,18 +810,43 @@ function srsInitUI(){
       return _hgOrig(pct,size);
     };
   }
-  // Patch renderOverview: ajusta container do gauge pós-render
+  // Patch renderOverview: ajusta container do gauge + enriquece hero no squilui
   if(typeof renderOverview==='function'&&!window._srsRoSqPatch){
     window._srsRoSqPatch=true;
     var _roSq=renderOverview;
     window.renderOverview=function(){
       _roSq.apply(this,arguments);
-      if(document.documentElement.getAttribute('data-theme')==='squilui'){
-        var g=document.getElementById('heroGauge');
-        if(g){g.style.width='110px';g.style.height='110px';}
-      } else {
-        var g=document.getElementById('heroGauge');
-        if(g){g.style.width='164px';g.style.height='164px';}
+      var isSq=document.documentElement.getAttribute('data-theme')==='squilui';
+      var g=document.getElementById('heroGauge');
+      if(g){g.style.width=isSq?'110px':'164px';g.style.height=isSq?'110px':'164px';}
+      if(!isSq)return;
+      // Dias de jornada
+      var hs=document.getElementById('heroStats');
+      if(hs&&!hs.querySelector('.hs-dias')){
+        var dias=0;
+        try{
+          var sd=state&&state.startDate?new Date(state.startDate):null;
+          if(sd&&!isNaN(sd))dias=Math.max(0,Math.floor((Date.now()-sd.getTime())/(86400000)));
+        }catch(e){}
+        var div=document.createElement('div');
+        div.className='hs hs-dias';
+        div.innerHTML='<div class="v">'+dias+'</div><div class="l">dias de jornada</div>';
+        hs.appendChild(div);
+      }
+      // Barra de progresso geral abaixo dos stats
+      var hero=document.querySelector('.hero');
+      if(hero&&!hero.querySelector('.hero-progress')){
+        var totT=0,doneT=0;
+        try{
+          totT=APP.skills.reduce(function(a,s){return a+s.topics.filter(function(t){return t.level<=s.target;}).length;},0);
+          doneT=APP.skills.reduce(function(a,s){return a+s.topics.filter(function(t){return t.level<=s.target&&state.done[t.id];}).length;},0);
+        }catch(e){}
+        var pct=totT?Math.round(doneT/totT*100):0;
+        var bar=document.createElement('div');
+        bar.className='hero-progress';
+        bar.style.cssText='position:absolute;bottom:0;left:5px;right:0;height:3px;background:rgba(196,98,10,.1);border-radius:0 0 24px 0;overflow:hidden';
+        bar.innerHTML='<div style="height:100%;width:'+pct+'%;background:linear-gradient(90deg,#c4620a,#e07820,#d4982a);transition:width 1.2s .3s ease;border-radius:0 0 24px 0"></div>';
+        hero.appendChild(bar);
       }
     };
   }
@@ -856,8 +881,8 @@ function srsInitUI(){
       +'@keyframes acornFloat{0%{left:-5%}100%{left:110%}}'
       +'.squirrel-run{position:absolute;top:50%;transform:translateY(-50%);font-size:8px;animation:squirrelChase 4.5s linear infinite}'
       +'@keyframes squirrelChase{0%{left:-10%}100%{left:115%}}'
-      +'.sqf-sq{font-size:18px;line-height:1;display:flex;align-items:center}'
-      +'[data-theme=squilui] .sec-flag{display:flex!important;width:auto!important;height:auto!important;background:none!important;overflow:visible!important}'
+      +'.sqf-sq{display:inline-block;width:4px;height:18px;background:linear-gradient(to bottom,#c4620a,#e07820,#d4982a);border-radius:3px;flex:none}'
+      +'[data-theme=squilui] .sec-flag{display:flex!important;width:auto!important;height:18px!important;background:none!important;overflow:visible!important;align-items:center!important}'
       /* SquuiLui: hero compact + hero left stripe */
       +'[data-theme=squilui] .hero::after{background:linear-gradient(to bottom,#c4620a,#e07820,#d4982a)!important}'
       +'[data-theme=squilui] .hero{padding:16px 24px!important;gap:20px!important;align-items:center!important}'
@@ -870,7 +895,7 @@ function srsInitUI(){
       +'[data-theme=squilui] .hs .l{font-size:8px!important;margin-top:4px!important;text-align:center!important}'
       +'[data-theme=squilui] .hs+.hs::before{left:0!important;top:8px!important;bottom:8px!important}'
       +'[data-theme=squilui] .radar-hero svg{width:170px!important;height:160px!important}'
-      +'#squiluiMascot{width:52px;height:52px;object-fit:contain;margin-right:8px;cursor:pointer;display:none}'
+      +'#squiluiMascot{width:52px;height:52px;object-fit:contain;margin-right:8px;cursor:pointer;display:none;mix-blend-mode:multiply}'
       +'[data-theme=squilui] #squiluiMascot{display:inline-flex!important;align-items:center;animation:mascotBob 2.5s ease-in-out infinite}'
       +'@keyframes mascotBob{0%,100%{transform:translateY(0) rotate(0deg)}40%{transform:translateY(-4px) rotate(-5deg)}60%{transform:translateY(-4px) rotate(5deg)}}'
       /* SquuiLui: brand gradient */
