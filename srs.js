@@ -217,7 +217,19 @@ function matSubcardsHtml(t,lang){
   }).join('')+'</div>';
 }
 function matStart(id,k){if(!state.started)state.started={};state.started[id+'::'+k]=true;save();openMaterial(id,k);}
-function matConcluir(id,k){state.done[id+'::'+k]=true;var bl=['v','f','m','i'];if(bl.every(function(x){return state.done[id+'::'+x];}))state.done[id]=true;save();if(typeof renderDetail==='function')renderDetail();}
+function matConcluir(id,k){
+  state.done[id+'::'+k]=true;
+  var bl=['v','f','m','i'];
+  var allMat=bl.every(function(x){return state.done[id+'::'+x];});
+  if(allMat){
+    if(!state.theoryDone)state.theoryDone={};
+    state.theoryDone[id]=true;
+    var srsPct=typeof srsTopicPct==='function'?srsTopicPct(id):0;
+    // Fecha só se SRS ≥ 50% OU já estava concluído antes (migração)
+    if(state.done[id]||srsPct>=0.5)state.done[id]=true;
+  }
+  save();if(typeof renderDetail==='function')renderDetail();
+}
 function matReiniciar(id,k){delete state.done[id+'::'+k];if(state.started)delete state.started[id+'::'+k];delete state.done[id];var cats=catsFor(RICH[id]||{},k);cats.forEach(function(c,ci){delete state.pos[id+'::'+k+'::'+ci];});save();if(typeof renderDetail==='function')renderDetail();}
 
 /* ---- detalhar (recolhe a descrição) ---- */
@@ -422,15 +434,16 @@ function srsRender(){
       +pron.split('-').map(function(s,i){return '<span id="ks'+i+'">'+srsEsc(s)+'</span>';}).join(' ')
       +'</div>':'';
   var img=c.img?'<img src="'+srsEsc(c.img)+'" alt="" style="max-width:90px;max-height:90px;border-radius:10px;margin-bottom:10px">':'';
-  var flagIT='<img src="https://flagcdn.com/w40/it.png" alt="🇮🇹" style="position:absolute;top:12px;right:14px;width:30px;border-radius:3px;box-shadow:0 1px 4px rgba(0,0,0,.2)">';
-  var flagBR='<img src="https://flagcdn.com/w40/br.png" alt="🇧🇷" style="position:absolute;top:12px;right:14px;width:30px;border-radius:3px;box-shadow:0 1px 4px rgba(0,0,0,.2)">';
+  var flagIT='<div style="font-size:22px;margin-bottom:4px">🇮🇹</div>';
+  var flagBR='<div style="font-size:22px;margin-bottom:8px">🇧🇷</div>';
+  // NÃO adicionar style="position:relative" nas faces — quebra o flip 3D
   box.innerHTML='<div class="flip" id="srsFlip" onclick="srsShow()"><div class="flip-in">'
-    +'<div class="face front" style="position:relative">'+flagIT+img
+    +'<div class="face front">'+flagIT+img
     +'<div style="font-size:27px;font-weight:700">'+srsEsc(c.f)+'</div>'
     +pronHtml
     +'<button class="btn" style="margin-top:14px;font-size:14px" onclick="event.stopPropagation();srsSpeakKaraoke(\''+srsJsq(c.f)+'\',\''+srsJsq(pron)+'\')">🔊 ouvir</button>'
     +'<div style="margin-top:10px;opacity:.45;font-size:11px">toque para ver tradução</div></div>'
-    +'<div class="face back" style="position:relative">'+flagBR
+    +'<div class="face back">'+flagBR
     +'<div style="font-size:24px;font-weight:700">'+srsEsc(c.b)+'</div></div>'
     +'</div></div>';
   btns.innerHTML='';
@@ -455,6 +468,15 @@ function srsCardHtml(id){
     +(cnt.learning?'<div style="flex:'+cnt.learning+';background:#e8a020" title="Aprendendo: '+cnt.learning+'"></div>':'')
     +(cnt.new    ?'<div style="flex:'+cnt.new    +';background:#ddd"    title="Novas: '+cnt.new+'"></div>':'')
     +'</div>';
+  var vocabCards=cards.filter(function(c){return !c.f.includes(' ');});
+  var phraseCards=cards.filter(function(c){return c.f.includes(' ');});
+  var dueVocab=vocabCards.filter(function(c){return srsDue(c.key);}).length;
+  var duePhr=phraseCards.filter(function(c){return srsDue(c.key);}).length;
+  var deckBtns='';
+  if(vocabCards.length)deckBtns+='<button onclick="openReview(\''+id+'\',\'vocab\')" style="cursor:pointer;border:1px solid #d9c7b0;border-radius:8px;padding:6px 12px;margin:4px 0;background:transparent;font-size:12px;width:100%;text-align:left">'
+    +'🔤 Vocabulário — '+vocabCards.length+' cartões'+(dueVocab?' · <b style="color:#c0212e">'+dueVocab+' vencidos</b>':'')+'</button>';
+  if(phraseCards.length)deckBtns+='<button onclick="openReview(\''+id+'\',\'phrases\')" style="cursor:pointer;border:1px solid #d9c7b0;border-radius:8px;padding:6px 12px;margin:4px 0;background:transparent;font-size:12px;width:100%;text-align:left">'
+    +'💬 Frases — '+phraseCards.length+' cartões (exige mais repetições)'+(duePhr?' · <b style="color:#c0212e">'+duePhr+' vencidas</b>':'')+'</button>';
   var tags=[
     cnt.mature   ?'<span style="color:#4f7a3a">●</span> '+cnt.mature+' maduras':'',
     cnt.young    ?'<span style="color:#2e7fa8">●</span> '+cnt.young+' jovens':'',
@@ -474,15 +496,20 @@ function srsCardHtml(id){
     +bar
     +'<div style="font-size:11px;color:var(--ink3,#666)">'+tags+'</div>'
     +dueMsg
+    +'<div style="margin-top:10px">'+deckBtns+'</div>'
     +'<div style="font-size:10px;opacity:.5;margin-top:6px">💡 Ver fácil 1× não é aprendizado — palavras maduras precisam de revisões ao longo de dias</div>'
     +'</div>';
 }
 
-/* Revisão em lotes de 20: prioriza vencidas, depois novas */
-function openReview(id){
+/* Revisão em lotes de 20: prioriza vencidas, depois novas. deck='vocab'|'phrases'|undefined(tudo) */
+var _srsDeck=null; // 'vocab'|'phrases'|null
+function openReview(id,deck){
   if(typeof ensureSrsView==='function')ensureSrsView();
-  _srsTopic=id;
+  _srsTopic=id;_srsDeck=deck||null;
   var cs=srsCardsForTopic(id);
+  // Filtrar por deck
+  if(deck==='vocab') cs=cs.filter(function(c){return !c.f.includes(' ');});
+  else if(deck==='phrases') cs=cs.filter(function(c){return c.f.includes(' ');});
   var due=cs.filter(function(c){return srsDue(c.key)&&srsMaturity(c.key)!=='new';});
   var newCards=cs.filter(function(c){return srsMaturity(c.key)==='new';});
   var BATCH=20;
@@ -494,13 +521,23 @@ function openReview(id){
   var ov=document.getElementById('overview');if(ov)ov.style.display='none';
   document.getElementById('srsView').style.display='block';
   var t=(APP.skills[curIdx]?APP.skills[curIdx].topics.find(function(x){return x.id===id;}):null);
-  var dueCount=due.length;
-  document.getElementById('srsTitle').textContent='Revisão · '+(t?t.t:id);
-  document.getElementById('srsCounts').textContent=
-    'Lote: '+_srsQueue.length+' de '+cs.length
-    +(dueCount?' · '+dueCount+' vencida'+(dueCount>1?'s':''):'');
+  var deckLabel=deck==='vocab'?'Vocabulário':deck==='phrases'?'Frases':'Revisão';
+  document.getElementById('srsTitle').textContent=deckLabel+' · '+(t?t.t:id);
+  document.getElementById('srsCounts').textContent='Sessão: 0/'+_srsQueue.length+' · Total: '+cs.length;
   window.scrollTo({top:0,behavior:'smooth'});
   if(typeof srsRender==='function')srsRender();
+}
+/* SM-2 mais exigente para frases: ao dar Easy, trata como Good (intervalo menor) */
+var _origSrsGrade=typeof srsGrade==='function'?srsGrade:null;
+function srsAns(g){
+  var c=_srsQueue[_srsIdx];
+  // Frases exigem mais: "fácil" vira "bom", "bom" vira "difícil"
+  var actualG=g;
+  if(_srsDeck==='phrases'||c.f.includes(' ')){
+    if(g==='easy')actualG='good';
+    else if(g==='good')actualG='hard';
+  }
+  srsGrade(c.key,actualG);_srsIdx++;srsRender();
 }
 
 function srsCloseAjustes(){
