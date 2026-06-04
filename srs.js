@@ -182,40 +182,110 @@ function closeMaterial(){
 
 /* ---- 4 subcards (com progresso e descrição) ---- */
 function matSubcardsHtml(t,lang){
-  var id=t.id;var blocks=['v','f','m','i'];var d=RICH[id]||{};
-  var names=lang?['Vocabulário','Frases-chave','Música','Imersão real']:['Conceito','Prática','Projeto','Validação'];
-  return '<div class="macro-grid">'+blocks.map(function(k,idx){
-    var key=id+'::'+k;var done=!!state.done[key];var started=!!(state.started&&state.started[key]);
-    var crit=(t.trk&&t.trk[k])||'';
-    var tot=blockTotal(d,k);var seen=blockSeen(id,k,d);var pct=tot?Math.round(seen/tot*100):0;
+  var id=t.id;var d=RICH[id]||{};
+
+  /* helper: injetar CSS de grid responsivo uma vez */
+  if(!document.getElementById('subRowsCSS')){
+    var st=document.createElement('style');st.id='subRowsCSS';
+    st.textContent='.sub-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px}'
+      +'@media(max-width:700px){.sub-row{grid-template-columns:1fr}}';
+    document.head.appendChild(st);
+  }
+
+  if(!lang){
+    /* Skills técnicas: layout original 4 cards */
+    var names=['Conceito','Prática','Projeto','Validação'];
+    var blocks=['v','f','m','i'];
+    return '<div class="macro-grid">'+blocks.map(function(k,idx){
+      var key=id+'::'+k;var done=!!state.done[key];var started=!!(state.started&&state.started[key]);
+      var crit=(t.trk&&t.trk[k])||'';
+      var tot=blockTotal(d,k);var seen=blockSeen(id,k,d);var pct=tot?Math.round(seen/tot*100):0;
+      var prog=tot?'<span style="font-weight:400;font-size:12px;opacity:.7;margin-left:6px">'+seen+'/'+tot+' · '+pct+'%</span>':'';
+      var btns;
+      if(done){btns='<button class="btn" style="background:#b85a28;color:#fff;border:none" onclick="matReiniciar(\''+id+'\',\''+k+'\')">↻ Reiniciar</button>';}
+      else if(started){btns='<button class="btn" style="background:#2e7fa8;color:#fff;border:none" onclick="matStart(\''+id+'\',\''+k+'\')">▸ Continuar</button><button class="btn" style="background:#4f7a3a;color:#fff;border:none" onclick="matConcluir(\''+id+'\',\''+k+'\')">✓ Concluir</button>';}
+      else{btns='<button class="btn" style="background:#1c6b8c;color:#fff;border:none;font-weight:700" onclick="matStart(\''+id+'\',\''+k+'\')">▶ Iniciar</button>';}
+      return '<div style="border:1px solid '+(done?'#9ec79a':'var(--border2,#e0d6c6)')+';border-radius:14px;background:'+(done?'var(--sub-done-bg,#eef7ea)':'var(--surface,#fff)')+';padding:16px;display:flex;flex-direction:column;gap:10px;min-height:120px">'
+        +'<div style="font-weight:700;font-size:15px;color:var(--ink,#1c1408)">'+(done?'✓ ':'')+srsEsc(names[idx])+prog+'</div>'
+        +(crit?'<div style="font-size:12px;color:var(--ink3,#666);line-height:1.45">'+srsEsc(crit)+'</div>':'')
+        +'<div style="margin-top:auto;display:flex;gap:8px;flex-wrap:wrap">'+btns+'</div></div>';
+    }).join('')+'</div>';
+  }
+
+  /* Skills de idioma: novo layout em linhas */
+  var vDone=!!state.done[id+'::v'];
+  var fDone=!!state.done[id+'::f'];
+  var vStarted=!!(state.started&&state.started[id+'::v']);
+  var fStarted=!!(state.started&&state.started[id+'::f']);
+  var vTot=blockTotal(d,'v'),vSeen=blockSeen(id,'v',d),vPct=vTot?Math.round(vSeen/vTot*100):0;
+  var fTot=blockTotal(d,'f'),fSeen=blockSeen(id,'f',d),fPct=fTot?Math.round(fSeen/fTot*100):0;
+  var vCrit=(t.trk&&t.trk.v)||'';var fCrit=(t.trk&&t.trk.f)||'';
+  var vSrsPct=typeof srsTopicPctDeck==='function'?Math.round(srsTopicPctDeck(id,'vocab')*100):0;
+  var fSrsPct=typeof srsTopicPctDeck==='function'?Math.round(srsTopicPctDeck(id,'phrases')*100):0;
+  var vPrnPct=typeof pronuncDeckPctDeck==='function'?Math.round(pronuncDeckPctDeck(id,'vocab')*100):0;
+  var fPrnPct=typeof pronuncDeckPctDeck==='function'?Math.round(pronuncDeckPctDeck(id,'phrases')*100):0;
+
+  function theoryCard(k,name,done,started,tot,seen,pct,crit){
     var prog=tot?'<span style="font-weight:400;font-size:12px;opacity:.7;margin-left:6px">'+seen+'/'+tot+' · '+pct+'%</span>':'';
     var btns;
-    if(done){btns='<button class="btn" style="background:#b85a28;color:#fff;border:none" onclick="matReiniciar(\''+id+'\',\''+k+'\')">↻ Reiniciar</button>';}
-    else if(started){btns='<button class="btn" style="background:#2e7fa8;color:#fff;border:none" onclick="matStart(\''+id+'\',\''+k+'\')">▸ Continuar</button>'
-      +'<button class="btn" style="background:#4f7a3a;color:#fff;border:none" onclick="matConcluir(\''+id+'\',\''+k+'\')">✓ Concluir</button>';}
-    else{btns='<button class="btn" style="background:#1c6b8c;color:#fff;border:none;font-weight:700" onclick="matStart(\''+id+'\',\''+k+'\')">▶ Iniciar</button>';}
-    // progress visual: barra dupla teoria+SRS para skills de idioma
-    var dualBar='';
-    if(lang&&idx===0&&!done){
-      var srsPctTopic=typeof srsTopicPct==='function'?Math.round(srsTopicPct(id)*100):0;
-      var theoryDone=!!(state.theoryDone&&state.theoryDone[id]);
-      var theoryPct=theoryDone?100:Math.round(pct/2);// approximation
-      dualBar='<div style="margin-top:4px">'
-        +'<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--ink3,#666);margin-bottom:2px">'
-        +'<span>Teoria '+(theoryDone?'✓':theoryPct+'%')+'</span>'
-        +'<span>Revisão '+srsPctTopic+'%</span></div>'
-        +'<div style="display:flex;gap:3px;height:5px">'
-        +'<div style="flex:1;background:#eee;border-radius:3px;overflow:hidden"><div style="height:100%;width:'+(theoryDone?100:theoryPct)+'%;background:#1c6b8c"></div></div>'
-        +'<div style="flex:1;background:#eee;border-radius:3px;overflow:hidden"><div style="height:100%;width:'+srsPctTopic+'%;background:#4f7a3a"></div></div>'
-        +'</div></div>';
+    if(done){btns='<button class="btn" style="background:#b85a28;color:#fff;border:none;font-size:11px" onclick="matReiniciar(\''+id+'\',\''+k+'\')">↻ Reiniciar</button>';}
+    else if(started){btns='<button class="btn" style="background:#2e7fa8;color:#fff;border:none;font-size:11px" onclick="matStart(\''+id+'\',\''+k+'\')">▸ Continuar</button><button class="btn" style="background:#4f7a3a;color:#fff;border:none;font-size:11px" onclick="matConcluir(\''+id+'\',\''+k+'\')">✓ Concluir</button>';}
+    else{btns='<button class="btn" style="background:#1c6b8c;color:#fff;border:none;font-weight:700;font-size:11px" onclick="matStart(\''+id+'\',\''+k+'\')">▶ Iniciar</button>';}
+    return '<div style="border:1px solid '+(done?'#9ec79a':'var(--border2,#e0d6c6)')+';border-radius:14px;background:'+(done?'var(--sub-done-bg,#eef7ea)':'var(--surface,#fff)')+';padding:14px;display:flex;flex-direction:column;gap:8px;min-height:110px">'
+      +'<div style="font-weight:700;font-size:14px;color:var(--ink,#1c1408)">'+(done?'✓ ':'')+srsEsc(name)+prog+'</div>'
+      +(crit?'<div style="font-size:11px;color:var(--ink3,#666);line-height:1.4">'+srsEsc(crit)+'</div>':'')
+      +'<div style="margin-top:auto;display:flex;gap:6px;flex-wrap:wrap">'+btns+'</div>'
+      +'</div>';
+  }
+
+  function practiceCard(label,icon,pct,onclick,locked,lockMsg){
+    if(locked){
+      return '<div style="border:1px dashed var(--border2,#d0c8b8);border-radius:14px;background:var(--surface2,#f8f2e5);padding:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:110px;text-align:center">'
+        +'<div style="font-size:20px">🔒</div>'
+        +'<div style="font-size:11px;color:var(--ink3,#888);line-height:1.35">'+(lockMsg||'Conclua a teoria para liberar')+'</div>'
+        +'</div>';
     }
-    return '<div class="sub-card'+(done?' sub-done':'')+'" style="border:1px solid '+(done?'#9ec79a':'var(--border2,#e0d6c6)')+';border-radius:14px;background:'+(done?'var(--sub-done-bg,#eef7ea)':'var(--surface,#fff)')+';padding:16px;display:flex;flex-direction:column;gap:10px;min-height:120px">'
-      +'<div style="font-weight:700;font-size:15px;color:var(--ink,#1c1408)">'+(done?'✓ ':'')+srsEsc(names[idx])+prog+'</div>'
-      +dualBar
-      +(crit?'<div style="font-size:12px;color:var(--ink3,#666);line-height:1.45">'+srsEsc(crit)+'</div>':'')
-      +'<div style="margin-top:auto;display:flex;gap:8px;flex-wrap:wrap">'+btns+'</div></div>';
-  }).join('')+'</div>';
+    var col=pct>=60?'#4f7a3a':pct>=30?'#e8a020':'#c0212e';
+    return '<div style="border:1px solid var(--border2,#e0d6c6);border-radius:14px;background:var(--surface,#fff);padding:14px;display:flex;flex-direction:column;gap:8px;min-height:110px;cursor:pointer" onclick="'+onclick+'">'
+      +'<div style="font-weight:700;font-size:13px;color:var(--ink,#1c1408)">'+icon+' '+srsEsc(label)+'</div>'
+      +'<div style="height:5px;background:#eee;border-radius:3px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+col+';border-radius:3px;transition:.4s"></div></div>'
+      +'<div style="font-size:18px;font-weight:800;color:'+col+'">'+pct+'%</div>'
+      +'<div style="margin-top:auto"><button class="btn" style="background:'+col+';color:#fff;border:none;font-size:10px" onclick="event.stopPropagation();'+onclick+'">▶ Praticar</button></div>'
+      +'</div>';
+  }
+
+  function lockedComing(name,icon){
+    return '<div style="border:1px dashed var(--border2,#d0c8b8);border-radius:14px;background:var(--surface2,#f8f2e5);padding:14px 18px;display:flex;align-items:center;gap:12px;margin-bottom:10px;opacity:.65">'
+      +'<div style="font-size:22px">🔒</div>'
+      +'<div><div style="font-weight:600;font-size:14px;color:var(--ink,#1c1408)">'+icon+' '+srsEsc(name)+'</div>'
+      +'<div style="font-size:11px;color:var(--ink3,#888);margin-top:2px">Em breve</div></div>'
+      +'</div>';
+  }
+
+  var vReviewOC="openReview('"+id+"','vocab')";
+  var vPrnOC="openPronunc('"+id+"','vocab')";
+  var fReviewOC="openReview('"+id+"','phrases')";
+  var fPrnOC="openPronunc('"+id+"','phrases')";
+
+  return '<div>'
+    /* ── Row 1: Vocabulário ── */
+    +'<div class="sub-row">'
+    +theoryCard('v','Vocabulário',vDone,vStarted,vTot,vSeen,vPct,vCrit)
+    +practiceCard('Revisão','🎴',vSrsPct,vReviewOC,!vDone,'Conclua o Vocabulário para liberar')
+    +practiceCard('Pronúncia','🎤',vPrnPct,vPrnOC,!vDone,'Conclua o Vocabulário para liberar')
+    +'</div>'
+    /* ── Row 2: Frases ── */
+    +'<div class="sub-row">'
+    +theoryCard('f','Frases-chave',fDone,fStarted,fTot,fSeen,fPct,fCrit)
+    +practiceCard('Revisão','🎴',fSrsPct,fReviewOC,!fDone,'Conclua as Frases para liberar')
+    +practiceCard('Pronúncia','🎤',fPrnPct,fPrnOC,!fDone,'Conclua as Frases para liberar')
+    +'</div>'
+    /* ── Row 3+4: locked ── */
+    +lockedComing('Música','🎵')
+    +lockedComing('Imersão real','🌍')
+    +'</div>';
 }
+
 function matStart(id,k){if(!state.started)state.started={};state.started[id+'::'+k]=true;save();openMaterial(id,k);}
 function matConcluir(id,k){
   state.done[id+'::'+k]=true;
@@ -732,6 +802,13 @@ function pronuncDeckPct(id){
   var cs=srsCardsForTopic(id);if(!cs.length)return 0;
   return cs.reduce(function(a,c){return a+Math.min(pronuncBest(c.key),100)/100;},0)/cs.length;
 }
+function pronuncDeckPctDeck(id,deck){
+  var cs=srsCardsForTopic(id);
+  if(deck==='vocab')cs=cs.filter(function(c){return !c.f.includes(' ');});
+  else if(deck==='phrases')cs=cs.filter(function(c){return c.f.includes(' ');});
+  if(!cs.length)return 0;
+  return cs.reduce(function(a,c){return a+Math.min(pronuncBest(c.key),100)/100;},0)/cs.length;
+}
 
 var _pronuncId=null,_pronuncQueue=[],_pronuncIdx=0,_pronuncRecog=null;
 
@@ -764,9 +841,11 @@ function closePronunc(){
   document.getElementById('detail').style.display='block';
   if(typeof renderDetail==='function')renderDetail();
 }
-function openPronunc(id){
+function openPronunc(id,deck){
   ensurePronuncView();_pronuncId=id;
   var cs=srsCardsForTopic(id);
+  if(deck==='vocab')cs=cs.filter(function(c){return !c.f.includes(' ');});
+  else if(deck==='phrases')cs=cs.filter(function(c){return c.f.includes(' ');});
   var notDone=cs.filter(function(c){return pronuncBest(c.key)<PRONUNC_THRESHOLD;});
   _pronuncQueue=(notDone.length?notDone:cs).slice(0,20);
   _pronuncIdx=0;
@@ -775,7 +854,8 @@ function openPronunc(id){
   var sv=document.getElementById('srsView');if(sv)sv.style.display='none';
   document.getElementById('pronuncView').style.display='block';
   var t=APP.skills[curIdx]?APP.skills[curIdx].topics.find(function(x){return x.id===id;}):null;
-  document.getElementById('pronuncTitle').textContent='Pronúncia · '+(t?t.t:id);
+  var dlabel=deck==='vocab'?'Vocabulário':deck==='phrases'?'Frases':'Tudo';
+  document.getElementById('pronuncTitle').textContent='Pronúncia ('+dlabel+') · '+(t?t.t:id);
   window.scrollTo({top:0,behavior:'smooth'});
   renderPronunc();
 }
