@@ -545,6 +545,11 @@ function srsCardHtml(id){
   if(phraseCards.length)deckBtns+='<button onclick="openReview(''+id+'','phrases')" style="cursor:pointer;border:1px solid #d9c7b0;border-radius:8px;padding:7px 12px;margin:3px 0;background:transparent;font-size:12px;width:100%;text-align:left;display:flex;align-items:center;justify-content:space-between">'
     +'<span>💬 Frases <span style="opacity:.6">(+ rep.)</span>'+(duePhr?' &nbsp;<b style="color:#c0212e">'+duePhr+' vencidas</b>':'')+'</span>'
     +'<b style="color:'+col(pPct)+';white-space:nowrap">'+pPct+'%'+miniBar(pPct,col(pPct))+'</b></button>';
+  // Deck Pronuncia
+  var prnPct=Math.round(pronuncDeckPct(id)*100);
+  deckBtns+='<button onclick="openPronunc(\''+id+'\')" style="cursor:pointer;border:1px solid #d9c7b0;border-radius:8px;padding:7px 12px;margin:3px 0;background:transparent;font-size:12px;width:100%;text-align:left;display:flex;align-items:center;justify-content:space-between">'
+    +'<span>🎤 Pronúncia <span style="opacity:.6">(meta '+PRONUNC_THRESHOLD+'%)</span></span>'
+    +'<b style="color:'+col(prnPct)+';white-space:nowrap">'+prnPct+'%'+miniBar(prnPct,col(prnPct))+'</b></button>';
   return '<div class="srs-card" style="margin:10px 0;padding:14px;border:1px solid #d9c7b0;border-radius:12px;background:#fbf6ee">'+
     '<div style="font-weight:700;font-size:14px;margin-bottom:5px">🎴 Revisão por cartões</div>'+
     '<div style="font-size:11px;color:var(--ink3,#666)">'+tags+'</div>'+
@@ -700,6 +705,166 @@ function srsInitUI(){
   if(backBtn&&!backBtn._srsPatchedBack){backBtn._srsPatchedBack=true;var ob=backBtn.onclick;backBtn.onclick=function(){if(ob)ob.call(this);document.body.classList.remove('showing-italian');srsHashSave('');};}
 })();
 if(document.querySelector('.top h1')){srsInitUI();}else{document.addEventListener('DOMContentLoaded',srsInitUI);}
+
+
+/* ===== PRONUNCIA: Web Speech API =====*/
+if(!state.pronunc)state.pronunc={};
+var PRONUNC_THRESHOLD=70;
+function levenshtein(a,b){
+  var m=a.length,n=b.length,dp=[],i,j;
+  for(i=0;i<=m;i++){dp[i]=[i];for(j=1;j<=n;j++)dp[i][j]=i?0:j;}
+  for(i=1;i<=m;i++)for(j=1;j<=n;j++)
+    dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+  return dp[m][n];
+}
+function pronuncScore(spoken,target){
+  var norm=function(s){return String(s).toLowerCase().replace(/[.,?!]/g,"").trim();};
+  var s=norm(spoken),t=norm(target);
+  if(!t.length)return 100;if(!s.length)return 0;
+  if(!t.includes(" ")){
+    var d=levenshtein(s,t);
+    return Math.max(0,Math.round((1-d/Math.max(s.length,t.length))*100));
+  }
+  var sw=s.split(/\s+/),tw=t.split(/\s+/);
+  return Math.round(tw.filter(function(w){return sw.indexOf(w)>=0;}).length/tw.length*100);
+}
+function pronuncBest(key){return(state.pronunc&&state.pronunc[key])||0;}
+function pronuncDeckPct(id){
+  var cs=srsCardsForTopic(id);if(!cs.length)return 0;
+  return cs.reduce(function(a,c){return a+Math.min(pronuncBest(c.key),100)/100;},0)/cs.length;
+}
+var _pronuncId=null,_pronuncQueue=[],_pronuncIdx=0,_pronuncRecog=null;
+function ensurePronuncView(){
+  if(document.getElementById("pronuncView"))return;
+  var st=document.createElement("style");
+  st.textContent=".mic-btn{font-size:36px;background:none;border:3px solid #1c6b8c;border-radius:50%;width:76px;height:76px;cursor:pointer;transition:.2s;display:inline-flex;align-items:center;justify-content:center;margin:8px auto}"
+    +".mic-btn.listening{border-color:#c0212e!important;animation:srs-pulse 1s infinite}"
+    +"@keyframes srs-pulse{0%,100%{box-shadow:0 0 0 0 rgba(192,33,46,.4)}50%{box-shadow:0 0 0 14px rgba(192,33,46,0)}}";
+  document.head.appendChild(st);
+  var v=document.createElement("div");v.id="pronuncView";v.style.display="none";
+  v.innerHTML='<div style="max-width:580px;margin:0 auto;padding:18px">'
+    +'<button class="btn" id="pronuncBack">← Voltar</button>'
+    +'<div id="pronuncTitle" style="margin:12px 0 4px;font-weight:700;font-size:16px"></div>'
+    +'<div id="pronuncCounts" style="font-size:12px;opacity:.7;margin-bottom:14px"></div>'
+    +'<div id="pronuncCardBox"></div>'
+    +'<div id="pronuncBtns" style="margin-top:18px;text-align:center;display:flex;gap:10px;justify-content:center;flex-wrap:wrap"></div>'
+    +'</div>';
+  document.body.appendChild(v);
+  document.getElementById("pronuncBack").onclick=closePronunc;
+}
+function closePronunc(){
+  if(_pronuncRecog){try{_pronuncRecog.stop();}catch(e){}_pronuncRecog=null;}
+  var pv=document.getElementById("pronuncView");if(pv)pv.style.display="none";
+  document.getElementById("detail").style.display="block";
+  if(typeof renderDetail==="function")renderDetail();
+}
+function openPronunc(id){
+  ensurePronuncView();_pronuncId=id;
+  var cs=srsCardsForTopic(id);
+  var notDone=cs.filter(function(c){return pronuncBest(c.key)<PRONUNC_THRESHOLD;});
+  _pronuncQueue=(notDone.length?notDone:cs).slice(0,20);
+  _pronuncIdx=0;
+  document.getElementById("detail").style.display="none";
+  var ov=document.getElementById("overview");if(ov)ov.style.display="none";
+  var sv=document.getElementById("srsView");if(sv)sv.style.display="none";
+  document.getElementById("pronuncView").style.display="block";
+  var t=APP.skills[curIdx]?APP.skills[curIdx].topics.find(function(x){return x.id===id;}):null;
+  document.getElementById("pronuncTitle").textContent="Pronúncia · "+(t?t.t:id);
+  window.scrollTo({top:0,behavior:"smooth"});renderPronunc();
+}
+function renderPronunc(){
+  var box=document.getElementById("pronuncCardBox");
+  var btns=document.getElementById("pronuncBtns");
+  var total=_pronuncQueue.length;
+  var done=_pronuncQueue.filter(function(c){return pronuncBest(c.key)>=PRONUNC_THRESHOLD;}).length;
+  document.getElementById("pronuncCounts").textContent=
+    "Sessão: "+(_pronuncIdx+1)+"/"+total+" · Meta: "+PRONUNC_THRESHOLD+"% · ✓ "+done+"/"+total;
+  if(_pronuncIdx>=total){
+    var oPct=Math.round(pronuncDeckPct(_pronuncId)*100);
+    box.innerHTML='<div style="text-align:center;padding:40px 0">'
+      +'<div style="font-size:52px">'+(oPct>=PRONUNC_THRESHOLD?"🎉":"💪")+'</div>'
+      +'<div style="font-size:22px;font-weight:700;margin:12px 0">Sessão concluída!</div>'
+      +'<div style="font-size:28px;font-weight:800;color:'+(oPct>=PRONUNC_THRESHOLD?"#4f7a3a":"#e8a020")+'">"+oPct+"%</div>'
+      +'<div style="font-size:13px;opacity:.65;margin-top:8px">'
+      +(oPct>=PRONUNC_THRESHOLD?"Pronúncia dominada ✓":"Meta: "+PRONUNC_THRESHOLD+"% — continue praticando")+'</div>'
+      +'</div>';
+    btns.innerHTML='<button class="btn" onclick="closePronunc()">Voltar</button>';
+    return;
+  }
+  var c=_pronuncQueue[_pronuncIdx];
+  var best=pronuncBest(c.key);
+  var lang=APP.skills[curIdx]?APP.skills[curIdx].name:"Italiano";
+  box.innerHTML=
+    '<div style="border:2px solid #4f7a3a;border-radius:22px;padding:28px 22px;'
+    +'background:linear-gradient(135deg,#eef7ea,#d8efcf);text-align:center;min-height:280px;'
+    +'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px">'
+    +'<div style="font-size:22px">🇧🇷</div>'
+    +'<div style="font-size:30px;font-weight:800;color:#234a18">'+srsEsc(c.b)+'</div>'
+    +'<div style="font-size:13px;color:#4f7a3a;opacity:.8">Como se diz em '+srsEsc(lang)+'?</div>'
+    +'<button class="mic-btn" id="micBtn" onclick="srsMicStart()" title="Clique e fale">🎤</button>'
+    +'<div style="font-size:12px;opacity:.5">Clique no microfone e fale</div>'
+    +'<div id="pronuncResult" style="min-height:80px;width:100%"></div>'
+    +(best>0?'<div style="font-size:11px;opacity:.45">Melhor: <b style="color:'+(best>=PRONUNC_THRESHOLD?"#4f7a3a":"#e8a020")+'">"+best+"%</b></div>':"")
+    +'</div>';
+  btns.innerHTML="";
+}
+function srsMicStart(){
+  var SRC=window.SpeechRecognition||window.webkitSpeechRecognition;
+  var res=document.getElementById("pronuncResult");
+  var btn=document.getElementById("micBtn");
+  if(!SRC){
+    if(res)res.innerHTML='<span style="color:#c0212e;font-size:12px">Use Chrome para reconhecimento de voz.</span>';
+    return;
+  }
+  if(btn)btn.classList.add("listening");
+  if(res)res.innerHTML='<div style="opacity:.6;font-size:13px;margin-top:8px">🎤 Ouvindo… fale agora</div>';
+  document.getElementById("pronuncBtns").innerHTML="";
+  if(_pronuncRecog){try{_pronuncRecog.stop();}catch(e){}}
+  var recog=new SRC();
+  recog.lang=srsTTSLang();recog.interimResults=false;recog.maxAlternatives=5;
+  _pronuncRecog=recog;
+  recog.onresult=function(e){
+    var c=_pronuncQueue[_pronuncIdx];
+    var alts=[];for(var i=0;i<e.results[0].length;i++)alts.push(e.results[0][i].transcript);
+    var scores=alts.map(function(s){return pronuncScore(s,c.f);});
+    var score=Math.max.apply(null,scores);
+    var bestAlt=alts[scores.indexOf(score)];
+    if(!state.pronunc)state.pronunc={};
+    if(score>pronuncBest(c.key))state.pronunc[c.key]=score;
+    save();
+    if(btn)btn.classList.remove("listening");_pronuncRecog=null;
+    var col=score>=PRONUNC_THRESHOLD?"#4f7a3a":score>=50?"#e8a020":"#c0212e";
+    var emj=score>=PRONUNC_THRESHOLD?"✓":score>=50?"⚡":"✗";
+    var msg=score>=PRONUNC_THRESHOLD?"Ótimo!":score>=50?"Quase lá!":"Tente novamente";
+    res.innerHTML='<div style="margin-top:10px;text-align:center">'
+      +'<div style="font-size:13px;color:#666;margin-bottom:4px">Você disse: <i>\"'+srsEsc(bestAlt)+'\"”</i></div>'
+      +'<div style="font-size:13px;color:#444;margin-bottom:8px">Esperado: <b>'+srsEsc(c.f)+'</b></div>'
+      +'<div style="font-size:36px;font-weight:800;color:'+col+'">'+score+'%</div>'
+      +'<div style="font-size:14px;color:'+col+'">'+emj+" "+msg+'</div>'
+      +'</div>';
+    document.getElementById("pronuncBtns").innerHTML=
+      '<button class="btn" onclick="srsMicStart()">🎤 Tentar novamente</button>'
+      +'<button class="btn" style="background:#1c6b8c;color:#fff;border:none;font-weight:700" onclick="pronuncNext()">Próximo →</button>';
+    setTimeout(function(){
+      var pron=typeof srsPronFor==="function"?srsPronFor(c.f,_pronuncId):"";
+      srsSpeakKaraoke(c.f,pron);
+    },700);
+  };
+  recog.onerror=function(e){
+    if(btn)btn.classList.remove("listening");_pronuncRecog=null;
+    var errMsg={"not-allowed":"Permita o microfone no browser.","no-speech":"Nenhuma fala detectada."}[e.error]||("Erro: "+e.error);
+    if(res)res.innerHTML='<div style="color:#c0212e;font-size:12px;margin-top:8px">'+errMsg+'</div>';
+    document.getElementById("pronuncBtns").innerHTML=
+      '<button class="btn" onclick="srsMicStart()">🎤 Tentar novamente</button>'
+      +'<button class="btn" onclick="pronuncNext()">Pular →</button>';
+  };
+  recog.onend=function(){if(btn)btn.classList.remove("listening");};
+  try{recog.start();}catch(e){if(res)res.innerHTML='<div style="color:#c0212e;font-size:12px">Permita o microfone.</div>';}
+}
+function pronuncNext(){
+  if(_pronuncRecog){try{_pronuncRecog.stop();}catch(e){}_pronuncRecog=null;}
+  _pronuncIdx++;renderPronunc();
+}
 
 /* ===== Hash routing: persiste a view atual na URL ===== */
 function srsHashSave(hash){
