@@ -401,7 +401,7 @@ function srsRender(){
     +'<div class="face front"><div style="font-size:22px;margin-bottom:4px">🇮🇹</div>'+img
     +'<div style="font-size:27px;font-weight:700">'+srsEsc(c.f)+'</div>'
     +pronHtml
-    +'<button class="btn" style="margin-top:14px;font-size:14px" onclick="event.stopPropagation();srsSpeakKaraoke(''+srsJsq(c.f)+'',''+srsJsq(pron)+'')">🔊 ouvir</button>'
+    +'<button class="btn" style="margin-top:14px;font-size:14px" onclick="event.stopPropagation();srsSpeakKaraoke(\''+srsJsq(c.f)+'\',\''+srsJsq(pron)+'\')">🔊 ouvir</button>'
     +'<div style="margin-top:10px;opacity:.45;font-size:11px">toque para ver tradução</div></div>'
     +'<div class="face back"><div style="font-size:22px;margin-bottom:8px">🇧🇷</div>'
     +'<div style="font-size:24px;font-weight:700">'+srsEsc(c.b)+'</div></div>'
@@ -539,10 +539,10 @@ function srsCardHtml(id){
   function col(p){return p>=60?'#4f7a3a':p>=30?'#e8a020':'#c0212e';}
   function miniBar(p,c){return '<span style="display:inline-block;width:44px;height:5px;background:#e8e0d0;border-radius:3px;vertical-align:middle;margin-left:5px"><span style="display:block;height:100%;width:'+p+'%;background:'+c+';border-radius:3px"></span></span>';}
   var deckBtns='';
-  if(vocabCards.length)deckBtns+='<button onclick="openReview(''+id+'','vocab')" style="cursor:pointer;border:1px solid #d9c7b0;border-radius:8px;padding:7px 12px;margin:3px 0;background:transparent;font-size:12px;width:100%;text-align:left;display:flex;align-items:center;justify-content:space-between">'
+  if(vocabCards.length)deckBtns+='<button onclick="openReview(\''+id+'\',\'vocab\')" style="cursor:pointer;border:1px solid #d9c7b0;border-radius:8px;padding:7px 12px;margin:3px 0;background:transparent;font-size:12px;width:100%;text-align:left;display:flex;align-items:center;justify-content:space-between">'
     +'<span>🔤 Vocabulário'+(dueVocab?' &nbsp;<b style="color:#c0212e">'+dueVocab+' vencidos</b>':'')+'</span>'
     +'<b style="color:'+col(vPct)+';white-space:nowrap">'+vPct+'%'+miniBar(vPct,col(vPct))+'</b></button>';
-  if(phraseCards.length)deckBtns+='<button onclick="openReview(''+id+'','phrases')" style="cursor:pointer;border:1px solid #d9c7b0;border-radius:8px;padding:7px 12px;margin:3px 0;background:transparent;font-size:12px;width:100%;text-align:left;display:flex;align-items:center;justify-content:space-between">'
+  if(phraseCards.length)deckBtns+='<button onclick="openReview(\''+id+'\',\'phrases\')" style="cursor:pointer;border:1px solid #d9c7b0;border-radius:8px;padding:7px 12px;margin:3px 0;background:transparent;font-size:12px;width:100%;text-align:left;display:flex;align-items:center;justify-content:space-between">'
     +'<span>💬 Frases <span style="opacity:.6">(+ rep.)</span>'+(duePhr?' &nbsp;<b style="color:#c0212e">'+duePhr+' vencidas</b>':'')+'</span>'
     +'<b style="color:'+col(pPct)+';white-space:nowrap">'+pPct+'%'+miniBar(pPct,col(pPct))+'</b></button>';
   // Deck Pronuncia
@@ -692,7 +692,7 @@ function srsInitUI(){
       +'.tools{gap:4px;flex-wrap:nowrap}'
       +'.btn{padding:5px 9px!important;font-size:8.5px!important}'
       +'.wrap{padding:8px 10px 80px!important}'
-      /* Jornada mobile: mostrar só etapa ativa */@media(max-width:600px){.journey{grid-template-columns:1fr!important}.jstep.done{padding:10px 18px!important}.jstep.done .jdesc,.jstep.done .jbadge{display:none!important}.jstep.future{display:none!important}.journey.expanded .jstep.future{display:block!important}}/* Flashcards mobile: empilhados, altura proporcional à tela */
+      +'@media(max-width:600px){.journey{grid-template-columns:1fr!important}.jstep.done{padding:10px 18px!important}.jstep.done .jdesc,.jstep.done .jbadge{display:none!important}.jstep.future{display:none!important}.journey.expanded .jstep.future{display:block!important}}'
       +'.mat-pair{flex-direction:column!important;gap:8px!important}'
       +'.mat-card-front,.mat-card-back{min-height:34vh!important;max-height:34vh!important;font-size:20px!important;overflow:auto}'
       +'}';
