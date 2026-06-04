@@ -1232,7 +1232,7 @@ async function sendEmailCode(toEmail, code, nome){
       var expires=new Date(Date.now()+15*60*1000);
       var timeStr=expires.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
       emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-        email: toEmail,
+        to_email: toEmail,
         passcode: code,
         nome: nome||'usuário',
         time: timeStr,
