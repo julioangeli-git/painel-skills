@@ -559,27 +559,33 @@ function srsRender(){
     return;
   }
   var c=_srsQueue[_srsIdx];
-  var pron=srsPronFor(c.f,_srsTopic);
+  var cf=typeof srsApplyPlaceholders==='function'?srsApplyPlaceholders(c.f):c.f;
+  var cb=typeof srsApplyPlaceholders==='function'?srsApplyPlaceholders(c.b):c.b;
+  var pron=srsPronFor(cf,_srsTopic)||cf.replace(/[.,?!]/g,'').split(/\s+/).filter(Boolean).join('-');
   var pronHtml=pron
     ?'<div id="karaoke" style="font-size:15px;color:#7a8aa0;letter-spacing:.5px;margin-top:8px">'
       +pron.split('-').map(function(s,i){return '<span id="ks'+i+'">'+srsEsc(s)+'</span>';}).join(' ')
       +'</div>':'';
   var img=c.img?'<img src="'+srsEsc(c.img)+'" alt="" style="max-width:90px;max-height:90px;border-radius:10px;margin-bottom:10px">':'';
-  var flagIT='<div style="font-size:22px;margin-bottom:4px">🇮🇹</div>';
-  var flagBR='<div style="font-size:22px;margin-bottom:8px">🇧🇷</div>';
-  // NÃO adicionar style="position:relative" nas faces — quebra o flip 3D
+  var flagIT='<img src="https://flagcdn.com/w40/it.png" alt="IT" style="width:28px;border-radius:3px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,.2)">';
+  var flagBR='<img src="https://flagcdn.com/w40/br.png" alt="BR" style="width:28px;border-radius:3px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.2)">';
   box.innerHTML='<div class="flip" id="srsFlip" onclick="srsShow()"><div class="flip-in">'
     +'<div class="face front">'+flagIT+img
-    +'<div style="font-size:27px;font-weight:700">'+srsEsc(c.f)+'</div>'
+    +'<div style="font-size:27px;font-weight:700">'+srsEsc(cf)+'</div>'
     +pronHtml
-    +'<button class="btn" style="margin-top:14px;font-size:14px" onclick="event.stopPropagation();srsSpeakKaraoke(\''+srsJsq(c.f)+'\',\''+srsJsq(pron)+'\')">🔊 ouvir</button>'
+    +'<button class="btn" style="margin-top:14px;font-size:14px" onclick="event.stopPropagation();srsOuvir()">🔊 ouvir</button>'
     +'<div style="margin-top:10px;opacity:.45;font-size:11px">toque para ver tradução</div></div>'
     +'<div class="face back">'+flagBR
-    +'<div style="font-size:24px;font-weight:700">'+srsEsc(c.b)+'</div></div>'
+    +'<div style="font-size:24px;font-weight:700">'+srsEsc(cb)+'</div></div>'
     +'</div></div>';
   btns.innerHTML='';
-  // Autoplay ao abrir o cartão
-  setTimeout(function(){srsSpeakKaraoke(c.f,pron);},280);
+  setTimeout(function(){srsSpeakKaraoke(cf,pron);},280);
+}
+function srsOuvir(){
+  var c=_srsQueue[_srsIdx];if(!c)return;
+  var cf=typeof srsApplyPlaceholders==='function'?srsApplyPlaceholders(c.f):c.f;
+  var pron=srsPronFor(cf,_srsTopic)||cf.replace(/[.,?!]/g,'').split(/\s+/).filter(Boolean).join('-');
+  srsSpeakKaraoke(cf,pron);
 }
 
 /* ===== SRS detalhado: override de srsCardHtml e openReview ===== */
@@ -793,9 +799,13 @@ function pronuncScore(spoken,target){
   var norm=function(s){return String(s).toLowerCase().replace(/[.,?!;:'"]/g,'').trim();};
   var s=norm(spoken),t=norm(target);
   if(!t.length)return 100;if(!s.length)return 0;
-  if(!t.includes(' ')){var d=levenshtein(s,t);return Math.max(0,Math.round((1-d/Math.max(s.length,t.length))*100));}
-  var sw=s.split(/\s+/),tw=t.split(/\s+/);
-  return Math.round(tw.filter(function(w){return sw.indexOf(w)>=0;}).length/tw.length*100);
+  // Levenshtein puro (sequência importa para palavras e frases)
+  var d=levenshtein(s,t);
+  var score=Math.max(0,Math.round((1-d/Math.max(s.length,t.length))*100));
+  // Penalidade: resposta muito curta em relação ao alvo (palavra incompleta ou frase parcial)
+  var ratio=s.length/t.length;
+  if(ratio<0.6)score=Math.round(score*Math.sqrt(ratio/0.6));
+  return Math.min(score,100);
 }
 function pronuncBest(key){return(state.pronunc&&state.pronunc[key])||0;}
 function pronuncDeckPct(id){
@@ -887,7 +897,7 @@ function renderPronunc(){
     +'background:linear-gradient(135deg,#eef7ea,#d8efcf);text-align:center;min-height:280px;'
     +'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px">'
     +'<div style="font-size:22px">🇧🇷</div>'
-    +'<div style="font-size:30px;font-weight:800;color:#234a18">'+srsEsc(c.b)+'</div>'
+    +'<div style="font-size:30px;font-weight:800;color:#234a18">'+srsEsc(typeof srsApplyPlaceholders==="function"?srsApplyPlaceholders(c.b):c.b)+'</div>'
     +'<div style="font-size:13px;color:#4f7a3a;opacity:.8">Como se diz em '+srsEsc(lang)+'?</div>'
     +'<button class="mic-btn" id="micBtn" onclick="srsMicStart()" title="Clique e fale">🎤</button>'
     +'<div style="font-size:12px;opacity:.5">Clique no microfone e fale</div>'
@@ -909,12 +919,13 @@ function srsMicStart(){
   document.getElementById('pronuncBtns').innerHTML='';
   if(_pronuncRecog){try{_pronuncRecog.stop();}catch(e){}}
   var recog=new SRC();
-  recog.lang=srsTTSLang();recog.interimResults=false;recog.maxAlternatives=5;
+  recog.lang=srsTTSLang();recog.interimResults=false;recog.maxAlternatives=2;
   _pronuncRecog=recog;
   recog.onresult=function(e){
     var c=_pronuncQueue[_pronuncIdx];
     var alts=[];for(var i=0;i<e.results[0].length;i++)alts.push(e.results[0][i].transcript);
-    var scores=alts.map(function(s){return pronuncScore(s,c.f);});
+    var cf2=typeof srsApplyPlaceholders==="function"?srsApplyPlaceholders(c.f):c.f;
+    var scores=alts.map(function(s){return pronuncScore(s,cf2);});
     var score=Math.max.apply(null,scores);
     var bestAlt=alts[scores.indexOf(score)];
     if(!state.pronunc)state.pronunc={};
