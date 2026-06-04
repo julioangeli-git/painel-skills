@@ -504,6 +504,14 @@ function srsRender(){
 /* ===== Configurações: paleta de cores e título ===== */
 var THEMES={
   'Itália (padrão)':{},
+  'SquuiLui':{
+    '--bg':'#f5ead0','--bg2':'#ede0c0','--surface':'#fffbf2','--surface2':'#f9f0dd',
+    '--ink':'#2a1a08','--ink2':'#6b3d10','--ink3':'#a0682a',
+    '--border':'rgba(90,50,10,.1)','--border2':'rgba(90,50,10,.2)',
+    '--terra':'#c4620a','--terra-g':'#e07820','--gold':'#d4982a',
+    '--it-green':'#c4620a','--it-red':'#8B3A0A',
+    '_theme':'squilui'
+  },
   'Noite':{
     '--bg':'#1e1b16','--bg2':'#26221b','--surface':'#2a261e','--surface2':'#332e24',
     '--ink':'#f2ecdd','--ink2':'#cdbf9f','--ink3':'#9a8a66',
@@ -520,9 +528,22 @@ function srsApplyTheme(name){
   var t=THEMES[name]||{};var r=document.documentElement;
   THEME_VARS.forEach(function(v){r.style.removeProperty(v);});
   Object.keys(t).forEach(function(v){if(v.startsWith('--'))r.style.setProperty(v,t[v]);});
-  // data-theme para overrides CSS de elementos com cores hardcoded
   r.setAttribute('data-theme', t['_theme']||'');
   try{localStorage.setItem('painelTheme',name);}catch(e){}
+  // SquuiLui: inject squirrel bar + swap flags to acorns
+  var existing=document.getElementById('squiluiBar');
+  if(t['_theme']==='squilui'){
+    if(!existing){
+      var bar=document.createElement('div');bar.id='squiluiBar';
+      bar.innerHTML='<div class="squirrel-track"><span class="acorn">🌰</span><span class="acorn">🌰</span><span class="acorn">🌰</span><span class="squirrel-run">🐿️</span></div>';
+      document.body.insertBefore(bar,document.body.firstChild);
+    }
+    document.querySelectorAll('.sec-flag').forEach(function(f){f.setAttribute('data-squilui','1');f.innerHTML='<span class="sqf-acorn">🌰</span>';});
+    document.querySelectorAll('.login-flag').forEach(function(f){f.style.cssText='display:flex;align-items:center;justify-content:center;width:46px;height:30px;margin:0 auto 8px;font-size:22px;';f.innerHTML='🐿️';});
+  } else {
+    if(existing)existing.remove();
+    document.querySelectorAll('.sec-flag[data-squilui]').forEach(function(f){f.removeAttribute('data-squilui');f.innerHTML='<span class="g"></span><span class="w"></span><span class="r"></span>';});
+  }
 }
 function srsApplyTitle(t){
   var h=document.querySelector('.top h1');if(!h)return;
@@ -730,7 +751,7 @@ function srsInitUI(){
     var ww=document.querySelector('.whoami-wrap');
     if(ww){Array.from(ww.childNodes).forEach(function(n){if(n.nodeType===3)n.textContent=n.textContent.replace('👤','').replace(' ','');});}
   }
-  try{var th=localStorage.getItem('painelTheme');if(th)srsApplyTheme(th);}catch(e){}
+  try{var th=localStorage.getItem('painelTheme');srsApplyTheme(th||'SquuiLui');}catch(e){srsApplyTheme('SquuiLui');}
   try{var ti=localStorage.getItem('painelTitle');if(ti)srsApplyTitle(ti);}catch(e){}
   // Aplicar avatar e observar login para reaplicar depois que o nome aparecer
   (function(){
@@ -789,6 +810,43 @@ function srsInitUI(){
       +'[data-theme=noite] #matView{color:#f2ecdd}'
       /* Botões de gestão de dados: ocultos da interface (auto-save em background) */
       +'#saveBtn,#cloudStatus,#expBtn,#impBtn,#resetBtn,.date-field{display:none!important}'
+      /* ===== SquuiLui theme ===== */
+      +'#squiluiBar{position:fixed;top:0;left:0;right:0;height:8px;z-index:200;background:linear-gradient(90deg,#8B3A0A,#c4620a,#e07820,#d4982a);overflow:hidden}'
+      +'.squirrel-track{position:relative;width:100%;height:100%;overflow:hidden}'
+      +'.acorn{position:absolute;top:50%;transform:translateY(-50%);font-size:7px;animation:acornFloat 6s linear infinite}'
+      +'.acorn:nth-child(1){animation-delay:0s;animation-duration:5.5s}'
+      +'.acorn:nth-child(2){animation-delay:2s;animation-duration:7s}'
+      +'.acorn:nth-child(3){animation-delay:4s;animation-duration:6s}'
+      +'@keyframes acornFloat{0%{left:-5%}100%{left:110%}}'
+      +'.squirrel-run{position:absolute;top:50%;transform:translateY(-50%);font-size:8px;animation:squirrelChase 4.5s linear infinite}'
+      +'@keyframes squirrelChase{0%{left:-10%}100%{left:115%}}'
+      +'.sqf-acorn{font-size:13px;line-height:1;display:flex;align-items:center}'
+      +'[data-theme=squilui] .sec-flag{display:flex!important;width:auto!important;height:auto!important;background:none!important;overflow:visible!important}'
+      /* SquuiLui: hero compact + hero left stripe */
+      +'[data-theme=squilui] .hero::after{background:linear-gradient(to bottom,#c4620a,#e07820,#d4982a)!important}'
+      +'[data-theme=squilui] .hs .v{font-size:28px!important}'
+      +'[data-theme=squilui] .gaugewrap .big{font-size:28px!important}'
+      +'[data-theme=squilui] .hero{padding:18px 22px!important;gap:18px!important}'
+      +'[data-theme=squilui] .herostats{gap:14px!important}'
+      +'[data-theme=squilui] .hs .l{margin-top:4px!important}'
+      /* SquuiLui: brand gradient */
+      +'[data-theme=squilui] .brand h1 em{background:linear-gradient(95deg,#8B3A0A,#c4620a,#e07820)!important;-webkit-background-clip:text!important;background-clip:text!important;-webkit-text-fill-color:transparent!important}'
+      +'[data-theme=squilui] .jstep.active{background:linear-gradient(150deg,rgba(196,98,10,.08),rgba(196,98,10,.02))!important}'
+      +'[data-theme=squilui] .jstep.active::after{background:linear-gradient(90deg,#8B3A0A,#c4620a,#e07820)!important}'
+      +'[data-theme=squilui] .jstep.done::after{background:#c4620a!important}'
+      /* ===== Transition animations (all themes) ===== */
+      +'.macro-card,.sub-card,.cat-card,.focus-card{transition:transform .2s ease,box-shadow .2s ease,opacity .2s ease}'
+      +'.macro-card:hover,.focus-card:hover{transform:translateY(-2px)}'
+      +'.btn{transition:border-color .15s,color .15s,background .15s,transform .12s}'
+      +'.btn:active{transform:scale(.96)}'
+      +'.hero{transition:box-shadow .2s ease}'
+      +'@keyframes fadeSlideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}'
+      +'#overview .hero{animation:fadeSlideUp .4s ease both}'
+      +'#overview .journey{animation:fadeSlideUp .5s .08s ease both}'
+      +'#overview .sec{animation:fadeSlideUp .4s .12s ease both;animation-fill-mode:both}'
+      +'.macro-card{animation:fadeSlideUp .35s ease both}'
+      +'.detail{animation:fadeSlideUp .3s ease both}'
+      +'.login-box{animation:fadeSlideUp .35s ease both}'
       /* Header mobile: esconde elementos secundários, mantém brand + botões essenciais */
       +'@media(max-width:600px){'
       +'header.top{margin:6px 8px 0;border-radius:12px}'
