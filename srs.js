@@ -539,13 +539,13 @@ function srsApplyTheme(name){
       document.body.insertBefore(bar,document.body.firstChild);
     }
     document.querySelectorAll('.sec-flag').forEach(function(f){f.setAttribute('data-squilui','1');f.innerHTML='<span class="sqf-sq">🐿</span>';});
-    document.querySelectorAll('.login-flag').forEach(function(f){f.style.cssText='display:flex;align-items:center;justify-content:center;width:46px;height:30px;margin:0 auto 8px;font-size:22px;';f.innerHTML='🐿️';});
+    document.querySelectorAll('.login-flag').forEach(function(f){f.style.cssText='display:flex;align-items:center;justify-content:center;width:64px;height:64px;margin:0 auto 10px;';f.innerHTML='<img src="img/mascote.png" style="width:64px;height:64px;object-fit:contain" alt="SquuiLui">';});
   // mascot badge in header
   var mascot=document.getElementById('squiluiMascot');
   if(t['_theme']==='squilui'){
     if(!mascot){
-      mascot=document.createElement('span');mascot.id='squiluiMascot';
-      mascot.textContent='🐿️';
+      mascot=document.createElement('img');mascot.id='squiluiMascot';
+      mascot.src='img/mascote.png';mascot.alt='SquuiLui';
       var brand=document.querySelector('.brand');if(brand)brand.insertBefore(mascot,brand.firstChild);
     }
   } else {
@@ -801,6 +801,31 @@ function srsInitUI(){
     }
   }
 
+  // Patch heroGauge: usa tamanho 110 no tema SquuiLui
+  if(typeof heroGauge==='function'&&!window._srsGaugePatch){
+    window._srsGaugePatch=true;
+    var _hgOrig=heroGauge;
+    window.heroGauge=function(pct,size){
+      if(document.documentElement.getAttribute('data-theme')==='squilui')return _hgOrig(pct,110);
+      return _hgOrig(pct,size);
+    };
+  }
+  // Patch renderOverview: ajusta container do gauge pós-render
+  if(typeof renderOverview==='function'&&!window._srsRoSqPatch){
+    window._srsRoSqPatch=true;
+    var _roSq=renderOverview;
+    window.renderOverview=function(){
+      _roSq.apply(this,arguments);
+      if(document.documentElement.getAttribute('data-theme')==='squilui'){
+        var g=document.getElementById('heroGauge');
+        if(g){g.style.width='110px';g.style.height='110px';}
+      } else {
+        var g=document.getElementById('heroGauge');
+        if(g){g.style.width='164px';g.style.height='164px';}
+      }
+    };
+  }
+
   // Injetar CSS global para: tema escuro, sec-flags ocultas, tricolore condicional
   if(!document.getElementById('srsGlobalStyles')){
     var css=document.createElement('style');css.id='srsGlobalStyles';css.textContent=
@@ -836,14 +861,13 @@ function srsInitUI(){
       /* SquuiLui: hero compact + hero left stripe */
       +'[data-theme=squilui] .hero::after{background:linear-gradient(to bottom,#c4620a,#e07820,#d4982a)!important}'
       +'[data-theme=squilui] .hero{padding:12px 18px!important;gap:12px!important}'
-      +'[data-theme=squilui] #heroGauge{width:100px!important;height:100px!important;min-width:100px!important}'
       +'[data-theme=squilui] .gaugewrap .big{font-size:22px!important}'
       +'[data-theme=squilui] .gaugewrap .lab{font-size:7px!important}'
       +'[data-theme=squilui] .hs .v{font-size:22px!important;line-height:1.1!important}'
       +'[data-theme=squilui] .hs .v small{font-size:12px!important}'
       +'[data-theme=squilui] .hs .l{font-size:7.5px!important;margin-top:3px!important}'
       +'[data-theme=squilui] .herostats{gap:8px!important}'
-      +'#squiluiMascot{font-size:26px;margin-right:6px;cursor:pointer;display:none}'
+      +'#squiluiMascot{width:36px;height:36px;object-fit:contain;margin-right:6px;cursor:pointer;display:none;border-radius:50%}'
       +'[data-theme=squilui] #squiluiMascot{display:inline-flex!important;align-items:center;animation:mascotBob 2.5s ease-in-out infinite}'
       +'@keyframes mascotBob{0%,100%{transform:translateY(0) rotate(0deg)}40%{transform:translateY(-4px) rotate(-5deg)}60%{transform:translateY(-4px) rotate(5deg)}}'
       /* SquuiLui: brand gradient */
