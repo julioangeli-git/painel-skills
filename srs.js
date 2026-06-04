@@ -225,8 +225,9 @@ function matConcluir(id,k){
     if(!state.theoryDone)state.theoryDone={};
     state.theoryDone[id]=true;
     var srsPct=typeof srsTopicPct==='function'?srsTopicPct(id):0;
-    // Fecha só se SRS ≥ 50% OU já estava concluído antes (migração)
-    if(state.done[id]||srsPct>=0.5)state.done[id]=true;
+    var allSn=typeof srsAllSeen==='function'?srsAllSeen(id):true;
+    // Fecha só se SRS ≥ 50% E todas vistas (ou já estava concluído — migração)
+    if(state.done[id]||(allSn&&srsPct>=0.5))state.done[id]=true;
   }
   save();if(typeof renderDetail==='function')renderDetail();
 }
@@ -351,6 +352,63 @@ function srsAvatarHtml(){
   }).join('');
 }
 
+
+/* ===== Helpers SRS por deck ===== */
+function srsTopicPctDeck(id,deck){
+  var cs=srsCardsForTopic(id);
+  if(deck==='vocab')cs=cs.filter(function(c){return !c.f.includes(' ');});
+  else if(deck==='phrases')cs=cs.filter(function(c){return c.f.includes(' ');});
+  if(!cs.length)return 0;
+  var sum=cs.reduce(function(a,c){return a+(MAT[srsMaturity(c.key)]||{w:0}).w;},0);
+  return sum/cs.length;
+}
+function srsAllSeen(id){
+  var cs=srsCardsForTopic(id);
+  return cs.length===0||cs.every(function(c){return srsMaturity(c.key)!=='new';});
+}
+
+/* ===== SRS flip: pronuncia lookup ===== */
+function srsPronFor(word,topicId){
+  var d=RICH[topicId]||{};
+  for(var i=0;i<(d.words||[]).length;i++){
+    var items=d.words[i].items||[];
+    for(var j=0;j<items.length;j++){if(items[j][0]===word)return items[j][2]||'';}
+  }
+  for(var k=0;k<(d.phrases||[]).length;k++){
+    var ph=srsApplyPlaceholders(d.phrases[k][0]);
+    if(ph===word||d.phrases[k][0]===word)return ph.replace(/[.,?!]/g,'').split(/\s+/).filter(Boolean).join('-');
+  }
+  return '';
+}
+/* srsRender override: autoplay, karaoke, bandeiras */
+function srsRender(){
+  _srsShown=false;
+  var box=document.getElementById('srsCardBox');var btns=document.getElementById('srsBtns');
+  if(!box||!btns)return;
+  var total=srsCardsForTopic(_srsTopic).length;
+  document.getElementById('srsCounts').textContent='Sessão: '+(_srsIdx+1)+'/'+_srsQueue.length+' · Total: '+total;
+  if(_srsIdx>=_srsQueue.length){
+    box.innerHTML='<div style="font-size:18px;text-align:center;padding:60px 0">✓ Sessão concluída!<br><span style="font-size:14px;opacity:.6">Volte amanhã para revisar as vencidas.</span></div>';
+    btns.innerHTML='<button class="btn" onclick="closeReview()">Voltar</button>';return;
+  }
+  var c=_srsQueue[_srsIdx];
+  var pron=srsPronFor(c.f,_srsTopic);
+  var pronHtml=pron?'<div id="karaoke" style="font-size:15px;color:#7a8aa0;letter-spacing:.5px;margin-top:8px">'
+    +pron.split('-').map(function(s,i){return '<span id="ks'+i+'">'+srsEsc(s)+'</span>';}).join(' ')+'</div>':'';
+  var img=c.img?'<img src="'+srsEsc(c.img)+'" alt="" style="max-width:90px;max-height:90px;border-radius:10px;margin-bottom:10px">':'';
+  /* Não adicionar position:relative nas faces — quebra o flip 3D */
+  box.innerHTML='<div class="flip" id="srsFlip" onclick="srsShow()"><div class="flip-in">'
+    +'<div class="face front"><div style="font-size:22px;margin-bottom:4px">🇮🇹</div>'+img
+    +'<div style="font-size:27px;font-weight:700">'+srsEsc(c.f)+'</div>'
+    +pronHtml
+    +'<button class="btn" style="margin-top:14px;font-size:14px" onclick="event.stopPropagation();srsSpeakKaraoke(''+srsJsq(c.f)+'',''+srsJsq(pron)+'')">🔊 ouvir</button>'
+    +'<div style="margin-top:10px;opacity:.45;font-size:11px">toque para ver tradução</div></div>'
+    +'<div class="face back"><div style="font-size:22px;margin-bottom:8px">🇧🇷</div>'
+    +'<div style="font-size:24px;font-weight:700">'+srsEsc(c.b)+'</div></div>'
+    +'</div></div>';
+  btns.innerHTML='';
+  setTimeout(function(){srsSpeakKaraoke(c.f,pron);},280);
+}
 /* ===== Configurações: paleta de cores e título ===== */
 var THEMES={
   'Itália (padrão)':{},
@@ -384,14 +442,17 @@ function srsOpenConfig(){
   var ov=document.getElementById('cfgOverlay');
   if(!ov){ov=document.createElement('div');ov.id='cfgOverlay';ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:3000;display:flex;align-items:center;justify-content:center';ov.onclick=function(e){if(e.target===ov)ov.style.display='none';};document.body.appendChild(ov);}
   var cur='';try{cur=localStorage.getItem('painelTitle')||'';}catch(e){}
+  var curDate=state&&state.startDate?state.startDate:'';
   var sw=Object.keys(THEMES).map(function(n){var c=THEMES[n]['--bg']||'#f2ead8';var a=THEMES[n]['--terra']||'#b85a28';return '<button onclick="srsApplyTheme(\''+srsJsq(n)+'\')" style="cursor:pointer;border:1px solid #ccc;border-radius:10px;padding:8px 10px;margin:4px;background:'+c+';color:'+(n==='Noite'?'#f2ecdd':'#1c1408')+';font-weight:600;font-size:13px"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+a+';margin-right:6px"></span>'+srsEsc(n)+'</button>';}).join('');
   var isFirst=!localStorage.getItem('painelAjustesShown');
   ov.innerHTML='<div onclick="event.stopPropagation()" style="background:var(--surface,#fdf9f2);color:var(--ink,#1c1408);border-radius:16px;padding:24px;max-width:480px;width:94%;max-height:92vh;overflow-y:auto;box-shadow:0 12px 44px rgba(0,0,0,.3)">'
     +(isFirst?'<div style="font-size:13px;color:var(--terra,#b85a28);margin-bottom:14px;padding:10px 14px;background:rgba(184,90,40,.08);border-radius:10px;border-left:3px solid var(--terra,#b85a28)">👋 Bem-vindo! Personalize o painel antes de começar.</div>':'')
     +'<div style="font-weight:700;font-size:18px;margin-bottom:16px">⚙ Ajustes</div>'
+    +'<label style="font-size:13px;font-weight:600">Data de início do projeto</label>'
+    +'<input type="date" id="cfgStartDate" value="'+curDate+'" style="width:100%;padding:8px;margin:4px 0 14px;border:1px solid #ccc;border-radius:8px;font-size:14px">'
     +'<label style="font-size:13px;font-weight:600">Nome do seu projeto</label>'
     +'<input id="cfgTitle" value="'+srsEsc(cur)+'" placeholder="Mudança para a Itália" style="width:100%;padding:9px;margin:6px 0 6px;border:1px solid #ccc;border-radius:8px;font-size:14px">'
-    +'<button class="btn" style="margin-bottom:18px" onclick="srsApplyTitle(document.getElementById(\'cfgTitle\').value)">Salvar nome</button>'
+    +'<button class="btn" style="margin-bottom:18px" onclick="srsApplyTitle(document.getElementById(\'cfgTitle\').value);var d=document.getElementById(\'cfgStartDate\');if(d&&d.value){state.startDate=d.value;save();}">Salvar nome</button>'
     +'<div style="font-size:13px;font-weight:600;margin-bottom:8px">Escolha seu personagem</div>'
     +'<div id="avatarGrid" style="display:flex;flex-wrap:wrap;margin-bottom:16px">'+srsAvatarHtml()+'</div>'
     +'<div style="font-size:13px;font-weight:600;margin-bottom:8px">Tema de cores</div>'
@@ -454,55 +515,45 @@ function srsRender(){
 /* ===== SRS detalhado: override de srsCardHtml e openReview ===== */
 function srsCardHtml(id){
   var cards=srsCardsForTopic(id);if(!cards.length)return '';
-  var cnt={new:0,learning:0,young:0,mature:0,due:0};
-  cards.forEach(function(c){
-    var m=srsMaturity(c.key);cnt[m]=(cnt[m]||0)+1;
-    if(srsDue(c.key)&&m!=='new')cnt.due++;
-  });
-  var pct=Math.round(srsTopicPct(id)*100);
-  var total=cards.length;
-  // barra composta
-  var bar='<div style="display:flex;height:8px;border-radius:4px;overflow:hidden;margin:8px 0">'
-    +(cnt.mature ?'<div style="flex:'+cnt.mature +';background:#4f7a3a" title="Maduras: '+cnt.mature+'"></div>':'')
-    +(cnt.young  ?'<div style="flex:'+cnt.young  +';background:#2e7fa8" title="Jovens: '+cnt.young+'"></div>':'')
-    +(cnt.learning?'<div style="flex:'+cnt.learning+';background:#e8a020" title="Aprendendo: '+cnt.learning+'"></div>':'')
-    +(cnt.new    ?'<div style="flex:'+cnt.new    +';background:#ddd"    title="Novas: '+cnt.new+'"></div>':'')
-    +'</div>';
+  var cnt={new:0,learning:0,young:0,mature:0};
+  cards.forEach(function(c){var m=srsMaturity(c.key);cnt[m]=(cnt[m]||0)+1;});
   var vocabCards=cards.filter(function(c){return !c.f.includes(' ');});
   var phraseCards=cards.filter(function(c){return c.f.includes(' ');});
+  var vPct=typeof srsTopicPctDeck==='function'?Math.round(srsTopicPctDeck(id,'vocab')*100):0;
+  var pPct=typeof srsTopicPctDeck==='function'?Math.round(srsTopicPctDeck(id,'phrases')*100):0;
   var dueVocab=vocabCards.filter(function(c){return srsDue(c.key);}).length;
   var duePhr=phraseCards.filter(function(c){return srsDue(c.key);}).length;
-  var deckBtns='';
-  if(vocabCards.length)deckBtns+='<button onclick="openReview(\''+id+'\',\'vocab\')" style="cursor:pointer;border:1px solid #d9c7b0;border-radius:8px;padding:6px 12px;margin:4px 0;background:transparent;font-size:12px;width:100%;text-align:left">'
-    +'🔤 Vocabulário — '+vocabCards.length+' cartões'+(dueVocab?' · <b style="color:#c0212e">'+dueVocab+' vencidos</b>':'')+'</button>';
-  if(phraseCards.length)deckBtns+='<button onclick="openReview(\''+id+'\',\'phrases\')" style="cursor:pointer;border:1px solid #d9c7b0;border-radius:8px;padding:6px 12px;margin:4px 0;background:transparent;font-size:12px;width:100%;text-align:left">'
-    +'💬 Frases — '+phraseCards.length+' cartões (exige mais repetições)'+(duePhr?' · <b style="color:#c0212e">'+duePhr+' vencidas</b>':'')+'</button>';
+  var allSeen=typeof srsAllSeen==='function'?srsAllSeen(id):true;
   var tags=[
-    cnt.mature   ?'<span style="color:#4f7a3a">●</span> '+cnt.mature+' maduras':'',
-    cnt.young    ?'<span style="color:#2e7fa8">●</span> '+cnt.young+' jovens':'',
-    cnt.learning ?'<span style="color:#e8a020">●</span> '+cnt.learning+' aprendendo':'',
-    cnt.new      ?'<span style="color:#aaa">●</span> '+cnt.new+' novas':''
+    cnt.mature  ?'<span style="color:#4f7a3a">●</span> '+cnt.mature+' maduras':'',
+    cnt.young   ?'<span style="color:#2e7fa8">●</span> '+cnt.young+' jovens':'',
+    cnt.learning?'<span style="color:#e8a020">●</span> '+cnt.learning+' aprendendo':'',
+    cnt.new     ?'<span style="color:#bbb">●</span> '+cnt.new+' não vistas':''
   ].filter(Boolean).join(' &nbsp; ');
-  var dueMsg=cnt.due>0
-    ?'<div style="margin-top:6px;font-size:12px;font-weight:700;color:#c0212e">⏰ '+cnt.due+' palavra'+(cnt.due>1?'s':'')+' pedindo revisão agora</div>'
-    :'<div style="margin-top:6px;font-size:11px;color:#4f7a3a">✓ Em dia — o sistema te avisará quando revisar</div>';
-  return '<div class="srs-card" onclick="openReview(\''+id+'\')" style="margin:10px 0;padding:14px;border:1px solid #d9c7b0;border-radius:12px;background:#fbf6ee;cursor:pointer">'
-    +'<div style="display:flex;align-items:center;justify-content:space-between;gap:12px">'
-    +'<div><div style="font-weight:700;font-size:14px">🎴 Revisão por cartões</div>'
-    +'<div style="font-size:11px;opacity:.65;margin-top:2px">'+total+' palavras no total</div></div>'
-    +'<div style="text-align:right;flex:0 0 auto">'
-    +'<div style="font-weight:700;font-size:22px;color:'+(pct>=60?'#4f7a3a':pct>=30?'#e8a020':'#c0212e')+'">'+pct+'%</div>'
-    +'<div style="font-size:10px;opacity:.6">dominado</div></div></div>'
-    +bar
-    +'<div style="font-size:11px;color:var(--ink3,#666)">'+tags+'</div>'
-    +dueMsg
-    +'<div style="margin-top:10px">'+deckBtns+'</div>'
-    +'<div style="font-size:10px;opacity:.5;margin-top:6px">💡 Ver fácil 1× não é aprendizado — palavras maduras precisam de revisões ao longo de dias</div>'
-    +'</div>';
+  var dueTotal=(dueVocab||0)+(duePhr||0);
+  var statusMsg=dueTotal>0
+    ?'<div style="font-size:12px;font-weight:700;color:#c0212e;margin-top:5px">⏰ '+dueTotal+' pedindo revisão agora</div>'
+    :(!allSeen
+      ?'<div style="font-size:11px;color:#e8a020;margin-top:5px">⚡ Veja todas ao menos 1× antes de fechar o tópico</div>'
+      :'<div style="font-size:11px;color:#4f7a3a;margin-top:5px">✓ Em dia — sistema avisará quando revisitar</div>');
+  function col(p){return p>=60?'#4f7a3a':p>=30?'#e8a020':'#c0212e';}
+  function miniBar(p,c){return '<span style="display:inline-block;width:44px;height:5px;background:#e8e0d0;border-radius:3px;vertical-align:middle;margin-left:5px"><span style="display:block;height:100%;width:'+p+'%;background:'+c+';border-radius:3px"></span></span>';}
+  var deckBtns='';
+  if(vocabCards.length)deckBtns+='<button onclick="openReview(''+id+'','vocab')" style="cursor:pointer;border:1px solid #d9c7b0;border-radius:8px;padding:7px 12px;margin:3px 0;background:transparent;font-size:12px;width:100%;text-align:left;display:flex;align-items:center;justify-content:space-between">'
+    +'<span>🔤 Vocabulário'+(dueVocab?' &nbsp;<b style="color:#c0212e">'+dueVocab+' vencidos</b>':'')+'</span>'
+    +'<b style="color:'+col(vPct)+';white-space:nowrap">'+vPct+'%'+miniBar(vPct,col(vPct))+'</b></button>';
+  if(phraseCards.length)deckBtns+='<button onclick="openReview(''+id+'','phrases')" style="cursor:pointer;border:1px solid #d9c7b0;border-radius:8px;padding:7px 12px;margin:3px 0;background:transparent;font-size:12px;width:100%;text-align:left;display:flex;align-items:center;justify-content:space-between">'
+    +'<span>💬 Frases <span style="opacity:.6">(+ rep.)</span>'+(duePhr?' &nbsp;<b style="color:#c0212e">'+duePhr+' vencidas</b>':'')+'</span>'
+    +'<b style="color:'+col(pPct)+';white-space:nowrap">'+pPct+'%'+miniBar(pPct,col(pPct))+'</b></button>';
+  return '<div class="srs-card" style="margin:10px 0;padding:14px;border:1px solid #d9c7b0;border-radius:12px;background:#fbf6ee">'+
+    '<div style="font-weight:700;font-size:14px;margin-bottom:5px">🎴 Revisão por cartões</div>'+
+    '<div style="font-size:11px;color:var(--ink3,#666)">'+tags+'</div>'+
+    statusMsg+
+    '<div style="margin-top:8px">'+deckBtns+'</div>'+
+    '<div style="font-size:10px;opacity:.4;margin-top:7px">💡 "Fácil 1×" ≠ aprendizado — palavras maduras chegam após revisões espaçadas em dias</div>'+
+    '</div>';
 }
 
-/* Revisão em lotes de 20: prioriza vencidas, depois novas. deck='vocab'|'phrases'|undefined(tudo) */
-var _srsDeck=null; // 'vocab'|'phrases'|null
 function openReview(id,deck){
   if(typeof ensureSrsView==='function')ensureSrsView();
   _srsTopic=id;_srsDeck=deck||null;
@@ -622,7 +673,7 @@ function srsInitUI(){
       +'[data-theme=noite] #matWhy{background:#332e24!important;color:#cdbf9f!important}'
       +'[data-theme=noite] #matView{color:#f2ecdd}'
       /* Botões de gestão de dados: ocultos da interface (auto-save em background) */
-      +'#saveBtn,#cloudStatus,#expBtn,#impBtn,#resetBtn{display:none!important}'
+      +'#saveBtn,#cloudStatus,#expBtn,#impBtn,#resetBtn,.date-field{display:none!important}'
       /* Header mobile: esconde elementos secundários, mantém brand + botões essenciais */
       +'@media(max-width:600px){'
       +'header.top{margin:6px 8px 0;border-radius:12px}'
@@ -635,7 +686,7 @@ function srsInitUI(){
       +'.tools{gap:4px;flex-wrap:nowrap}'
       +'.btn{padding:5px 9px!important;font-size:8.5px!important}'
       +'.wrap{padding:8px 10px 80px!important}'
-      /* Flashcards mobile: empilhados, altura proporcional à tela */
+      /* Jornada mobile: mostrar só etapa ativa */@media(max-width:600px){.journey{grid-template-columns:1fr!important}.jstep.done{padding:10px 18px!important}.jstep.done .jdesc,.jstep.done .jbadge{display:none!important}.jstep.future{display:none!important}.journey.expanded .jstep.future{display:block!important}}/* Flashcards mobile: empilhados, altura proporcional à tela */
       +'.mat-pair{flex-direction:column!important;gap:8px!important}'
       +'.mat-card-front,.mat-card-back{min-height:34vh!important;max-height:34vh!important;font-size:20px!important;overflow:auto}'
       +'}';
@@ -670,6 +721,21 @@ function srsHashRestore(){
     var skillIdx=APP.skills.findIndex(function(s){return idFull.startsWith(s.name);});
     if(skillIdx>=0){openDetail(skillIdx);openMaterial(idFull,k);}
   }
+}
+
+/* Journey mobile: botão para expandir etapas futuras */
+function srsInitJourneyMobile(){
+  if(window.innerWidth>600)return;
+  var j=document.getElementById('journey');if(!j||j._srsMobileInit)return;
+  j._srsMobileInit=true;
+  var btn=document.createElement('button');
+  btn.className='btn';btn.style.cssText='width:100%;margin-top:6px;font-size:12px';
+  btn.textContent='Ver próximas etapas ▾';
+  btn.onclick=function(){
+    j.classList.toggle('expanded');
+    btn.textContent=j.classList.contains('expanded')?'Ocultar etapas ▴':'Ver próximas etapas ▾';
+  };
+  j.parentNode.insertBefore(btn,j.nextSibling);
 }
 (function srsHookNav(){
   if(window._srsNavPatched)return;window._srsNavPatched=true;
