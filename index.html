@@ -1,5 +1,5 @@
 <!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover,user-scalable=yes">
-<title>Central de Skills — Mudança para a Itália</title>
+<title>Central de Aprendizagem — Mudança para a Itália</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Spline+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -269,7 +269,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 <div id="loginOverlay" class="login-ov">
   <div class="login-box">
     <div class="login-flag"><span></span><span></span><span></span></div>
-    <h2>Central de Skills</h2>
+    <h2>Central de Aprendizagem</h2>
     <p>Entre para ver e salvar seu progresso</p>
     <label>Usuário</label>
     <input id="loginNome" type="text" autocomplete="username" placeholder="seu nome de usuário">
@@ -285,8 +285,8 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 
 <header class="top"><div class="top-in">
   <div class="brand">
-    <div class="kicker">Central de Skills</div>
-    <h1>Mudança para a <em>Itália</em></h1>
+    <div class="kicker">Central de Aprendizagem</div>
+    <h1><em>Minha Jornada</em></h1>
   </div>
   <div class="tools">
     <div class="date-field">Início<input type="date" id="startDate"></div>
@@ -9150,23 +9150,4 @@ async function doLogin(nome,pin){
   setStatus('salvo na nuvem ✓');
 }
 function wireLogin(){
-  var sel=document.getElementById('loginNome');
-  var pin=document.getElementById('loginPin');
-  var btn=document.getElementById('loginBtn');
-  if(btn)btn.onclick=function(){doLogin(sel.value.trim(),pin.value.trim());};
-  if(pin)pin.addEventListener('keydown',function(e){if(e.key==='Enter'&&btn)btn.click();});
-  var sv=document.getElementById('saveBtn'); if(sv)sv.onclick=salvarAgora;
-  var out=document.getElementById('logoutBtn');
-  if(out)out.onclick=function(){ currentUser=null; try{localStorage.removeItem('painelUser');}catch(e){} document.getElementById('loginPin').value=''; document.getElementById('loginMsg').textContent=''; document.getElementById('loginOverlay').style.display='flex'; };
-}
-if(document.getElementById('loginBtn')){wireLogin();}else{document.addEventListener('DOMContentLoaded',wireLogin);}
-(async function(){
-  if(!sb)return;
-  var saved=null; try{saved=JSON.parse(localStorage.getItem('painelUser')||'null');}catch(e){}
-  if(saved&&saved.id){ currentUser=saved; try{ await applyCloud(saved.id); var w=document.getElementById('whoami'); if(w)w.textContent=saved.nome; document.getElementById('loginOverlay').style.display='none'; renderOverview(); setStatus('salvo na nuvem ✓'); }catch(e){ document.getElementById('loginOverlay').style.display='flex'; } }
-})();
-
-</script>
-<script src="dados/data.js"></script>
-<script src="srs.js"></script>
-</body></html>
+  var s
