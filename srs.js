@@ -1209,12 +1209,16 @@ var EMAILJS_PUBLIC_KEY  = 'RbRbZ5sip0VGG4O2G';
 
 var _emailjsLoaded = false;
 function loadEmailJS(cb){
-  if(_emailjsLoaded){cb();return;}
+  if(_emailjsLoaded){cb(null);return;}
   var s=document.createElement('script');
   s.src='https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
   s.onload=function(){
-    try{emailjs.init({publicKey:EMAILJS_PUBLIC_KEY});}catch(e){}
-    _emailjsLoaded=true;cb();
+    try{emailjs.init({publicKey:EMAILJS_PUBLIC_KEY});}catch(e){console.error('EmailJS init error:',e);}
+    _emailjsLoaded=true;cb(null);
+  };
+  s.onerror=function(){
+    console.error('EmailJS: falha ao carregar script');
+    cb(new Error('EmailJS script failed to load'));
   };
   document.head.appendChild(s);
 }
@@ -1223,13 +1227,20 @@ function genCode(){return String(Math.floor(100000+Math.random()*900000));}
 
 async function sendEmailCode(toEmail, code, nome){
   return new Promise(function(resolve,reject){
-    loadEmailJS(function(){
+    loadEmailJS(function(loadErr){
+      if(loadErr){console.error('EmailJS load error:',loadErr);reject(loadErr);return;}
       emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
         to_email: toEmail,
         code: code,
         nome: nome||'usuário',
         reply_to: toEmail
-      }).then(function(){resolve('sent');}).catch(reject);
+      }).then(function(resp){
+        console.log('EmailJS enviado com sucesso:', resp.status, resp.text);
+        resolve('sent');
+      }).catch(function(err){
+        console.error('EmailJS send error:', JSON.stringify(err));
+        reject(err);
+      });
     });
   });
 }
@@ -1296,7 +1307,7 @@ async function srsSubmitEmail(){
       msg.style.color='#4f7a3a';msg.textContent='Código enviado para '+email;
     }
     setTimeout(function(){srsOpenEmailVerify(email,result&&result.startsWith('dev:')?result.split(':')[1]:null);},1200);
-  }catch(e){msg.style.color='#c0212e';msg.textContent='Erro ao salvar. Tente novamente.';}
+  }catch(e){msg.style.color='#c0212e';msg.textContent='Erro: '+(e&&e.message?e.message:JSON.stringify(e));console.error('set_email error',e);}
 }
 
 function srsOpenEmailVerify(email, devCode){
