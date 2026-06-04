@@ -873,7 +873,7 @@ function srsInitUI(){
       +'.btn{transition:transform .18s cubic-bezier(.34,1.56,.64,1),border-color .15s,color .15s,background .15s,box-shadow .15s!important;position:relative;overflow:hidden}'
       +'.btn:hover{transform:translateY(-2px)!important;box-shadow:0 4px 12px rgba(80,55,20,.12)!important}'
       +'.btn:active{transform:scale(.94)!important}'
-      +'.btn::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.45) 50%,transparent 60%);transform:translateX(-100%);transition:transform .45s}'
+      +'.btn::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.45) 50%,transparent 60%);transform:translateX(-100%);transition:transform .45s}'
       +'.btn:hover::after{transform:translateX(100%)}'
       +'#focusGrid .sk-card:nth-child(1){animation:fadeSlideUp .38s .05s both}'
       +'#focusGrid .sk-card:nth-child(2){animation:fadeSlideUp .38s .1s both}'
