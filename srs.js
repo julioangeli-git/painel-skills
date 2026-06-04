@@ -795,7 +795,7 @@ function srsInitUI(){
       +'.wrap{padding:8px 10px 80px!important}'
       +'@media(max-width:600px){.journey{grid-template-columns:1fr!important}.jstep.done{padding:10px 18px!important}.jstep.done .jdesc,.jstep.done .jbadge{display:none!important}.jstep.future{display:none!important}.journey.expanded .jstep.future{display:block!important}}'
       +'.mat-pair{flex-direction:column!important;gap:8px!important}'
-      +'.mat-card-front,.mat-card-back{min-height:34vh!important;max-height:34vh!important;font-size:20px!important;overflow:auto}'
+      +'.mat-card-front,.mat-card-back{min-height:28vh!important;max-height:28vh!important;font-size:18px!important;overflow:auto}'+'#matBody~div{position:sticky!important;bottom:6px!important;z-index:10!important;background:var(--bg,#f2ead8)!important;padding:4px 0!important;border-radius:12px!important}'
       +'}';
     document.head.appendChild(css);
   }
@@ -1171,6 +1171,20 @@ function fillCheck(){
 }
 function fillNext(){_fillIdx++;renderFill();}
 
+
+/* ===== Override srsCardsForTopic: exclui musica (songWords/songLines) =====*/
+function srsCardsForTopic(id){
+  var d=RICH[id]||{};var out=[],seen={};
+  function add(f,b,img){
+    if(f==null)return;var k=String(f).toLowerCase().trim();
+    if(!k||seen[k])return;seen[k]=1;
+    out.push({f:String(f),b:String(b==null?'':b),key:id+'::'+f,img:img||null});
+  }
+  (d.words||[]).forEach(function(c){(c.items||[]).forEach(function(w){add(w[0],w[1],w[3]);});});
+  (d.phraseWords||[]).forEach(function(w){add(w[0],w[1]);});
+  (d.phrases||[]).forEach(function(p){add(srsApplyPlaceholders(p[0]),srsApplyPlaceholders(p[1]));});
+  return out;
+}
 /* ===== Hash routing: persiste a view atual na URL ===== */
 function srsHashSave(hash){
   try{history.replaceState(null,'',location.pathname+(hash?'#'+hash:''));}catch(e){}
