@@ -1224,10 +1224,6 @@ function genCode(){return String(Math.floor(100000+Math.random()*900000));}
 async function sendEmailCode(toEmail, code, nome){
   return new Promise(function(resolve,reject){
     loadEmailJS(function(){
-      if(EMAILJS_SERVICE_ID==='service_nr171pe'){
-        // Modo dev: mostrar código na tela em vez de enviar
-        resolve('dev:'+code);return;
-      }
       emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
         to_email: toEmail,
         code: code,
