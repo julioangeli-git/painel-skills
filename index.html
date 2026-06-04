@@ -9150,4 +9150,23 @@ async function doLogin(nome,pin){
   setStatus('salvo na nuvem ✓');
 }
 function wireLogin(){
-  var s
+  var sel=document.getElementById('loginNome');
+  var pin=document.getElementById('loginPin');
+  var btn=document.getElementById('loginBtn');
+  if(btn)btn.onclick=function(){doLogin(sel.value.trim(),pin.value.trim());};
+  if(pin)pin.addEventListener('keydown',function(e){if(e.key==='Enter'&&btn)btn.click();});
+  var sv=document.getElementById('saveBtn'); if(sv)sv.onclick=salvarAgora;
+  var out=document.getElementById('logoutBtn');
+  if(out)out.onclick=function(){ currentUser=null; try{localStorage.removeItem('painelUser');}catch(e){} document.getElementById('loginPin').value=''; document.getElementById('loginMsg').textContent=''; document.getElementById('loginOverlay').style.display='flex'; };
+}
+if(document.getElementById('loginBtn')){wireLogin();}else{document.addEventListener('DOMContentLoaded',wireLogin);}
+(async function(){
+  if(!sb)return;
+  var saved=null; try{saved=JSON.parse(localStorage.getItem('painelUser')||'null');}catch(e){}
+  if(saved&&saved.id){ currentUser=saved; try{ await applyCloud(saved.id); var w=document.getElementById('whoami'); if(w)w.textContent=saved.nome; document.getElementById('loginOverlay').style.display='none'; renderOverview(); setStatus('salvo na nuvem ✓'); }catch(e){ document.getElementById('loginOverlay').style.display='flex'; } }
+})();
+
+</script>
+<script src="dados/data.js"></script>
+<script src="srs.js"></script>
+</body></html>
