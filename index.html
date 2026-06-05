@@ -2204,18 +2204,28 @@ function srsRender(){
 
   // ── Cartão de contexto (frase com a palavra após 2º erro) ─────────────────
   if(c.type==='sentence'){
-    var word=c._forCard?srsEsc(typeof srsApplyPlaceholders==='function'?srsApplyPlaceholders(c._forCard.f):c._forCard.f):'';
-    var phrase=srsEsc(typeof srsApplyPlaceholders==='function'?srsApplyPlaceholders(c.f):c.f);
+    var cf2=typeof srsApplyPlaceholders==='function'?srsApplyPlaceholders(c.f):c.f;
     var trans=srsEsc(typeof srsApplyPlaceholders==='function'?srsApplyPlaceholders(c.b):c.b);
-    if(word){var rx=new RegExp('('+word.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi');phrase=phrase.replace(rx,'<b style="color:#b85a28">$1</b>');}
+    var titulo,corpo;
+    if(c._noPhrase){
+      titulo='🔁 Reforce esta palavra';
+      corpo='<div style="font-size:36px;font-weight:700;color:#b85a28;margin-bottom:10px">'+srsEsc(cf2)+'</div>'
+        +'<div style="font-size:20px;opacity:.75;margin-bottom:16px">'+trans+'</div>';
+    } else {
+      titulo='💡 Veja como a palavra é usada';
+      var word=c._forCard?srsEsc(typeof srsApplyPlaceholders==='function'?srsApplyPlaceholders(c._forCard.f):c._forCard.f):'';
+      var phrase=srsEsc(cf2);
+      if(word){var rx=new RegExp('('+word.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi');phrase=phrase.replace(rx,'<b style="color:#b85a28;font-weight:700">$1</b>');}
+      corpo='<div style="font-size:22px;font-weight:600;line-height:1.5;margin-bottom:10px">'+phrase+'</div>'
+        +'<div style="font-size:15px;opacity:.65;font-style:italic;margin-bottom:16px">'+trans+'</div>';
+    }
     box.innerHTML='<div style="text-align:center;padding:20px 10px">'
-      +'<div style="font-size:11px;font-weight:700;color:#b85a28;letter-spacing:.08em;margin-bottom:14px;text-transform:uppercase">💡 Veja como a palavra é usada</div>'
-      +'<div style="font-size:22px;font-weight:600;line-height:1.5;margin-bottom:10px">'+phrase+'</div>'
-      +'<div style="font-size:15px;opacity:.65;font-style:italic;margin-bottom:16px">'+trans+'</div>'
+      +'<div style="font-size:11px;font-weight:700;color:#b85a28;letter-spacing:.08em;margin-bottom:14px;text-transform:uppercase">'+titulo+'</div>'
+      +corpo
       +'<button class="btn" style="font-size:14px" onclick="srsOuvir()">🔊 ouvir</button>'
       +'</div>';
     btns.innerHTML='<button class="btn" style="background:#2e7d32;color:#fff" onclick="srsNextSentence()">Entendi →</button>';
-    setTimeout(function(){srsSpeakKaraoke(c.f,'');},300);
+    setTimeout(function(){srsSpeakKaraoke(cf2,'');},300);
     return;
   }
 
@@ -2327,13 +2337,18 @@ function openReview(id,deck){
 }
 /* Busca frase contextual contendo a palavra-alvo */
 function findContextSentence(card,topicId){
-  var d=RICH[topicId]||{};
   var word=(card.f||'').toLowerCase().replace(/[.,!?]/g,'').trim();
-  var phrases=d.phrases||[];
-  for(var i=0;i<phrases.length;i++){
-    var ph=typeof srsApplyPlaceholders==='function'?srsApplyPlaceholders(phrases[i][0]):phrases[i][0];
-    if(ph.toLowerCase().includes(word)){
-      return {type:'sentence',f:ph,b:(typeof srsApplyPlaceholders==='function'?srsApplyPlaceholders(phrases[i][1]):phrases[i][1]),key:card.key+'::ctx',_forCard:card,img:null};
+  if(!word) return null;
+  var keys=Object.keys(RICH);
+  var order=[topicId].concat(keys.filter(function(k){return k!==topicId;}));
+  for(var t=0;t<order.length;t++){
+    var phrases=(RICH[order[t]]||{}).phrases||[];
+    for(var i=0;i<phrases.length;i++){
+      var ph=typeof srsApplyPlaceholders==='function'?srsApplyPlaceholders(phrases[i][0]):phrases[i][0];
+      if(ph.toLowerCase().includes(word)){
+        var tr=typeof srsApplyPlaceholders==='function'?srsApplyPlaceholders(phrases[i][1]):phrases[i][1];
+        return {type:'sentence',f:ph,b:tr,key:card.key+'::ctx',_forCard:card,img:null};
+      }
     }
   }
   return null;
@@ -2360,8 +2375,8 @@ function srsAns(g){
       // 2º erro: insere cartão de contexto + original logo após o atual
       _srsRetries[c.key]=2;
       var ctx=findContextSentence(c,_srsTopic);
-      if(ctx){ _srsQueue.splice(_srsIdx+1,0,ctx,c); }
-      else { _srsQueue.push(c); }
+      if(!ctx){ ctx={type:'sentence',f:c.f,b:c.b,key:c.key+'::ctx',_forCard:c,_noPhrase:true,img:c.img||null}; }
+      _srsQueue.splice(_srsIdx+1,0,ctx,c);
     }
     // 3º+ erro: sem requeue — apenas grava o "again"
     srsGrade(c.key,actualG);
