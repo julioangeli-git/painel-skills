@@ -1,0 +1,13 @@
+{
+  "name": "Central de Aprendizagem — Itália",
+  "short_name": "Central",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#f2ead8",
+  "theme_color": "#007a3d",
+  "icons": [
+    { "src": "img/mascote.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "img/mascote.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
