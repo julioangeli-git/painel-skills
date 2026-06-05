@@ -306,7 +306,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 
 <header class="top"><div class="top-in">
   <div class="brand">
-    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0605.1508</span></div>
+    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0605.1522</span></div>
     <h1><em>Minha Jornada</em></h1>
   </div>
   <div class="tools">
@@ -1209,7 +1209,9 @@ function openReview(id,section){
 }
 function closeReview(){
   save();
-  document.getElementById('srsView').style.display='none';document.getElementById('detail').style.display='block';renderDetail();
+  document.getElementById('srsView').style.display='none';
+  if(_srsTopic==='__all__'&&typeof openStats==='function'){openStats();return;}
+  document.getElementById('detail').style.display='block';renderDetail();
 }
 function srsContextFor(card,id){
   var d=RICH[id];if(!d)return null;
@@ -2306,7 +2308,7 @@ function srsRender(){
   _srsShown=false;
   var box=document.getElementById('srsCardBox');var btns=document.getElementById('srsBtns');
   if(!box||!btns)return;
-  var total=srsCardsForTopic(_srsTopic,_srsSection).length;
+  var total=(_srsTopic==='__all__')?_srsQueue.length:srsCardsForTopic(_srsTopic,_srsSection).length;
   document.getElementById('srsCounts').textContent=
     'Sessão: '+(_srsIdx+1)+'/'+_srsQueue.length+' · Total do deck: '+total;
   if(_srsIdx>=_srsQueue.length){
@@ -2345,7 +2347,7 @@ function srsRender(){
 
   var cf=typeof srsApplyPlaceholders==='function'?srsApplyPlaceholders(c.f):c.f;
   var cb=typeof srsApplyPlaceholders==='function'?srsApplyPlaceholders(c.b):c.b;
-  var pron=srsPronFor(cf,_srsTopic)||cf.replace(/[.,?!]/g,'').split(/\s+/).filter(Boolean).join('-');
+  var pron=srsPronFor(cf,c._topicId||_srsTopic)||cf.replace(/[.,?!]/g,'').split(/\s+/).filter(Boolean).join('-');
   var pronHtml=pron
     ?'<div id="karaoke" style="font-size:15px;color:#7a8aa0;letter-spacing:.5px;margin-top:8px">'
       +pron.split('-').map(function(s,i){return '<span id="ks'+i+'">'+srsEsc(s)+'</span>';}).join(' ')
@@ -2480,7 +2482,7 @@ function srsAns(g){
     } else if(retries===1){
       // 2º erro: insere cartão de contexto + original logo após o atual
       _srsRetries[c.key]=2;
-      var ctx=findContextSentence(c,_srsTopic);
+      var ctx=findContextSentence(c,c._topicId||_srsTopic);
       if(!ctx){ ctx={type:'sentence',f:c.f,b:c.b,key:c.key+'::ctx',_forCard:c,_noPhrase:true,img:c.img||null}; }
       _srsQueue.splice(_srsIdx+1,0,ctx,c);
     }
@@ -3266,7 +3268,7 @@ try{ if(typeof RICH!=='undefined'){
   if(typeof _material==='function') window.openMaterial=function(id,k){ _material(id,k); go('#/material/'+encodeURIComponent(id)+'/'+k); };
   // fechar volta para o nivel anterior pela URL
   var _cr=window.closeReview, _cm=window.closeMaterial;
-  if(typeof _cr==='function') window.closeReview =function(){ _cr(); go('#/skill/'+(window.curIdx||0)); };
+  if(typeof _cr==='function') window.closeReview =function(){ _cr(); if(window._srsTopic!=='__all__')go('#/skill/'+(window.curIdx||0)); };
   if(typeof _cm==='function') window.closeMaterial=function(){ _cm(); go('#/skill/'+(window.curIdx||0)); };
 
   function apply(){
@@ -3288,72 +3290,221 @@ try{ if(typeof RICH!=='undefined'){
 
 </script>
 <script>
-/* ===== 22-streak-stats.js — habito: streak, meta diaria, badge de vencidas, estatisticas =====
-   Envolve srsGrade (ja em FSRS) para contar revisoes/dia. Tudo em state.stats. */
+/* ===== 22-streak-stats.js — streak, revisões e hub de prática ===== */
 (function(){
+  // ── Streak ───────────────────────────────────────────────────────────────────
   function today(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);}
-  function ensureStats(){ if(!state.stats)state.stats={hist:{},streak:0,last:null,goal:20}; return state.stats; }
+  function ensureStats(){if(!state.stats)state.stats={hist:{},streak:0,last:null,goal:20};return state.stats;}
   function bump(){
-    var st=ensureStats(), t=today();
+    var st=ensureStats(),t=today();
     st.hist[t]=(st.hist[t]||0)+1;
     if(st.last!==t){
-      var y=new Date(Date.now()-86400000); var yk=y.getFullYear()+'-'+('0'+(y.getMonth()+1)).slice(-2)+'-'+('0'+y.getDate()).slice(-2);
+      var y=new Date(Date.now()-86400000);var yk=y.getFullYear()+'-'+('0'+(y.getMonth()+1)).slice(-2)+'-'+('0'+y.getDate()).slice(-2);
       st.streak=(st.last===yk)?(st.streak||0)+1:1;
       st.last=t;
     }
   }
   var _g=window.srsGrade;
-  window.srsGrade=function(key,g){ _g(key,g); try{bump(); paintBadge();}catch(e){} };
+  window.srsGrade=function(key,g){_g(key,g);try{bump();paintBadge();}catch(e){}};
 
-  // badge de "vencidas hoje" no cabecalho
+  // ── Due badge ─────────────────────────────────────────────────────────────────
   function dueCount(){
-    var n=0; try{ (APP.skills||[]).forEach(function(s){ (s.topics||[]).forEach(function(t){
-      (typeof srsCardsForTopic==='function'?srsCardsForTopic(t.id):[]).forEach(function(c){ if(srsDue(c.key))n++; });
-    });}); }catch(e){}
+    var n=0;try{(APP.skills||[]).forEach(function(s){(s.topics||[]).forEach(function(t){
+      (typeof srsCardsForTopic==='function'?srsCardsForTopic(t.id):[]).forEach(function(c){if(srsDue(c.key))n++;});
+    });});}catch(e){}
     return n;
   }
   function paintBadge(){
-    var host=document.querySelector('header .tools'); if(!host)return;
+    var host=document.querySelector('header .tools');if(!host)return;
     var b=document.getElementById('dueBadge');
-    if(!b){ b=document.createElement('button'); b.id='dueBadge'; b.className='btn'; b.onclick=openStats; host.insertBefore(b,host.firstChild); }
-    var st=ensureStats(), d=dueCount();
+    if(!b){b=document.createElement('button');b.id='dueBadge';b.className='btn';b.onclick=openStats;host.insertBefore(b,host.firstChild);}
+    var st=ensureStats(),d=dueCount();
     b.innerHTML='🔥 '+(st.streak||0)+' · 🎴 '+d+' vencidas · '+(st.hist[today()]||0)+'/'+(st.goal||20);
   }
   window.paintDueBadge=paintBadge;
 
+  // ── Cross-topic queue ─────────────────────────────────────────────────────────
+  function buildAllVocabQueue(section,cap){
+    cap=cap||20;
+    var all=[];
+    (APP.skills||[]).forEach(function(s){
+      (s.topics||[]).forEach(function(t){
+        // Only include topics where vocab theory has been completed at least once
+        if(!(state.done&&state.done[t.id+'::v']))return;
+        var cards=typeof srsCardsForTopic==='function'?srsCardsForTopic(t.id,section||'vocab'):[];
+        cards.forEach(function(c){
+          if(all.some(function(x){return x.key===c.key;}))return;
+          c._topicId=t.id;
+          all.push(c);
+        });
+      });
+    });
+    // Sort by maturity ascending (lowest absorption first), then by due date
+    all.sort(function(a,b){
+      var wa=typeof MAT!=='undefined'?MAT[srsMaturity(a.key)].w:0;
+      var wb=typeof MAT!=='undefined'?MAT[srsMaturity(b.key)].w:0;
+      if(wa!==wb)return wa-wb;
+      var sa=state.srs&&state.srs[a.key],sb=state.srs&&state.srs[b.key];
+      return ((sa&&sa.due)||0)-((sb&&sb.due)||0);
+    });
+    return all.slice(0,cap);
+  }
+  window.buildAllVocabQueue=buildAllVocabQueue;
+
+  window.openAllVocabReview=function(section){
+    if(typeof ensureSrsView==='function')ensureSrsView();
+    var queue=buildAllVocabQueue(section,20);
+    if(!queue.length){
+      alert('Nenhum módulo desbloqueado para '+(section==='phrases'?'frases':'vocabulário')+'. Conclua ao menos um módulo de teoria primeiro.');
+      return;
+    }
+    window._srsTopic='__all__';
+    window._srsDeck=section||'vocab';
+    window._srsSection=section||'vocab';
+    window._srsQueue=queue;
+    window._srsIdx=0;
+    if(typeof window._srsRetries!=='undefined')window._srsRetries={};
+    window._srsWrong={};
+    window._srsMode='card';
+    ['detail','overview','statsView','pronuncView','fillView'].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display='none';});
+    document.getElementById('srsView').style.display='block';
+    var label=section==='phrases'?'Todas as Frases':'Todo Vocabulário';
+    document.getElementById('srsTitle').textContent='Revisão Global — '+label;
+    document.getElementById('srsCounts').textContent='Na fila: '+queue.length+' | Total: '+queue.length;
+    window.scrollTo({top:0,behavior:'smooth'});
+    if(typeof srsRender==='function')srsRender();
+  };
+
+  // ── Stats view HTML ───────────────────────────────────────────────────────────
   function ensureStatsView(){
     if(document.getElementById('statsView'))return;
-    var v=document.createElement('div'); v.id='statsView'; v.style.display='none';
-    v.innerHTML='<div style="max-width:680px;margin:0 auto;padding:18px">'
+    var v=document.createElement('div');v.id='statsView';v.style.display='none';
+    v.innerHTML='<div style="max-width:900px;margin:0 auto;padding:18px 16px">'
       +'<button class="btn" id="statsBack">← Voltar</button>'
-      +'<h2 style="font-family:Fraunces,serif;margin:14px 0">Estatisticas</h2>'
-      +'<div id="statsTop" style="display:flex;gap:18px;flex-wrap:wrap;margin-bottom:18px"></div>'
-      +'<div style="font-weight:700;margin-bottom:8px">Revisoes (14 dias)</div>'
-      +'<div id="statsBars" style="display:flex;gap:4px;align-items:flex-end;height:120px"></div>'
-      +'<div style="font-weight:700;margin:18px 0 8px">Maturidade das palavras</div>'
-      +'<div id="statsMat"></div></div>';
+      +'<h2 style="font-family:Fraunces,serif;margin:14px 0 18px">Estatísticas</h2>'
+      +'<div id="statsTop" style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:24px"></div>'
+      +'<div style="font-weight:700;font-size:13px;letter-spacing:.06em;text-transform:uppercase;opacity:.65;margin-bottom:10px">Praticar por absorção</div>'
+      +'<div id="statsHubCards" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:28px;max-width:520px"></div>'
+      +'<div style="font-weight:700;margin-bottom:8px">Revisões (14 dias)</div>'
+      +'<div id="statsBars" style="display:flex;gap:4px;align-items:flex-end;height:100px;margin-bottom:26px"></div>'
+      +'<div id="statsModules"></div>'
+      +'</div>';
     document.body.appendChild(v);
-    document.getElementById('statsBack').onclick=function(){ v.style.display='none'; var ov=document.getElementById('overview'); if(ov)ov.style.display='block'; };
+    document.getElementById('statsBack').onclick=function(){
+      v.style.display='none';
+      var ov=document.getElementById('overview');if(ov)ov.style.display='block';
+    };
   }
+
   function openStats(){
-    ensureStatsView(); var st=ensureStats();
-    ['overview','detail','srsView','matView'].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display='none';});
+    ensureStatsView();
+    var st=ensureStats();
+    ['overview','detail','srsView','matView','pronuncView','fillView'].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display='none';});
     document.getElementById('statsView').style.display='block';
+
+    // Top stat cards
     document.getElementById('statsTop').innerHTML=
-      card('🔥 '+(st.streak||0),'dias seguidos')+card((st.hist[today()]||0)+'/'+(st.goal||20),'meta de hoje')+card(dueCount(),'vencidas');
-    // barras 14 dias
+      statCard('🔥 '+(st.streak||0),'dias seguidos')+
+      statCard((st.hist[today()]||0)+'/'+(st.goal||20),'revisões hoje')+
+      statCard(dueCount(),'vencidas agora');
+
+    // Hub cards — count unlocked vocab and phrases
+    var allVocabCount=0,allPhraseCount=0,allVocabDue=0,allPhraseDue=0;
+    (APP.skills||[]).forEach(function(s){
+      (s.topics||[]).forEach(function(t){
+        if(!(state.done&&state.done[t.id+'::v']))return;
+        var vc=typeof srsCardsForTopic==='function'?srsCardsForTopic(t.id,'vocab'):[];
+        var pc=typeof srsCardsForTopic==='function'?srsCardsForTopic(t.id,'phrases'):[];
+        allVocabCount+=vc.length;
+        allPhraseCount+=pc.length;
+        allVocabDue+=vc.filter(function(c){return srsDue(c.key);}).length;
+        allPhraseDue+=pc.filter(function(c){return srsDue(c.key);}).length;
+      });
+    });
+    document.getElementById('statsHubCards').innerHTML=
+      hubCard('🎴','Todo Vocabulário',allVocabCount,allVocabDue,"openAllVocabReview('vocab')")+
+      hubCard('💬','Todas as Frases',allPhraseCount,allPhraseDue,"openAllVocabReview('phrases')");
+
+    // Bar chart — 14 days
     var days=[],max=1;
-    for(var i=13;i>=0;i--){var d=new Date(Date.now()-i*86400000);var k=d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);var c=st.hist[k]||0;max=Math.max(max,c);days.push([k.slice(5),c]);}
-    document.getElementById('statsBars').innerHTML=days.map(function(d){var h=Math.round(d[1]/max*110);return '<div style="flex:1;text-align:center"><div title="'+d[1]+'" style="height:'+h+'px;min-height:2px;background:var(--it-green,#007a3d);border-radius:3px 3px 0 0"></div><div style="font-size:8px;opacity:.6;margin-top:3px">'+d[0]+'</div></div>';}).join('');
-    // maturidade
-    var cnt={new:0,learning:0,young:0,mature:0};
-    try{(APP.skills||[]).forEach(function(s){(s.topics||[]).forEach(function(t){(srsCardsForTopic(t.id)||[]).forEach(function(c){cnt[srsMaturity(c.key)]++;});});});}catch(e){}
-    var labels={new:'Nova',learning:'Aprendendo',young:'Jovem',mature:'Madura'},cols={new:'#c9ccd6',learning:'#c49820',young:'#2e7fa8',mature:'#4f7a3a'};
-    document.getElementById('statsMat').innerHTML=Object.keys(cnt).map(function(k){return '<span style="display:inline-block;margin:0 12px 8px 0"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+cols[k]+';margin-right:5px"></span>'+labels[k]+': <b>'+cnt[k]+'</b></span>';}).join('');
+    for(var i=13;i>=0;i--){
+      var d=new Date(Date.now()-i*86400000);
+      var k=d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);
+      var cnt=st.hist[k]||0;max=Math.max(max,cnt);days.push([k.slice(5),cnt]);
+    }
+    document.getElementById('statsBars').innerHTML=days.map(function(d){
+      var h=Math.round(d[1]/max*88);
+      return '<div style="flex:1;text-align:center">'
+        +'<div title="'+d[1]+'" style="height:'+h+'px;min-height:'+(d[1]?2:0)+'px;background:var(--it-green,#007a3d);border-radius:3px 3px 0 0"></div>'
+        +'<div style="font-size:8px;opacity:.55;margin-top:3px">'+d[0]+'</div></div>';
+    }).join('');
+
+    // Module cards per skill
+    var modHtml='';
+    (APP.skills||[]).forEach(function(s){
+      if(!(s.topics&&s.topics.length))return;
+      modHtml+='<div style="font-weight:700;font-size:13px;letter-spacing:.06em;text-transform:uppercase;opacity:.65;margin:0 0 10px">Por módulo — '
+        +(typeof srsEsc==='function'?srsEsc(s.name):s.name)+'</div>'
+        +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:10px;margin-bottom:26px">';
+      s.topics.forEach(function(t){
+        var vDone=!!(state.done&&state.done[t.id+'::v']);
+        modHtml+=vDone?unlockedModCard(t):lockedModCard(t);
+      });
+      modHtml+='</div>';
+    });
+    document.getElementById('statsModules').innerHTML=modHtml;
   }
-  function card(v,l){return '<div style="background:var(--surface,#fff);border-radius:14px;padding:16px 20px;box-shadow:var(--shadow,0 1px 3px rgba(0,0,0,.1))"><div style="font-family:Fraunces,serif;font-size:30px">'+v+'</div><div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;opacity:.6">'+l+'</div></div>';}
+
+  // ── Card renderers ────────────────────────────────────────────────────────────
+  function esc(s){return typeof srsEsc==='function'?srsEsc(s):String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+  function statCard(v,l){
+    return '<div style="background:var(--surface,#fff);border-radius:14px;padding:14px 18px;box-shadow:var(--shadow,0 1px 4px rgba(0,0,0,.08));min-width:80px">'
+      +'<div style="font-family:Fraunces,serif;font-size:26px;font-weight:700">'+v+'</div>'
+      +'<div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;opacity:.6;margin-top:2px">'+l+'</div>'
+      +'</div>';
+  }
+
+  function hubCard(icon,label,total,due,onclick){
+    var hasContent=total>0;
+    var dueLabel=due>0?'<span style="color:#c0212e;font-weight:700"> · '+due+' vencidas</span>':'';
+    return '<div style="background:var(--surface,#fff);border:1px solid var(--border2,#e0d6c6);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:8px;cursor:'+(hasContent?'pointer':'default')+'" '+(hasContent?'onclick="'+onclick+'"':'')+'>'
+      +'<div style="font-size:24px">'+icon+'</div>'
+      +'<div style="font-weight:700;font-size:14px">'+label+'</div>'
+      +'<div style="font-size:22px;font-weight:800;color:var(--terra,#b85a28)">'+(hasContent?total:'—')+'</div>'
+      +'<div style="font-size:11px;opacity:.65">'+(hasContent?total+' liberadas'+dueLabel:'Conclua módulos para liberar')+'</div>'
+      +(hasContent?'<button class="btn" style="background:var(--terra,#b85a28);color:#fff;border:none;margin-top:4px" onclick="event.stopPropagation();'+onclick+'">▶ Treinar 20 menores</button>':'')
+      +'</div>';
+  }
+
+  function lockedModCard(t){
+    return '<div style="border:1px dashed var(--border2,#d0c8b8);border-radius:12px;background:var(--surface2,#f8f2e5);padding:12px;display:flex;flex-direction:column;gap:6px;min-height:90px">'
+      +'<div style="font-size:16px">🔒</div>'
+      +'<div style="font-weight:600;font-size:12px;color:var(--ink,#1c1408);line-height:1.35">'+esc(t.t||t.id)+'</div>'
+      +'<div style="font-size:10px;color:var(--ink3,#888);margin-top:auto;line-height:1.3">Conclua o vocabulário para desbloquear</div>'
+      +'</div>';
+  }
+
+  function unlockedModCard(t){
+    var vPct=typeof srsTopicPctDeck==='function'?Math.round(srsTopicPctDeck(t.id,'vocab')*100):0;
+    var fDone=!!(state.done&&state.done[t.id+'::f']);
+    var fPct=fDone&&typeof srsTopicPctDeck==='function'?Math.round(srsTopicPctDeck(t.id,'phrases')*100):0;
+    function col(p){return p>=60?'#4f7a3a':p>=30?'#e8a020':'#c0212e';}
+    function bar(p,c){return '<div style="height:3px;background:#e8e0d0;border-radius:2px;margin:2px 0 5px"><div style="height:100%;width:'+p+'%;background:'+c+';border-radius:2px"></div></div>';}
+    return '<div style="border:1px solid var(--border2,#e0d6c6);border-radius:12px;background:var(--surface,#fff);padding:12px;display:flex;flex-direction:column;gap:3px;min-height:90px">'
+      +'<div style="font-weight:700;font-size:12px;color:var(--ink,#1c1408);line-height:1.35;margin-bottom:4px">'+esc(t.t||t.id)+'</div>'
+      +'<div style="font-size:11px;opacity:.7">📖 <b style="color:'+col(vPct)+'">'+vPct+'%</b></div>'
+      +bar(vPct,col(vPct))
+      +(fDone?'<div style="font-size:11px;opacity:.7">💬 <b style="color:'+col(fPct)+'">'+fPct+'%</b></div>'+bar(fPct,col(fPct)):'')
+      +'<div style="display:flex;gap:5px;margin-top:auto;flex-wrap:wrap">'
+      +'<button class="btn" style="font-size:10px;padding:3px 7px;background:var(--terra,#b85a28);color:#fff;border:none" onclick="openReview(\''+t.id+'\',\'vocab\')">Vocab</button>'
+      +(fDone?'<button class="btn" style="font-size:10px;padding:3px 7px" onclick="openReview(\''+t.id+'\',\'phrases\')">Frases</button>':'')
+      +'</div>'
+      +'</div>';
+  }
+
   window.openStats=openStats;
-  window.addEventListener('load',function(){ setTimeout(paintBadge,600); });
+  window.addEventListener('load',function(){setTimeout(paintBadge,600);});
 })();
 
 </script>
