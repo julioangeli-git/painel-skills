@@ -306,7 +306,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 
 <header class="top"><div class="top-in">
   <div class="brand">
-    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0605.1844</span></div>
+    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0605.1858</span></div>
     <h1><em>Minha Jornada</em></h1>
   </div>
   <div class="tools">
@@ -3330,8 +3330,6 @@ try{ if(typeof RICH!=='undefined'){
   // ── Helpers ──────────────────────────────────────────────────────────────────
   function today(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);}
 
-  // Normaliza state.stats — garante que todos os campos existam mesmo se vieram
-  // da nuvem como objeto incompleto (ex: {} sem hist, streak, etc.)
   function ensureStats(){
     if(!state.stats)state.stats={};
     var s=state.stats;
@@ -3373,7 +3371,6 @@ try{ if(typeof RICH!=='undefined'){
     var b=document.getElementById('dueBadge');
     if(!b){
       b=document.createElement('button');b.id='dueBadge';b.className='btn';
-      // Referência tardia: avalia window.openStats no momento do clique
       b.onclick=function(){if(typeof window.openStats==='function')window.openStats();};
       host.insertBefore(b,host.firstChild);
     }
@@ -3382,7 +3379,7 @@ try{ if(typeof RICH!=='undefined'){
   }
   window.paintDueBadge=paintBadge;
 
-  // ── Maturity helpers ──────────────────────────────────────────────────────────
+  // ── Maturity counts ───────────────────────────────────────────────────────────
   function matCounts(cards){
     var c={new:0,learning:0,young:0,mature:0,total:0,due:0};
     try{cards.forEach(function(card){
@@ -3394,12 +3391,13 @@ try{ if(typeof RICH!=='undefined'){
     return c;
   }
 
-  // ── Cross-topic queue ─────────────────────────────────────────────────────────
+  // ── Cross-topic queue (só idiomas) ────────────────────────────────────────────
   function buildAllVocabQueue(section,cap){
     cap=cap||20;
     var all=[];
     try{
       (APP.skills||[]).forEach(function(s){
+        if(!s.lang)return; // apenas idiomas
         (s.topics||[]).forEach(function(t){
           if(!(state&&state.done&&state.done[t.id+'::v']))return;
           var cards=typeof srsCardsForTopic==='function'?srsCardsForTopic(t.id,section||'vocab'):[];
@@ -3427,7 +3425,7 @@ try{ if(typeof RICH!=='undefined'){
     if(typeof ensureSrsView==='function')ensureSrsView();
     var queue=buildAllVocabQueue(section,20);
     if(!queue.length){
-      alert('Nenhum módulo desbloqueado. Conclua ao menos um módulo de teoria primeiro.');return;
+      alert('Nenhum módulo de idioma desbloqueado. Conclua ao menos um módulo de vocabulário primeiro.');return;
     }
     window._srsTopic='__all__';window._srsDeck=section||'vocab';window._srsSection=section||'vocab';
     window._srsQueue=queue;window._srsIdx=0;
@@ -3446,55 +3444,44 @@ try{ if(typeof RICH!=='undefined'){
   function openStats(){
     var sv=document.getElementById('statsView');
     if(!sv){sv=document.createElement('div');sv.id='statsView';document.body.appendChild(sv);}
-
-    // Hide other views BEFORE building content (evita flash de tela branca)
     ['overview','detail','srsView','matView','pronuncView','fillView'].forEach(
       function(id){var e=document.getElementById(id);if(e)e.style.display='none';}
     );
-
-    // Constrói todo o HTML ANTES de mostrar a view — evita blank page em caso de erro
     var html='';
-    try{
-      html=buildStatsHTML();
-    }catch(err){
+    try{ html=buildStatsHTML(); }
+    catch(err){
       html='<div style="max-width:900px;margin:0 auto;padding:18px">'
         +'<button id="statsBack" class="btn">← Voltar</button>'
-        +'<p style="color:red;margin-top:20px">Erro ao carregar estatísticas: '+esc(String(err))+'</p>'
-        +'</div>';
+        +'<p style="color:red;margin-top:20px">Erro: '+esc(String(err))+'</p></div>';
     }
-
     sv.innerHTML=html;
     sv.style.display='block';
     window.scrollTo({top:0,behavior:'smooth'});
-
-    var backBtn=document.getElementById('statsBack');
-    if(backBtn)backBtn.onclick=function(){
-      sv.style.display='none';
-      var ov=document.getElementById('overview');if(ov)ov.style.display='block';
-    };
+    var b=document.getElementById('statsBack');
+    if(b)b.onclick=function(){sv.style.display='none';var ov=document.getElementById('overview');if(ov)ov.style.display='block';};
   }
   window.openStats=openStats;
 
-  // ── HTML builder (separado para try-catch limpo) ──────────────────────────────
+  // ── HTML builder ──────────────────────────────────────────────────────────────
   function buildStatsHTML(){
     var st=ensureStats();
 
-    // Top stat cards
+    // Top cards
     var topHtml=
       _sCard('🔥 '+(st.streak||0),'dias seguidos')+
       _sCard((st.hist[today()]||0)+'/'+(st.goal||20),'revisões hoje')+
       _sCard(dueCount(),'vencidas agora');
 
-    // Aggregate maturity
+    // Aggregate (só idiomas)
     var globV={new:0,learning:0,young:0,mature:0,total:0,due:0};
     var globP={new:0,learning:0,young:0,mature:0,total:0,due:0};
     try{
       (APP.skills||[]).forEach(function(s){
+        if(!s.lang)return;
         (s.topics||[]).forEach(function(t){
           if(!(state&&state.done&&state.done[t.id+'::v']))return;
-          var vc=typeof srsCardsForTopic==='function'?srsCardsForTopic(t.id,'vocab'):[];
-          var pc=typeof srsCardsForTopic==='function'?srsCardsForTopic(t.id,'phrases'):[];
-          var mv=matCounts(vc),mp=matCounts(pc);
+          var mv=matCounts(typeof srsCardsForTopic==='function'?srsCardsForTopic(t.id,'vocab'):[]);
+          var mp=matCounts(typeof srsCardsForTopic==='function'?srsCardsForTopic(t.id,'phrases'):[]);
           ['new','learning','young','mature','total','due'].forEach(function(k){globV[k]+=mv[k];globP[k]+=mp[k];});
         });
       });
@@ -3504,15 +3491,14 @@ try{ if(typeof RICH!=='undefined'){
       _hubCard('🎴','Todo Vocabulário',globV,"openAllVocabReview('vocab')")+
       _hubCard('💬','Todas as Frases', globP,"openAllVocabReview('phrases')");
 
-    // Bar chart (try-catch isolado)
+    // Bar chart
     var barsHtml='';
     try{
       var days=[],max=1;
       for(var i=13;i>=0;i--){
         var dd=new Date(Date.now()-i*86400000);
         var kk=dd.getFullYear()+'-'+('0'+(dd.getMonth()+1)).slice(-2)+'-'+('0'+dd.getDate()).slice(-2);
-        var cv=(st.hist&&st.hist[kk])||0;
-        max=Math.max(max,cv);days.push([kk.slice(5),cv]);
+        var cv=(st.hist&&st.hist[kk])||0; max=Math.max(max,cv); days.push([kk.slice(5),cv]);
       }
       barsHtml=days.map(function(d){
         var h=Math.round(d[1]/max*88);
@@ -3522,30 +3508,43 @@ try{ if(typeof RICH!=='undefined'){
       }).join('');
     }catch(e){barsHtml='<span style="font-size:11px;opacity:.5">sem dados</span>';}
 
-    // Module cards
-    var modHtml='';
+    // Module sections — idiomas first, outros depois
+    var langHtml='', otherHtml='';
     try{
       (APP.skills||[]).forEach(function(s){
         if(!(s.topics&&s.topics.length))return;
-        modHtml+='<div style="font-weight:700;font-size:12px;letter-spacing:.07em;text-transform:uppercase;opacity:.6;margin:0 0 10px">Por módulo — '+esc(s.name)+'</div>'
-          +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:10px;margin-bottom:26px">';
-        s.topics.forEach(function(t){
-          var vDone=!!(state&&state.done&&state.done[t.id+'::v']);
-          modHtml+=vDone?_unlocked(t):_locked(t);
-        });
-        modHtml+='</div>';
+        if(s.lang){
+          langHtml+='<div style="font-weight:700;font-size:12px;letter-spacing:.07em;text-transform:uppercase;opacity:.6;margin:0 0 10px">'+esc(s.name)+'</div>'
+            +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:10px;margin-bottom:26px">';
+          s.topics.forEach(function(t){
+            var vDone=!!(state&&state.done&&state.done[t.id+'::v']);
+            langHtml+=vDone?_unlockedLang(t):_locked(t);
+          });
+          langHtml+='</div>';
+        } else {
+          otherHtml+=_otherSkill(s);
+        }
       });
-    }catch(e){modHtml='<p style="color:red;font-size:12px">Erro módulos: '+esc(String(e))+'</p>';}
+    }catch(e){langHtml+='<p style="color:red;font-size:12px">Erro: '+esc(String(e))+'</p>';}
+
+    var modSection='';
+    if(langHtml){
+      modSection+='<div style="font-weight:700;font-size:12px;letter-spacing:.07em;text-transform:uppercase;opacity:.6;margin-bottom:14px">🌍 Idiomas</div>'+langHtml;
+    }
+    if(otherHtml){
+      modSection+='<div style="font-weight:700;font-size:12px;letter-spacing:.07em;text-transform:uppercase;opacity:.6;margin:8px 0 12px">📚 Outros cursos</div>'
+        +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:24px">'+otherHtml+'</div>';
+    }
 
     return '<div style="max-width:900px;margin:0 auto;padding:18px 16px">'
       +'<button id="statsBack" class="btn">← Voltar</button>'
       +'<h2 style="font-family:Fraunces,serif;margin:14px 0 18px">Estatísticas</h2>'
       +'<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:24px">'+topHtml+'</div>'
-      +'<div style="font-weight:700;font-size:12px;letter-spacing:.07em;text-transform:uppercase;opacity:.6;margin-bottom:10px">Praticar por absorção</div>'
-      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:28px;max-width:560px">'+hubHtml+'</div>'
+      +'<div style="font-weight:700;font-size:12px;letter-spacing:.07em;text-transform:uppercase;opacity:.6;margin-bottom:10px">Praticar por absorção — Idiomas</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:30px;max-width:560px">'+hubHtml+'</div>'
       +'<div style="font-weight:700;margin-bottom:8px">Revisões (14 dias)</div>'
-      +'<div style="display:flex;gap:4px;align-items:flex-end;height:100px;margin-bottom:26px">'+barsHtml+'</div>'
-      +modHtml
+      +'<div style="display:flex;gap:4px;align-items:flex-end;height:100px;margin-bottom:28px">'+barsHtml+'</div>'
+      +modSection
       +'</div>';
   }
 
@@ -3564,14 +3563,13 @@ try{ if(typeof RICH!=='undefined'){
     function seg(n,c,tt){if(!n||!m.total)return'';return '<div title="'+tt+': '+n+'" style="height:100%;width:'+Math.round(n/m.total*100)+'%;background:'+c+'"></div>';}
     var matBar=has?'<div style="display:flex;height:6px;border-radius:3px;overflow:hidden;background:#e8e0d0;margin:4px 0 2px">'
       +seg(m.mature,'#4f7a3a','Madura')+seg(m.young,'#2e7fa8','Jovem')
-      +seg(m.learning,'#c49820','Aprendendo')+seg(m.new,'#c9ccd6','Nova')
-      +'</div>':'';
+      +seg(m.learning,'#c49820','Aprendendo')+seg(m.new,'#c9ccd6','Nova')+'</div>':'';
     var matLeg=has?'<div style="display:flex;flex-wrap:wrap;gap:6px;font-size:10px;opacity:.7;margin-top:2px">'
       +(m.new?'<span>⚪ '+m.new+' novas</span>':'')
       +(m.learning?'<span>🟡 '+m.learning+' aprend.</span>':'')
       +(m.young?'<span>🔵 '+m.young+' jovens</span>':'')
       +(m.mature?'<span>🟢 '+m.mature+' maduras</span>':'')
-      +(m.due?'<span style="color:#c0212e;font-weight:700">⏰ '+m.due+' vencidas</span>':'')
+      +(m.due?'<span style="color:#c0212e;font-weight:700"> ⏰ '+m.due+' vencidas</span>':'')
       +'</div>':'<div style="font-size:11px;opacity:.6">Conclua módulos para liberar</div>';
     return '<div style="background:var(--surface,#fff);border:1px solid var(--border2,#e0d6c6);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:6px;cursor:'+(has?'pointer':'default')+'" '+(has?'onclick="'+oc+'"':'')+'>'
       +'<div style="font-size:22px">'+icon+'</div>'
@@ -3583,42 +3581,75 @@ try{ if(typeof RICH!=='undefined'){
   }
 
   function _locked(t){
-    return '<div style="border:1px dashed var(--border2,#d0c8b8);border-radius:12px;background:var(--surface2,#f8f2e5);padding:12px;display:flex;flex-direction:column;gap:6px;min-height:90px">'
+    return '<div style="border:1px dashed var(--border2,#d0c8b8);border-radius:12px;background:var(--surface2,#f8f2e5);padding:12px;display:flex;flex-direction:column;gap:6px;min-height:100px">'
       +'<div style="font-size:16px">🔒</div>'
       +'<div style="font-weight:600;font-size:12px;color:var(--ink,#1c1408);line-height:1.35">'+esc(t.t||t.id)+'</div>'
       +'<div style="font-size:10px;color:var(--ink3,#888);margin-top:auto;line-height:1.3">Conclua o vocabulário para desbloquear</div>'
       +'</div>';
   }
 
-  function _unlocked(t){
+  function _otherSkill(s){
+    // Skill não-idioma: mostra apenas como "em breve"
+    return '<div style="border:1px dashed var(--border2,#d0c8b8);border-radius:12px;background:var(--surface2,#f8f2e5);padding:14px;display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;text-align:center;min-height:80px;opacity:.65">'
+      +'<div style="font-weight:700;font-size:13px;color:var(--ink,#1c1408)">'+esc(s.name)+'</div>'
+      +'<div style="font-size:10px;background:var(--border2,#e0d6c6);padding:2px 8px;border-radius:20px;color:var(--ink3,#888)">Em breve</div>'
+      +'</div>';
+  }
+
+  function _unlockedLang(t){
+    var RICH_=typeof RICH!=='undefined'?RICH:{};
     var vc=typeof srsCardsForTopic==='function'?srsCardsForTopic(t.id,'vocab'):[];
     var pc=typeof srsCardsForTopic==='function'?srsCardsForTopic(t.id,'phrases'):[];
     var mv=matCounts(vc),mp=matCounts(pc);
     var fDone=!!(state&&state.done&&state.done[t.id+'::f']);
+    var hasFill=!!(RICH_[t.id]&&RICH_[t.id].fillSentences&&RICH_[t.id].fillSentences.length);
+    var vPrnPct=typeof pronuncDeckPctDeck==='function'?Math.round(pronuncDeckPctDeck(t.id,'vocab')*100):null;
+    var fFillPct=typeof fillDeckPct==='function'?Math.round(fillDeckPct(t.id,'vocab')*100):null;
+
     function col(p){return p>=60?'#4f7a3a':p>=30?'#e8a020':'#c0212e';}
     function pctOf(m){return m.total?Math.round(((m.young||0)+(m.mature||0))/m.total*100):0;}
+
     function miniBar(m){
       if(!m.total)return'';
       function s(n,c){return n?'<div style="height:100%;width:'+Math.round(n/m.total*100)+'%;background:'+c+'"></div>':'';}
-      return '<div style="display:flex;height:3px;border-radius:2px;overflow:hidden;background:#e8e0d0;margin:1px 0 5px">'
+      return '<div style="display:flex;height:3px;border-radius:2px;overflow:hidden;background:#e8e0d0;margin:1px 0 4px">'
         +s(m.mature,'#4f7a3a')+s(m.young,'#2e7fa8')+s(m.learning,'#c49820')+s(m.new,'#c9ccd6')+'</div>';
     }
-    function rowLabel(m,label){
+
+    function rowLabel(m,icon){
       var parts=[m.new?m.new+'n':'',m.learning?m.learning+'a':'',m.young?m.young+'j':'',m.mature?m.mature+'m':''].filter(Boolean).join(' ');
-      return '<div style="font-size:10px;opacity:.65;margin-bottom:1px">'+label
+      return '<div style="font-size:10px;opacity:.65;margin-bottom:1px">'+icon
         +' <b style="color:'+col(pctOf(m))+'">'+pctOf(m)+'%</b>'
         +(m.due?' <span style="color:#c0212e">⏰'+m.due+'</span>':'')
-        +(parts?' <span style="opacity:.55">('+parts+')</span>':'')
+        +(parts?' <span style="opacity:.5">('+parts+')</span>':'')
         +'</div>';
     }
-    return '<div style="border:1px solid var(--border2,#e0d6c6);border-radius:12px;background:var(--surface,#fff);padding:12px;display:flex;flex-direction:column;gap:2px;min-height:90px">'
+
+    // Botões — uma linha por tipo de prática
+    var btnStyle='font-size:10px;padding:3px 7px;';
+    var btnPrimary='background:var(--terra,#b85a28);color:#fff;border:none;';
+
+    var vocabRow='<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:3px">'
+      +'<span style="font-size:10px;opacity:.5;align-self:center;min-width:52px">📖 Vocab</span>'
+      +'<button class="btn" style="'+btnStyle+btnPrimary+'" onclick="openReview(\''+t.id+'\',\'vocab\')">Revisão</button>'
+      +(vPrnPct!==null?'<button class="btn" style="'+btnStyle+'" onclick="openPronunc(\''+t.id+'\',\'vocab\')">🎤 '+vPrnPct+'%</button>':'')
+      +(hasFill?'<button class="btn" style="'+btnStyle+'" onclick="openFill(\''+t.id+'\',\'vocab\')">✏️'+(fFillPct!==null?' '+fFillPct+'%':'')+'</button>':'')
+      +'</div>';
+
+    var phrasesRow=fDone?'<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:3px">'
+      +'<span style="font-size:10px;opacity:.5;align-self:center;min-width:52px">💬 Frases</span>'
+      +'<button class="btn" style="'+btnStyle+btnPrimary+'" onclick="openReview(\''+t.id+'\',\'phrases\')">Revisão</button>'
+      +'<button class="btn" style="'+btnStyle+'" onclick="openPronunc(\''+t.id+'\',\'phrases\')">🎤</button>'
+      +(hasFill?'<button class="btn" style="'+btnStyle+'" onclick="openFill(\''+t.id+'\',\'phrases\')">✏️</button>':'')
+      +'</div>':'';
+
+    return '<div style="border:1px solid var(--border2,#e0d6c6);border-radius:12px;background:var(--surface,#fff);padding:12px;display:flex;flex-direction:column;gap:2px;min-height:100px">'
       +'<div style="font-weight:700;font-size:12px;color:var(--ink,#1c1408);line-height:1.35;margin-bottom:4px">'+esc(t.t||t.id)+'</div>'
       +rowLabel(mv,'📖')+miniBar(mv)
       +(fDone?rowLabel(mp,'💬')+miniBar(mp):'')
-      +'<div style="display:flex;gap:5px;margin-top:auto;flex-wrap:wrap">'
-      +'<button class="btn" style="font-size:10px;padding:3px 7px;background:var(--terra,#b85a28);color:#fff;border:none" onclick="openReview(\''+t.id+'\',\'vocab\')">Vocab</button>'
-      +(fDone?'<button class="btn" style="font-size:10px;padding:3px 7px" onclick="openReview(\''+t.id+'\',\'phrases\')">Frases</button>':'')
-      +'</div></div>';
+      +vocabRow
+      +phrasesRow
+      +'</div>';
   }
 
   window.addEventListener('load',function(){setTimeout(paintBadge,600);});
