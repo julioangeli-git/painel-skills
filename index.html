@@ -306,7 +306,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 
 <header class="top"><div class="top-in">
   <div class="brand">
-    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0605.1333</span></div>
+    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0605.1405</span></div>
     <h1><em>Minha Jornada</em></h1>
   </div>
   <div class="tools">
@@ -1822,14 +1822,16 @@ function renderWord(catName){
   var d=RICH[_catId]||{};
   if(blockSeen(_catId,_catK,d)>=blockTotal(d,_catK)){
     state.done[_catId+'::'+_catK]=true;
-    var bl=['v','f','m','i'];
-    var allMat=bl.every(function(x){return state.done[_catId+'::'+x];});
-    if(allMat){
+    // Só fecha o tópico se AMBOS os blocos ativos (v e f) estão concluídos
+    // m e i são bloqueados ("Em breve") e não devem ser exigidos
+    var theoryAllDone=!!(state.done[_catId+'::v']&&state.done[_catId+'::f']);
+    if(theoryAllDone){
       if(!state.theoryDone)state.theoryDone={};
       state.theoryDone[_catId]=true;
-      // Fecha o tópico se SRS ≥ 50% OU se já estava concluido antes (migração)
+      // Fecha o tópico apenas se a prática também estiver concluída (SRS ≥ 50% E todos vistos)
       var srsPct=typeof srsTopicPct==='function'?srsTopicPct(_catId):0;
-      if(state.done[_catId]||srsPct>=0.5)state.done[_catId]=true;
+      var allSnAuto=typeof srsAllSeen==='function'?srsAllSeen(_catId):false;
+      if(allSnAuto&&srsPct>=0.5)state.done[_catId]=true;
     }
   }
   save();
@@ -1995,19 +1997,29 @@ function matSubcardsHtml(t,lang){
 function matStart(id,k){if(!state.started)state.started={};state.started[id+'::'+k]=true;save();openMaterial(id,k);}
 function matConcluir(id,k){
   state.done[id+'::'+k]=true;
-  var bl=['v','f','m','i'];
-  var allMat=bl.every(function(x){return state.done[id+'::'+x];});
-  if(allMat){
+  // Só fecha o tópico se AMBOS os blocos ativos (v e f) estão concluídos
+  // m e i são bloqueados ("Em breve") — não devem ser exigidos para fechar
+  var theoryDone=!!(state.done[id+'::v']&&state.done[id+'::f']);
+  if(theoryDone){
     if(!state.theoryDone)state.theoryDone={};
     state.theoryDone[id]=true;
     var srsPct=typeof srsTopicPct==='function'?srsTopicPct(id):0;
-    var allSn=typeof srsAllSeen==='function'?srsAllSeen(id):true;
-    // Fecha só se SRS ≥ 50% E todas vistas (ou já estava concluído — migração)
-    if(state.done[id]||(allSn&&srsPct>=0.5))state.done[id]=true;
+    var allSn=typeof srsAllSeen==='function'?srsAllSeen(id):false;
+    // Fecha APENAS se prática concluída: SRS ≥ 50% E todos os cards vistos ao menos 1×
+    if(allSn&&srsPct>=0.5) state.done[id]=true;
   }
   save();if(typeof renderDetail==='function')renderDetail();
 }
-function matReiniciar(id,k){delete state.done[id+'::'+k];if(state.started)delete state.started[id+'::'+k];delete state.done[id];var cats=catsFor(RICH[id]||{},k);cats.forEach(function(c,ci){delete state.pos[id+'::'+k+'::'+ci];});save();if(typeof renderDetail==='function')renderDetail();}
+function matReiniciar(id,k){
+  delete state.done[id+'::'+k];
+  if(state.started)delete state.started[id+'::'+k];
+  delete state.done[id];
+  // Limpa também blocos futuros (m, i) que podem ter sido marcados pelo botão de bandeira
+  // Isso evita que estado residual dispare o fechamento automático indevido
+  ['m','i'].forEach(function(x){delete state.done[id+'::'+x];if(state.started)delete state.started[id+'::'+x];});
+  var cats=catsFor(RICH[id]||{},k);cats.forEach(function(c,ci){delete state.pos[id+'::'+k+'::'+ci];});
+  save();if(typeof renderDetail==='function')renderDetail();
+}
 
 /* ---- detalhar (recolhe a descrição) ---- */
 function detalharHtml(id,rich){
@@ -2763,9 +2775,7 @@ function pronuncDeckPct(id){
   return cs.reduce(function(a,c){return a+Math.min(pronuncBest(c.key),100)/100;},0)/cs.length;
 }
 function pronuncDeckPctDeck(id,deck){
-  var cs=srsCardsForTopic(id);
-  if(deck==='vocab')cs=cs.filter(function(c){return !c.f.includes(' ');});
-  else if(deck==='phrases')cs=cs.filter(function(c){return c.f.includes(' ');});
+  var cs=srsCardsForTopic(id,deck||null);
   if(!cs.length)return 0;
   return cs.reduce(function(a,c){return a+Math.min(pronuncBest(c.key),100)/100;},0)/cs.length;
 }
@@ -2804,9 +2814,8 @@ function closePronunc(){
 }
 function openPronunc(id,deck){
   ensurePronuncView();_pronuncId=id;
-  var cs=srsCardsForTopic(id);
-  if(deck==='vocab')cs=cs.filter(function(c){return !c.f.includes(' ');});
-  else if(deck==='phrases')cs=cs.filter(function(c){return c.f.includes(' ');});
+  // Usa o filtro por deck diretamente em vez de filtro por espaço (impreciso para frases curtas)
+  var cs=srsCardsForTopic(id,deck||null);
   var notDone=cs.filter(function(c){return pronuncBest(c.key)<PRONUNC_THRESHOLD;});
   _pronuncQueue=(notDone.length?notDone:cs).slice(0,20);
   _pronuncIdx=0;
