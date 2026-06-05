@@ -266,6 +266,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 .login-flag{display:flex;width:46px;height:30px;margin:0 auto 8px;border-radius:5px;overflow:hidden}
 .login-flag span{flex:1}.login-flag span:nth-child(1){background:#2e7d32}.login-flag span:nth-child(2){background:#fff}.login-flag span:nth-child(3){background:#c62828}
 .login-msg{margin-top:10px;font-size:13px;color:#c62828;min-height:18px}
+.login-toggle{margin:12px 0 0;font-size:13px;opacity:.7}.login-toggle a{color:#2e7d32;font-weight:600;text-decoration:none}
 .cloud-status{font-size:12px;opacity:.65;margin-right:6px;white-space:nowrap}
 .whoami-wrap{font-size:13px;margin-right:6px;white-space:nowrap}
 
@@ -276,13 +277,27 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
   <div class="login-box">
     <div class="login-flag"><span></span><span></span><span></span></div>
     <h2>Central de Aprendizagem</h2>
-    <p>Entre para ver e salvar seu progresso</p>
-    <label>Usuário</label>
-    <input id="loginNome" type="text" autocomplete="username" placeholder="seu nome de usuário">
-    <label>Senha</label>
-    <input id="loginPin" type="password" inputmode="numeric" autocomplete="current-password" placeholder="senha">
-    <button id="loginBtn">Entrar</button>
-    <div id="loginMsg" class="login-msg"></div>
+
+    <!-- Tela 1: login / cadastro -->
+    <div id="loginForm">
+      <p id="loginSubtitle">Entre para ver e salvar seu progresso</p>
+      <label>E-mail</label>
+      <input id="loginNome" type="email" autocomplete="email" placeholder="seu e-mail">
+      <label>Senha</label>
+      <input id="loginPin" type="password" autocomplete="current-password" placeholder="senha">
+      <button id="loginBtn">Entrar</button>
+      <div id="loginMsg" class="login-msg"></div>
+      <p class="login-toggle">Não tem conta? <a href="#" id="toggleModeBtn">Cadastrar-se</a></p>
+    </div>
+
+    <!-- Tela 2: nome de exibição (pós-auth) -->
+    <div id="nomeStep" style="display:none">
+      <p>Bem-vindo! Como quer ser chamado?</p>
+      <label>Nome de exibição</label>
+      <input id="nomeInput" type="text" autocomplete="nickname" placeholder="Seu nome ou apelido">
+      <button id="nomeBtn">Confirmar</button>
+      <div id="nomeMsg" class="login-msg"></div>
+    </div>
   </div>
 </div>
 
@@ -1359,12 +1374,11 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progre
 
 </script>
 <script>
-/* ===== 08-supabase-auth.js (versão segura) — login via Supabase Auth (e-mail+senha) =====
-   Substitui o login por PIN. A identidade vem do TOKEN (RLS por auth.uid());
-   o navegador nunca manda id.
-   ATIVACAO (depois de rodar supabase-auth.sql e criar os usuarios no Auth):
-     1. Copie este arquivo por cima de src/js/08-supabase-auth.js.
-     2. python build.py e publique. (mesmo nome de arquivo: nao precisa mexer no index.html) */
+/* ===== 08-supabase-auth.js — login + cadastro via Supabase Auth (e-mail+senha) =====
+   - Login: e-mail + senha existentes
+   - Cadastro: e-mail + senha -> cria conta -> pede nome de exibicao
+   - Nome: salvo em user_metadata.display_name (sem alterar banco)
+   - Sessao persistida automaticamente pelo supabase-js */
 (function(){
   const SUPABASE_URL = "https://iimyqfnxlyjpsolnwgst.supabase.co";
   const SUPABASE_KEY = "sb_publishable_sKx3adUH-u4r1cAqA1t-Zw_R-hY-Ws6";
@@ -1374,6 +1388,12 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progre
   window.currentUser=null;
 
   function setStatus(t){ var el=document.getElementById('cloudStatus'); if(el)el.textContent=t; }
+  function setMsg(id,t){ var el=document.getElementById(id); if(el)el.textContent=t; }
+
+  function nomeFromUser(user){
+    return (user.user_metadata&&user.user_metadata.display_name)||
+           (user.email||'').split('@')[0];
+  }
 
   async function pushCloud(){
     if(!sb||!window.currentUser) return;
@@ -1385,10 +1405,11 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progre
   window.scheduleCloudSave=function(){
     if(!sb||!window.currentUser) return;
     clearTimeout(cloudTimer); setStatus('salvando...');
-    cloudTimer=setTimeout(async function(){ try{ await pushCloud(); setStatus('salvo na nuvem ✓'); }
-      catch(e){ setStatus('sem conexao - salvo no aparelho'); } },800);
+    cloudTimer=setTimeout(async function(){
+      try{ await pushCloud(); setStatus('salvo na nuvem'); }
+      catch(e){ setStatus('sem conexao - salvo no aparelho'); }
+    },800);
   };
-  // encadeia no save() ja existente
   var _origSave=save; save=function(){ _origSave(); window.scheduleCloudSave(); };
 
   window.salvarAgora=async function(){
@@ -1396,8 +1417,8 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progre
     var btn=document.getElementById('saveBtn');
     if(!sb||!window.currentUser){ setStatus('entre para salvar na nuvem'); return; }
     clearTimeout(cloudTimer); setStatus('salvando...'); if(btn)btn.disabled=true;
-    try{ await pushCloud(); setStatus('salvo na nuvem ✓');
-      if(btn){var o=btn.textContent;btn.textContent='✓ Salvo';setTimeout(function(){btn.textContent=o;},1400);} }
+    try{ await pushCloud(); setStatus('salvo na nuvem');
+      if(btn){var o=btn.textContent;btn.textContent='Salvo';setTimeout(function(){btn.textContent=o;},1400);} }
     catch(e){ setStatus('erro ao salvar - tente de novo'); }
     finally{ if(btn)btn.disabled=false; }
   };
@@ -1411,47 +1432,136 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progre
     var sd=document.getElementById('startDate'); if(sd)sd.value=state.startDate;
   }
 
-  async function doLogin(email,senha){
-    var msg=document.getElementById('loginMsg');
-    if(!sb){ if(msg)msg.textContent='Sem conexao. Verifique a internet.'; return; }
-    if(msg)msg.textContent='Entrando...';
-    var r=await sb.auth.signInWithPassword({email:email, password:senha});
-    if(r.error){ if(msg)msg.textContent='Usuario ou senha incorretos.'; return; }
-    window.currentUser={id:r.data.user.id, nome:(r.data.user.email||'').split('@')[0]};
-    try{ await applyCloud(); }catch(e){ console.error('carregar progresso',e); }
+  function applyUser(user){
+    window.currentUser={id:user.id, nome:nomeFromUser(user)};
     var w=document.getElementById('whoami'); if(w)w.textContent=window.currentUser.nome;
+    setStatus('salvo na nuvem');
+  }
+
+  async function afterAuth(user){
+    applyUser(user);
+    try{ await applyCloud(); }catch(e){ console.error('carregar progresso',e); }
+    var temNome=user.user_metadata&&user.user_metadata.display_name;
+    if(!temNome){ showNomeStep(); } else { closeOverlay(); }
+  }
+
+  function closeOverlay(){
     document.getElementById('loginOverlay').style.display='none';
     try{ renderOverview(); }catch(e){}
-    setStatus('salvo na nuvem ✓');
+  }
+
+  function showNomeStep(){
+    document.getElementById('loginForm').style.display='none';
+    document.getElementById('nomeStep').style.display='block';
+    setTimeout(function(){ var n=document.getElementById('nomeInput'); if(n)n.focus(); },100);
+  }
+
+  async function doSaveName(){
+    var input=document.getElementById('nomeInput');
+    var nome=(input&&input.value.trim())||'';
+    if(!nome){ setMsg('nomeMsg','Digite um nome para continuar.'); return; }
+    setMsg('nomeMsg','Salvando...');
+    try{
+      if(sb){ await sb.auth.updateUser({data:{display_name:nome}}); }
+      window.currentUser.nome=nome;
+      var w=document.getElementById('whoami'); if(w)w.textContent=nome;
+      closeOverlay();
+    } catch(e){ setMsg('nomeMsg','Erro ao salvar nome. Tente de novo.'); }
+  }
+
+  async function doLogin(email,senha){
+    setMsg('loginMsg','Entrando...');
+    if(!sb){ setMsg('loginMsg','Sem conexao. Verifique a internet.'); return; }
+    var r=await sb.auth.signInWithPassword({email:email, password:senha});
+    if(r.error){ setMsg('loginMsg','E-mail ou senha incorretos.'); return; }
+    await afterAuth(r.data.user);
+  }
+
+  async function doSignUp(email,senha){
+    setMsg('loginMsg','Criando conta...');
+    if(!sb){ setMsg('loginMsg','Sem conexao. Verifique a internet.'); return; }
+    if(senha.length<6){ setMsg('loginMsg','Senha deve ter ao menos 6 caracteres.'); return; }
+    var r=await sb.auth.signUp({email:email, password:senha});
+    if(r.error){ setMsg('loginMsg',r.error.message||'Erro ao criar conta.'); return; }
+    if(!r.data.session){ setMsg('loginMsg','Verifique seu e-mail para confirmar o cadastro.'); return; }
+    await afterAuth(r.data.user);
+  }
+
+  var modoAtual='login';
+  function setModo(modo){
+    modoAtual=modo;
+    var sub=document.getElementById('loginSubtitle');
+    var btn=document.getElementById('loginBtn');
+    var tog=document.getElementById('toggleModeBtn');
+    var pin=document.getElementById('loginPin');
+    if(modo==='cadastro'){
+      if(sub)sub.textContent='Crie sua conta gratuitamente';
+      if(btn)btn.textContent='Cadastrar-se';
+      if(tog)tog.textContent='Entrar';
+      if(pin)pin.setAttribute('autocomplete','new-password');
+    } else {
+      if(sub)sub.textContent='Entre para ver e salvar seu progresso';
+      if(btn)btn.textContent='Entrar';
+      if(tog)tog.textContent='Cadastrar-se';
+      if(pin)pin.setAttribute('autocomplete','current-password');
+    }
+    setMsg('loginMsg','');
   }
 
   function wireLogin(){
-    var nome=document.getElementById('loginNome');
-    var pin=document.getElementById('loginPin');
+    var emailEl=document.getElementById('loginNome');
+    var senhaEl=document.getElementById('loginPin');
     var btn=document.getElementById('loginBtn');
-    if(nome){ nome.setAttribute('type','email'); nome.setAttribute('placeholder','seu e-mail'); }
-    var lbl=nome&&nome.previousElementSibling; if(lbl&&lbl.tagName==='LABEL')lbl.textContent='E-mail';
-    if(btn)btn.onclick=function(){ doLogin(nome.value.trim(), pin.value.trim()); };
-    if(pin)pin.addEventListener('keydown',function(e){ if(e.key==='Enter'&&btn)btn.click(); });
+    var tog=document.getElementById('toggleModeBtn');
+    var nomeBtn=document.getElementById('nomeBtn');
+    var nomeInput=document.getElementById('nomeInput');
+
+    if(btn) btn.onclick=function(){
+      var email=(emailEl&&emailEl.value.trim())||'';
+      var senha=(senhaEl&&senhaEl.value.trim())||'';
+      if(modoAtual==='cadastro') doSignUp(email,senha);
+      else doLogin(email,senha);
+    };
+    if(senhaEl) senhaEl.addEventListener('keydown',function(e){ if(e.key==='Enter'&&btn)btn.click(); });
+    if(tog) tog.addEventListener('click',function(e){
+      e.preventDefault();
+      setModo(modoAtual==='login'?'cadastro':'login');
+    });
+    if(nomeBtn) nomeBtn.onclick=doSaveName;
+    if(nomeInput) nomeInput.addEventListener('keydown',function(e){ if(e.key==='Enter')doSaveName(); });
+
     var sv=document.getElementById('saveBtn'); if(sv)sv.onclick=window.salvarAgora;
     var out=document.getElementById('logoutBtn');
-    if(out)out.onclick=async function(){ try{await sb.auth.signOut();}catch(e){} window.currentUser=null;
-      document.getElementById('loginPin').value=''; document.getElementById('loginMsg').textContent='';
-      document.getElementById('loginOverlay').style.display='flex'; };
+    if(out) out.onclick=async function(){
+      try{ if(sb) await sb.auth.signOut(); }catch(e){}
+      window.currentUser=null;
+      var loginForm=document.getElementById('loginForm');
+      var nomeStep=document.getElementById('nomeStep');
+      if(loginForm)loginForm.style.display='block';
+      if(nomeStep)nomeStep.style.display='none';
+      if(senhaEl)senhaEl.value='';
+      setMsg('loginMsg','');
+      setModo('login');
+      document.getElementById('loginOverlay').style.display='flex';
+    };
   }
-  if(document.getElementById('loginBtn')) wireLogin(); else document.addEventListener('DOMContentLoaded',wireLogin);
 
-  // sessao persistida automaticamente pelo supabase-js: restaura ao abrir
+  if(document.getElementById('loginBtn')) wireLogin();
+  else document.addEventListener('DOMContentLoaded',wireLogin);
+
   (async function(){
     if(!sb) return;
     var r=await sb.auth.getSession();
-    if(r.data&&r.data.session){ var u=r.data.session.user;
-      window.currentUser={id:u.id, nome:(u.email||'').split('@')[0]};
-      try{ await applyCloud(); var w=document.getElementById('whoami'); if(w)w.textContent=window.currentUser.nome;
-        document.getElementById('loginOverlay').style.display='none'; renderOverview(); setStatus('salvo na nuvem ✓'); }
-      catch(e){ document.getElementById('loginOverlay').style.display='flex'; }
+    if(r.data&&r.data.session&&r.data.session.user){
+      var user=r.data.session.user;
+      applyUser(user);
+      try{ await applyCloud(); }catch(e){ console.error('restaurar progresso',e); }
+      document.getElementById('loginOverlay').style.display='none';
+      try{ renderOverview(); }catch(e){}
+      setStatus('salvo na nuvem');
     }
   })();
+
 })();
 
 </script>
