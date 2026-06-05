@@ -1097,29 +1097,30 @@ function downloadAnkiApp(id){
    O espaçamento entre sessões é governado pelas datas `due` (FSRS, 20-fsrs.js):
    depois que um card é introduzido, ele só reaparece quando vence. */
 
-function buildSrsQueue(topicId, newPerSession) {
+function buildSrsQueue(topicId, section, newPerSession) {
   if (!topicId) return [];
 
-  var cap = (newPerSession == null) ? 20 : newPerSession; // novos POR SESSÃO
-  var allCards = srsCardsForTopic(topicId);
+  // Retrocompatibilidade: se section for número, é o parâmetro antigo newPerSession
+  if (typeof section === 'number') { newPerSession = section; section = null; }
+
+  var cap = (newPerSession == null) ? 20 : newPerSession;
+  var allCards = srsCardsForTopic(topicId, section);
   if (!allCards.length) return [];
 
   var due = [], learning = [], fresh = [];
   allCards.forEach(function (c) {
     var s = state.srs[c.key];
-    if (!s || (!s.reps && !s.last)) {      // nunca introduzido = realmente novo
+    if (!s || (!s.reps && !s.last)) {
       fresh.push(c);
-    } else if (!s.reps) {                  // já tocado mas zerado por "Errei" = relearn
+    } else if (!s.reps) {
       learning.push(c);
-    } else if (srsDue(c.key)) {            // maduro e vencido
+    } else if (srsDue(c.key)) {
       due.push(c);
     }
-    // maduro e ainda no prazo → fica de fora desta sessão (espaçamento Anki)
   });
 
   var queue = learning.concat(due).concat(fresh.slice(0, cap));
 
-  // Shuffle (Fisher–Yates) para alternar os cards e evitar ordem fixa
   for (var i = queue.length - 1; i > 0; i--) {
     var j = Math.floor(Math.random() * (i + 1));
     var tmp = queue[i]; queue[i] = queue[j]; queue[j] = tmp;
@@ -1133,15 +1134,19 @@ function buildSrsQueue(topicId, newPerSession) {
 if(!state.srs)state.srs={};
 var MAT={'new':{w:0,c:'#c9ccd6',lab:'Nova'},learning:{w:0.3,c:'#c49820',lab:'Aprendendo'},young:{w:0.6,c:'#2e7fa8',lab:'Jovem'},mature:{w:1,c:'#4f7a3a',lab:'Madura'}};
 function srsEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function srsCardsForTopic(id){
+function srsCardsForTopic(id, section){
   var d=RICH[id];if(!d)return[];
   var out=[],seen={};
   function add(f,b,img){if(f==null)return;var k=String(f).toLowerCase().trim();if(!k||seen[k])return;seen[k]=1;out.push({f:String(f),b:String(b==null?'':b),key:id+'::'+f,img:img||null});}
-  (d.words||[]).forEach(function(c){(c.items||[]).forEach(function(w){add(w[0],w[1],w[3]);});});
-  (d.phraseWords||[]).forEach(function(w){add(w[0],w[1]);});
-  (d.songWords||[]).forEach(function(w){add(w[0],w[1]);});
-  (d.phrases||[]).forEach(function(p){add(p[0],p[1]);});
-  (d.songLines||[]).forEach(function(v,i){add(v,(d.songLinesTr&&d.songLinesTr[i])?d.songLinesTr[i]:'');});
+  if(section==='vocab'||!section){
+    (d.words||[]).forEach(function(c){(c.items||[]).forEach(function(w){add(w[0],w[1],w[3]);});});
+    (d.phraseWords||[]).forEach(function(w){add(w[0],w[1]);});
+    (d.songWords||[]).forEach(function(w){add(w[0],w[1]);});
+  }
+  if(section==='phrases'||!section){
+    (d.phrases||[]).forEach(function(p){add(p[0],p[1]);});
+    (d.songLines||[]).forEach(function(v,i){add(v,(d.songLinesTr&&d.songLinesTr[i])?d.songLinesTr[i]:'');});
+  }
   return out;
 }
 function srsGet(key){return state.srs[key]||{ef:2.5,int:0,reps:0,due:0};}
@@ -1157,21 +1162,16 @@ function srsGrade(key,g){
 function srsMaturity(key){var s=state.srs[key];if(!s||!s.reps)return 'new';if(s.int<1)return 'learning';if(s.int<21)return 'young';return 'mature';}
 function srsDue(key){var s=state.srs[key];return !s||!s.reps||(s.due||0)<=Date.now();}
 function srsTopicPct(id){var cs=srsCardsForTopic(id);if(!cs.length)return 0;var sum=cs.reduce(function(a,c){return a+MAT[srsMaturity(c.key)].w;},0);return sum/cs.length;}
+function srsTopicPctDeck(id,section){var cs=srsCardsForTopic(id,section);if(!cs.length)return 0;var sum=cs.reduce(function(a,c){return a+MAT[srsMaturity(c.key)].w;},0);return sum/cs.length;}
 function srsDot(key){var m=MAT[srsMaturity(key)];return '<span title="'+m.lab+'" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+m.c+';margin-right:6px;flex:0 0 auto"></span>';}
 function srsCardHtml(id){
   var n=srsCardsForTopic(id).length;if(!n)return '';
   var pct=Math.round(srsTopicPct(id)*100);
-  return '<div class="srs-card" onclick="openReview(\''+id+'\')" style="margin:10px 0;padding:12px 14px;border:1px solid #d9c7b0;border-radius:10px;background:#fbf6ee;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px">'
-    +'<div><div style="font-weight:700">🎴 Revisar ('+n+' cartões)</div><div style="font-size:11px;opacity:.65">revisão por cartões · clique para abrir</div></div>'
+  return '<div class="srs-card" onclick="openReview(\''+id+'\')+" style="margin:10px 0;padding:12px 14px;border:1px solid #d9c7b0;border-radius:10px;background:#fbf6ee;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px">'
+    +'<div><div style="font-weight:700">🎴 Revisar ('+n+' cartoes)</div><div style="font-size:11px;opacity:.65">revisao por cartoes - clique para abrir</div></div>'
     +'<div style="text-align:right"><div style="font-weight:700;font-size:18px">'+pct+'%</div><div style="font-size:10px;opacity:.6">dominado</div></div></div>';
 }
-
-/* ── Estado da sessão ──────────────────────────────────────────────
-   _srsWrong[key] : nº de erros do card NESTA sessão
-   _srsMode       : 'card' (desafio) | 'context' (fase de aplicação)
-   _srsCtx        : texto do exemplo atual (para o botão 🔊)             */
-var _srsQueue=[],_srsIdx=0,_srsTopic=null,_srsShown=false,_srsWrong={},_srsMode='card',_srsCtx='';
-
+var _srsQueue=[],_srsIdx=0,_srsTopic=null,_srsSection=null,_srsShown=false,_srsWrong={},_srsMode='card',_srsCtx='';
 function ensureSrsView(){
   if(document.getElementById('srsView'))return;
   var v=document.createElement('div');v.id='srsView';v.style.display='none';
@@ -1187,7 +1187,7 @@ function ensureSrsView(){
     +'#srsView .g-again{background:#c0392b}#srsView .g-hard{background:#d68910}#srsView .g-good{background:#2e8b57}#srsView .g-easy{background:#2e7fa8}'
     +'</style>'
     +'<div style="max-width:560px;margin:0 auto;padding:18px">'
-    +'<button class="btn" id="srsBack">← Voltar</button>'
+    +'<button class="btn" id="srsBack">BACK</button>'
     +'<div id="srsTitle" style="margin:12px 0 4px;font-weight:700;font-size:16px"></div>'
     +'<div id="srsCounts" style="font-size:12px;opacity:.7;margin-bottom:14px"></div>'
     +'<div id="srsCardBox" style="min-height:260px"></div>'
@@ -1195,21 +1195,22 @@ function ensureSrsView(){
   document.body.appendChild(v);
   document.getElementById('srsBack').onclick=closeReview;
 }
-function openReview(id){
-  ensureSrsView();_srsTopic=id;
-  _srsQueue=buildSrsQueue(id);      // due + até 20 novos por sessão (com shuffle)
+function openReview(id,section){
+  ensureSrsView();_srsTopic=id;_srsSection=section||null;
+  _srsQueue=buildSrsQueue(id,section);
   _srsIdx=0;_srsWrong={};_srsMode='card';
   document.getElementById('detail').style.display='none';
   var ov=document.getElementById('overview');if(ov)ov.style.display='none';
   document.getElementById('srsView').style.display='block';
   var t=(APP.skills[curIdx]?APP.skills[curIdx].topics.find(function(x){return x.id===id;}):null);
-  document.getElementById('srsTitle').textContent='Revisão · '+(t?t.t:id);
+  document.getElementById('srsTitle').textContent='Revisao - '+(t?t.t:id);
   window.scrollTo({top:0,behavior:'smooth'});
   srsRender();
 }
-function closeReview(){document.getElementById('srsView').style.display='none';document.getElementById('detail').style.display='block';renderDetail();}
-
-/* Procura uma frase/linha de música REAL que contenha a palavra do card. */
+function closeReview(){
+  save();
+  document.getElementById('srsView').style.display='none';document.getElementById('detail').style.display='block';renderDetail();
+}
 function srsContextFor(card,id){
   var d=RICH[id];if(!d)return null;
   var needle=String(card.f).toLowerCase().trim();if(!needle)return null;
@@ -1221,44 +1222,38 @@ function srsContextFor(card,id){
       if(hit(d.songLines[i]))return{ex:d.songLines[i],tr:(d.songLinesTr&&d.songLinesTr[i])||''};
     }
   }
-  return null; // sem frase na base → cai no reforço (frente+verso)
+  return null;
 }
-
 function srsRender(){
   var box=document.getElementById('srsCardBox'),btns=document.getElementById('srsBtns');
-  document.getElementById('srsCounts').textContent='Na fila: '+Math.max(0,_srsQueue.length-_srsIdx)+' · Total no tópico: '+srsCardsForTopic(_srsTopic).length;
-
+  document.getElementById('srsCounts').textContent='Na fila: '+Math.max(0,_srsQueue.length-_srsIdx)+' | Total: '+srsCardsForTopic(_srsTopic,_srsSection).length;
   if(_srsIdx>=_srsQueue.length){
-    box.innerHTML='<div style="font-size:18px;text-align:center;padding:60px 0">✓ Revisão concluída</div>';
+    box.innerHTML='<div style="font-size:18px;text-align:center;padding:60px 0">OK - Revisao concluida</div>';
     btns.innerHTML='<button class="btn" onclick="closeReview()">Voltar</button>';
     return;
   }
   var c=_srsQueue[_srsIdx];
-
-  // Fase de contexto (disparada no 2º erro do mesmo card)
   if(_srsMode==='context'){
     var ctx=srsContextFor(c,_srsTopic);
-    _srsCtx=ctx?ctx.ex:(c.f+' — '+c.b);
+    _srsCtx=ctx?ctx.ex:(c.f+' - '+c.b);
     var body=ctx
-      ?'<div style="font-size:12px;letter-spacing:.5px;opacity:.65;margin-bottom:10px">📌 EM CONTEXTO</div>'
+      ?'<div style="font-size:12px;letter-spacing:.5px;opacity:.65;margin-bottom:10px">CONTEXTO</div>'
         +'<div style="font-size:21px;font-weight:700;line-height:1.45">'+srsEsc(ctx.ex)+'</div>'
         +(ctx.tr?'<div style="font-size:15px;opacity:.7;margin-top:10px">'+srsEsc(ctx.tr)+'</div>':'')
         +'<div style="font-size:13px;opacity:.6;margin-top:14px">palavra: <b>'+srsEsc(c.f)+'</b> = '+srsEsc(c.b)+'</div>'
-      :'<div style="font-size:12px;letter-spacing:.5px;opacity:.65;margin-bottom:10px">📌 REFORÇO</div>'
+      :'<div style="font-size:12px;letter-spacing:.5px;opacity:.65;margin-bottom:10px">REFORCO</div>'
         +'<div style="font-size:24px;font-weight:700">'+srsEsc(c.f)+'</div>'
         +'<div style="font-size:18px;opacity:.78;margin-top:10px">'+srsEsc(c.b)+'</div>';
     box.innerHTML='<div class="ctx">'+body
-      +'<button class="btn" style="margin-top:16px" onclick="srsSpeakCtx()">🔊 Ouvir</button></div>';
-    btns.innerHTML='<button class="grade g-good" onclick="srsContinue()">Continuar → desafio</button>';
+      +'<button class="btn" style="margin-top:16px" onclick="srsSpeakCtx()">SOM</button></div>';
+    btns.innerHTML='<button class="grade g-good" onclick="srsContinue()">Continuar</button>';
     return;
   }
-
-  // Card normal (desafio)
   _srsShown=false;
   var img=c.img?'<img src="'+srsEsc(c.img)+'" alt="" style="max-width:120px;max-height:120px;border-radius:10px;margin-bottom:10px">':'';
   box.innerHTML='<div class="flip" id="srsFlip" onclick="srsShow()"><div class="flip-in">'
     +'<div class="face front">'+img+'<div style="font-size:27px;font-weight:700">'+srsEsc(c.f)+'</div>'
-    +'<button class="btn" style="margin-top:12px" onclick="event.stopPropagation();srsSpeakCur()">🔊</button>'
+    +'<button class="btn" style="margin-top:12px" onclick="event.stopPropagation();srsSpeakCur()">SOM</button>'
     +'<div style="margin-top:10px;opacity:.5;font-size:12px">toque para virar</div></div>'
     +'<div class="face back"><div style="font-size:23px;font-weight:700">'+srsEsc(c.b)+'</div></div>'
     +'</div></div>';
@@ -1269,32 +1264,35 @@ function srsShow(){
   var f=document.getElementById('srsFlip');if(f)f.classList.add('flipped');
   document.getElementById('srsBtns').innerHTML=
     '<button class="grade g-again" onclick="srsAns(\'again\')">Errei</button>'
-   +'<button class="grade g-hard" onclick="srsAns(\'hard\')">Difícil</button>'
+   +'<button class="grade g-hard" onclick="srsAns(\'hard\')">Dificil</button>'
    +'<button class="grade g-good" onclick="srsAns(\'good\')">Bom</button>'
-   +'<button class="grade g-easy" onclick="srsAns(\'easy\')">Fácil</button>';
+   +'<button class="grade g-easy" onclick="srsAns(\'easy\')">Facil</button>';
 }
-
-/* Loop da sessão:
-   - acertou (hard/good/easy) → agenda no FSRS e sai da sessão
-   - 1º erro → reenfileira no FIM (alterna com os outros cards)
-   - 2º erro (ao reencontrar) → fase de contexto + re-desafio imediato         */
 function srsAns(g){
   var c=_srsQueue[_srsIdx];
-  srsGrade(c.key,g);                              // persiste o agendamento (FSRS)
+  srsGrade(c.key,g);
   if(g==='again'){
     _srsWrong[c.key]=(_srsWrong[c.key]||0)+1;
-    if(_srsWrong[c.key]>=2){                      // errou de novo → contexto, sem avançar
+    if(_srsWrong[c.key]>=2){
       _srsMode='context';srsRender();return;
     }
-    _srsQueue.push(c);_srsIdx++;srsRender();return; // 1º erro → volta pro fim da fila
+    _srsQueue.push(c);_srsIdx++;srsRender();return;
   }
-  _srsIdx++;srsRender();                          // acertou → próximo
+  _srsIdx++;srsRender();
 }
-function srsContinue(){_srsMode='card';srsRender();} // volta do contexto pro desafio
+function srsContinue(){_srsMode='card';srsRender();}
 function srsSpeakCur(){var c=_srsQueue[_srsIdx];if(!c)return;srsSpeak(c.f);}
 function srsSpeakCtx(){if(_srsCtx)srsSpeak(_srsCtx);}
 function srsSpeak(t){try{var u=new SpeechSynthesisUtterance(t);u.lang='it-IT';speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){}}
 function srsJsq(s){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,' ');}
+function srsAllSeen(id){
+  var cs=srsCardsForTopic(id);
+  if(!cs.length)return true;
+  return cs.every(function(c){
+    var s=state.srs[c.key];
+    return s&&s.reps>=1;
+  });
+}
 
 </script>
 <script>
