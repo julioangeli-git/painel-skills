@@ -306,7 +306,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 
 <header class="top"><div class="top-in">
   <div class="brand">
-    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0605</span></div>
+    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0605.1333</span></div>
     <h1><em>Minha Jornada</em></h1>
   </div>
   <div class="tools">
@@ -2131,9 +2131,7 @@ function srsAvatarHtml(){
 
 /* ===== Helpers SRS por deck ===== */
 function srsTopicPctDeck(id,deck){
-  var cs=srsCardsForTopic(id);
-  if(deck==='vocab')cs=cs.filter(function(c){return !c.f.includes(' ');});
-  else if(deck==='phrases')cs=cs.filter(function(c){return c.f.includes(' ');});
+  var cs=srsCardsForTopic(id,deck);
   if(!cs.length)return 0;
   var sum=cs.reduce(function(a,c){return a+(MAT[srsMaturity(c.key)]||{w:0}).w;},0);
   return sum/cs.length;
@@ -2417,25 +2415,17 @@ function srsCardHtml(id){
 
 function openReview(id,deck){
   if(typeof ensureSrsView==='function')ensureSrsView();
-  _srsTopic=id;_srsDeck=deck||null;
-  var cs=srsCardsForTopic(id);
-  // Filtrar por deck
-  if(deck==='vocab') cs=cs.filter(function(c){return !c.f.includes(' ');});
-  else if(deck==='phrases') cs=cs.filter(function(c){return c.f.includes(' ');});
-  var due=cs.filter(function(c){return srsDue(c.key)&&srsMaturity(c.key)!=='new';});
-  var newCards=cs.filter(function(c){return srsMaturity(c.key)==='new';});
-  var BATCH=20;
-  _srsQueue=due.slice(0,BATCH);
-  if(_srsQueue.length<BATCH)_srsQueue=_srsQueue.concat(newCards.slice(0,BATCH-_srsQueue.length));
-  if(!_srsQueue.length)_srsQueue=cs.slice(0,BATCH);
-  _srsIdx=0;_srsRetries={};
+  _srsTopic=id;_srsDeck=deck||null;_srsSection=deck||null;
+  _srsQueue=typeof buildSrsQueue==='function'?buildSrsQueue(id,deck):[];
+  var cs=srsCardsForTopic(id,deck);
+  _srsIdx=0;_srsRetries={};_srsWrong={};_srsMode='card';
   var detail=document.getElementById('detail');if(detail)detail.style.display='none';
   var ov=document.getElementById('overview');if(ov)ov.style.display='none';
   document.getElementById('srsView').style.display='block';
   var t=(APP.skills[curIdx]?APP.skills[curIdx].topics.find(function(x){return x.id===id;}):null);
-  var deckLabel=deck==='vocab'?'Vocabulário':deck==='phrases'?'Frases':'Revisão';
-  document.getElementById('srsTitle').textContent=deckLabel+' · '+(t?t.t:id);
-  document.getElementById('srsCounts').textContent='Sessão: 0/'+_srsQueue.length+' · Total: '+cs.length;
+  var deckLabel=deck==='vocab'?'Vocabulario':deck==='phrases'?'Frases':'Revisao';
+  document.getElementById('srsTitle').textContent=deckLabel+' - '+(t?t.t:id);
+  document.getElementById('srsCounts').textContent='Na fila: '+Math.max(0,_srsQueue.length-_srsIdx)+' | Total: '+cs.length;
   window.scrollTo({top:0,behavior:'smooth'});
   if(typeof srsRender==='function')srsRender();
 }
@@ -3132,20 +3122,6 @@ function fillCheck(){
 function fillNext(){_fillIdx++;renderFill();}
 
 
-/* ===== Override srsCardsForTopic: exclui musica (songWords/songLines) =====*/
-function srsCardsForTopic(id){
-  var d=RICH[id]||{};var out=[],seen={};
-  function add(f,b,img){
-    if(f==null)return;var k=String(f).toLowerCase().trim();
-    if(!k||seen[k])return;seen[k]=1;
-    out.push({f:String(f),b:String(b==null?'':b),key:id+'::'+f,img:img||null});
-  }
-  (d.words||[]).forEach(function(c){(c.items||[]).forEach(function(w){add(w[0],w[1],w[3]);});});
-  (d.phraseWords||[]).forEach(function(w){add(w[0],w[1]);});
-  (d.phrases||[]).forEach(function(p){add(srsApplyPlaceholders(p[0]),srsApplyPlaceholders(p[1]));});
-  return out;
-}
-
 /* ===== E-MAIL: registro, verificação e troca de senha =====
    Requer:
    1. SQL de migração: supabase-email.sql
@@ -3199,7 +3175,6 @@ async function sendEmailCode(toEmail, code, nome){
     });
   });
 }
-
 
 </script>
 <script>
