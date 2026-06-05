@@ -1087,6 +1087,42 @@ function downloadAnkiApp(id){
 
 </script>
 <script>
+/* ===== SRS Scheduler — Anki-style fila de revisão =====
+   Gera fila respeitando: todos os "due" + limite de novos por dia.
+   Após estudar, card volta em X dias (FSRS/SM-2 calcula).
+   Shuffle para evitar repetição visual. */
+
+function buildSrsQueue(topicId, dailyNew) {
+  if (!topicId) return [];
+
+  var dailyNew = dailyNew || 20;  // limite padrão de novos/dia
+  var allCards = srsCardsForTopic(topicId);
+  if (!allCards.length) return [];
+
+  var due = [], _new = [];
+  allCards.forEach(function(c) {
+    var s = state.srs[c.key];
+    if (!s || !s.reps) {
+      _new.push(c);
+    } else if (srsDue(c.key)) {
+      due.push(c);
+    }
+  });
+
+  // Anki: todos due + até N novos
+  var queue = due.concat(_new.slice(0, dailyNew));
+
+  // Shuffle para evitar ordem visual repetida
+  for (var i = queue.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = queue[i]; queue[i] = queue[j]; queue[j] = tmp;
+  }
+
+  return queue;
+}
+
+</script>
+<script>
 /* ===== SRS (estilo Anki) — Fase 1, localStorage ===== */
 if(!state.srs)state.srs={};
 var MAT={'new':{w:0,c:'#c9ccd6',lab:'Nova'},learning:{w:0.3,c:'#c49820',lab:'Aprendendo'},young:{w:0.6,c:'#2e7fa8',lab:'Jovem'},mature:{w:1,c:'#4f7a3a',lab:'Madura'}};
@@ -1148,9 +1184,7 @@ function ensureSrsView(){
 }
 function openReview(id){
   ensureSrsView();_srsTopic=id;
-  var cs=srsCardsForTopic(id);
-  _srsQueue=cs.filter(function(c){return srsDue(c.key);});
-  if(!_srsQueue.length)_srsQueue=cs.slice();
+  _srsQueue=buildSrsQueue(id, 20);  // Anki: due + 20 novos/dia, com shuffle
   _srsIdx=0;
   document.getElementById('detail').style.display='none';
   var ov=document.getElementById('overview');if(ov)ov.style.display='none';
