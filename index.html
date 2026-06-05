@@ -306,7 +306,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 
 <header class="top"><div class="top-in">
   <div class="brand">
-    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0605.1522</span></div>
+    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0605.1827</span></div>
     <h1><em>Minha Jornada</em></h1>
   </div>
   <div class="tools">
@@ -1545,8 +1545,15 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progre
   }
 
   async function afterAuth(user){
+    // Cancela qualquer save pendente do usuário anterior para evitar race condition
+    clearTimeout(cloudTimer); cloudTimer=null;
     applyUser(user);
-    try{ await applyCloud(); }catch(e){ console.error('carregar progresso',e); }
+    try{
+      await applyCloud();
+      // Persiste imediatamente no localStorage para evitar que dados do usuário
+      // anterior contaminem caso a pagina feche antes do proximo save()
+      _origSave();
+    }catch(e){ console.error('carregar progresso',e); }
     var temNome=user.user_metadata&&user.user_metadata.display_name;
     if(!temNome){ showNomeStep(); } else { closeOverlay(); }
   }
@@ -1639,8 +1646,14 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progre
     var sv=document.getElementById('saveBtn'); if(sv)sv.onclick=window.salvarAgora;
     var out=document.getElementById('logoutBtn');
     if(out) out.onclick=async function(){
+      // Cancela saves pendentes para não salvar estado deste usuario depois do logout
+      clearTimeout(cloudTimer); cloudTimer=null;
       try{ if(sb) await sb.auth.signOut(); }catch(e){}
       window.currentUser=null;
+      // Limpa estado em memoria e localStorage para não contaminar proximo login
+      state.done={};state.pace={};state.startDate=APP.startDate;
+      state.srs={};state.pos={};state.started={};state.stats=null;
+      _origSave();
       var loginForm=document.getElementById('loginForm');
       var nomeStep=document.getElementById('nomeStep');
       if(loginForm)loginForm.style.display='block';
@@ -1669,11 +1682,15 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progre
   // Restaurar sessao persistida
   (async function(){
     if(!sb) return;
+    clearTimeout(cloudTimer); cloudTimer=null;
     var r=await sb.auth.getSession();
     if(r.data&&r.data.session&&r.data.session.user){
       var user=r.data.session.user;
       applyUser(user);
-      try{ await applyCloud(); }catch(e){ console.error('restaurar progresso',e); }
+      try{
+        await applyCloud();
+        _origSave(); // persiste estado da nuvem no localStorage imediatamente
+      }catch(e){ console.error('restaurar progresso',e); }
       document.getElementById('loginOverlay').style.display='none';
       try{ renderOverview(); }catch(e){}
       setStatus('salvo na nuvem');
@@ -3292,9 +3309,12 @@ try{ if(typeof RICH!=='undefined'){
 <script>
 /* ===== 22-streak-stats.js — streak, revisões e hub de prática ===== */
 (function(){
-  // ── Streak ───────────────────────────────────────────────────────────────────
+  // ── Helpers ──────────────────────────────────────────────────────────────────
   function today(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);}
   function ensureStats(){if(!state.stats)state.stats={hist:{},streak:0,last:null,goal:20};return state.stats;}
+  function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+  // ── Streak tracking ───────────────────────────────────────────────────────────
   function bump(){
     var st=ensureStats(),t=today();
     st.hist[t]=(st.hist[t]||0)+1;
@@ -3309,15 +3329,17 @@ try{ if(typeof RICH!=='undefined'){
 
   // ── Due badge ─────────────────────────────────────────────────────────────────
   function dueCount(){
-    var n=0;try{(APP.skills||[]).forEach(function(s){(s.topics||[]).forEach(function(t){
-      (typeof srsCardsForTopic==='function'?srsCardsForTopic(t.id):[]).forEach(function(c){if(srsDue(c.key))n++;});
+    var n=0;
+    try{(APP.skills||[]).forEach(function(s){(s.topics||[]).forEach(function(t){
+      var cards=typeof srsCardsForTopic==='function'?srsCardsForTopic(t.id):[];
+      cards.forEach(function(c){if(typeof srsDue==='function'&&srsDue(c.key))n++;});
     });});}catch(e){}
     return n;
   }
   function paintBadge(){
     var host=document.querySelector('header .tools');if(!host)return;
     var b=document.getElementById('dueBadge');
-    if(!b){b=document.createElement('button');b.id='dueBadge';b.className='btn';b.onclick=openStats;host.insertBefore(b,host.firstChild);}
+    if(!b){b=document.createElement('button');b.id='dueBadge';b.className='btn';b.onclick=window.openStats;host.insertBefore(b,host.firstChild);}
     var st=ensureStats(),d=dueCount();
     b.innerHTML='🔥 '+(st.streak||0)+' · 🎴 '+d+' vencidas · '+(st.hist[today()]||0)+'/'+(st.goal||20);
   }
@@ -3327,24 +3349,24 @@ try{ if(typeof RICH!=='undefined'){
   function buildAllVocabQueue(section,cap){
     cap=cap||20;
     var all=[];
-    (APP.skills||[]).forEach(function(s){
-      (s.topics||[]).forEach(function(t){
-        // Only include topics where vocab theory has been completed at least once
-        if(!(state.done&&state.done[t.id+'::v']))return;
-        var cards=typeof srsCardsForTopic==='function'?srsCardsForTopic(t.id,section||'vocab'):[];
-        cards.forEach(function(c){
-          if(all.some(function(x){return x.key===c.key;}))return;
-          c._topicId=t.id;
-          all.push(c);
+    try{
+      (APP.skills||[]).forEach(function(s){
+        (s.topics||[]).forEach(function(t){
+          var done=state&&state.done&&state.done[t.id+'::v'];
+          if(!done)return;
+          var cards=typeof srsCardsForTopic==='function'?srsCardsForTopic(t.id,section||'vocab'):[];
+          cards.forEach(function(c){
+            if(all.some(function(x){return x.key===c.key;}))return;
+            c._topicId=t.id;all.push(c);
+          });
         });
       });
-    });
-    // Sort by maturity ascending (lowest absorption first), then by due date
+    }catch(e){}
     all.sort(function(a,b){
       var wa=typeof MAT!=='undefined'?MAT[srsMaturity(a.key)].w:0;
       var wb=typeof MAT!=='undefined'?MAT[srsMaturity(b.key)].w:0;
       if(wa!==wb)return wa-wb;
-      var sa=state.srs&&state.srs[a.key],sb=state.srs&&state.srs[b.key];
+      var sa=state&&state.srs&&state.srs[a.key],sb=state&&state.srs&&state.srs[b.key];
       return ((sa&&sa.due)||0)-((sb&&sb.due)||0);
     });
     return all.slice(0,cap);
@@ -3355,17 +3377,12 @@ try{ if(typeof RICH!=='undefined'){
     if(typeof ensureSrsView==='function')ensureSrsView();
     var queue=buildAllVocabQueue(section,20);
     if(!queue.length){
-      alert('Nenhum módulo desbloqueado para '+(section==='phrases'?'frases':'vocabulário')+'. Conclua ao menos um módulo de teoria primeiro.');
-      return;
+      alert('Nenhum módulo desbloqueado. Conclua ao menos um módulo de teoria primeiro.');return;
     }
-    window._srsTopic='__all__';
-    window._srsDeck=section||'vocab';
-    window._srsSection=section||'vocab';
-    window._srsQueue=queue;
-    window._srsIdx=0;
+    window._srsTopic='__all__';window._srsDeck=section||'vocab';window._srsSection=section||'vocab';
+    window._srsQueue=queue;window._srsIdx=0;
     if(typeof window._srsRetries!=='undefined')window._srsRetries={};
-    window._srsWrong={};
-    window._srsMode='card';
+    window._srsWrong={};window._srsMode='card';
     ['detail','overview','statsView','pronuncView','fillView'].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display='none';});
     document.getElementById('srsView').style.display='block';
     var label=section==='phrases'?'Todas as Frases':'Todo Vocabulário';
@@ -3375,135 +3392,139 @@ try{ if(typeof RICH!=='undefined'){
     if(typeof srsRender==='function')srsRender();
   };
 
-  // ── Stats view HTML ───────────────────────────────────────────────────────────
-  function ensureStatsView(){
-    if(document.getElementById('statsView'))return;
-    var v=document.createElement('div');v.id='statsView';v.style.display='none';
-    v.innerHTML='<div style="max-width:900px;margin:0 auto;padding:18px 16px">'
-      +'<button class="btn" id="statsBack">← Voltar</button>'
-      +'<h2 style="font-family:Fraunces,serif;margin:14px 0 18px">Estatísticas</h2>'
-      +'<div id="statsTop" style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:24px"></div>'
-      +'<div style="font-weight:700;font-size:13px;letter-spacing:.06em;text-transform:uppercase;opacity:.65;margin-bottom:10px">Praticar por absorção</div>'
-      +'<div id="statsHubCards" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:28px;max-width:520px"></div>'
-      +'<div style="font-weight:700;margin-bottom:8px">Revisões (14 dias)</div>'
-      +'<div id="statsBars" style="display:flex;gap:4px;align-items:flex-end;height:100px;margin-bottom:26px"></div>'
-      +'<div id="statsModules"></div>'
-      +'</div>';
-    document.body.appendChild(v);
-    document.getElementById('statsBack').onclick=function(){
-      v.style.display='none';
-      var ov=document.getElementById('overview');if(ov)ov.style.display='block';
-    };
-  }
+  // ── Stats page (rebuilt from scratch on every open) ───────────────────────────
+  window.openStats=function openStats(){
+    // Ensure container exists
+    var sv=document.getElementById('statsView');
+    if(!sv){sv=document.createElement('div');sv.id='statsView';document.body.appendChild(sv);}
 
-  function openStats(){
-    ensureStatsView();
+    // Hide other views
+    ['overview','detail','srsView','matView','pronuncView','fillView','pronuncView','fillView'].forEach(
+      function(id){var e=document.getElementById(id);if(e)e.style.display='none';}
+    );
+    sv.style.display='block';
+    window.scrollTo({top:0,behavior:'smooth'});
+
     var st=ensureStats();
-    ['overview','detail','srsView','matView','pronuncView','fillView'].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display='none';});
-    document.getElementById('statsView').style.display='block';
 
+    // ── Build HTML ──────────────────────────────────────────────────────────────
     // Top stat cards
-    document.getElementById('statsTop').innerHTML=
-      statCard('🔥 '+(st.streak||0),'dias seguidos')+
-      statCard((st.hist[today()]||0)+'/'+(st.goal||20),'revisões hoje')+
-      statCard(dueCount(),'vencidas agora');
+    var topHtml=
+      _sCard('🔥 '+(st.streak||0),'dias seguidos')+
+      _sCard((st.hist[today()]||0)+'/'+(st.goal||20),'revisões hoje')+
+      _sCard(dueCount(),'vencidas agora');
 
-    // Hub cards — count unlocked vocab and phrases
+    // Hub cards
     var allVocabCount=0,allPhraseCount=0,allVocabDue=0,allPhraseDue=0;
-    (APP.skills||[]).forEach(function(s){
-      (s.topics||[]).forEach(function(t){
-        if(!(state.done&&state.done[t.id+'::v']))return;
-        var vc=typeof srsCardsForTopic==='function'?srsCardsForTopic(t.id,'vocab'):[];
-        var pc=typeof srsCardsForTopic==='function'?srsCardsForTopic(t.id,'phrases'):[];
-        allVocabCount+=vc.length;
-        allPhraseCount+=pc.length;
-        allVocabDue+=vc.filter(function(c){return srsDue(c.key);}).length;
-        allPhraseDue+=pc.filter(function(c){return srsDue(c.key);}).length;
+    try{
+      (APP.skills||[]).forEach(function(s){
+        (s.topics||[]).forEach(function(t){
+          if(!(state&&state.done&&state.done[t.id+'::v']))return;
+          var vc=typeof srsCardsForTopic==='function'?srsCardsForTopic(t.id,'vocab'):[];
+          var pc=typeof srsCardsForTopic==='function'?srsCardsForTopic(t.id,'phrases'):[];
+          allVocabCount+=vc.length; allPhraseCount+=pc.length;
+          if(typeof srsDue==='function'){
+            allVocabDue+=vc.filter(function(c){return srsDue(c.key);}).length;
+            allPhraseDue+=pc.filter(function(c){return srsDue(c.key);}).length;
+          }
+        });
       });
-    });
-    document.getElementById('statsHubCards').innerHTML=
-      hubCard('🎴','Todo Vocabulário',allVocabCount,allVocabDue,"openAllVocabReview('vocab')")+
-      hubCard('💬','Todas as Frases',allPhraseCount,allPhraseDue,"openAllVocabReview('phrases')");
+    }catch(e){}
+    var hubHtml=
+      _hubCard('🎴','Todo Vocabulário',allVocabCount,allVocabDue,"openAllVocabReview('vocab')")+
+      _hubCard('💬','Todas as Frases',allPhraseCount,allPhraseDue,"openAllVocabReview('phrases')");
 
-    // Bar chart — 14 days
+    // Bar chart
     var days=[],max=1;
     for(var i=13;i>=0;i--){
-      var d=new Date(Date.now()-i*86400000);
-      var k=d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);
-      var cnt=st.hist[k]||0;max=Math.max(max,cnt);days.push([k.slice(5),cnt]);
+      var dd=new Date(Date.now()-i*86400000);
+      var kk=dd.getFullYear()+'-'+('0'+(dd.getMonth()+1)).slice(-2)+'-'+('0'+dd.getDate()).slice(-2);
+      var cv=st.hist[kk]||0;max=Math.max(max,cv);days.push([kk.slice(5),cv]);
     }
-    document.getElementById('statsBars').innerHTML=days.map(function(d){
+    var barsHtml=days.map(function(d){
       var h=Math.round(d[1]/max*88);
       return '<div style="flex:1;text-align:center">'
         +'<div title="'+d[1]+'" style="height:'+h+'px;min-height:'+(d[1]?2:0)+'px;background:var(--it-green,#007a3d);border-radius:3px 3px 0 0"></div>'
         +'<div style="font-size:8px;opacity:.55;margin-top:3px">'+d[0]+'</div></div>';
     }).join('');
 
-    // Module cards per skill
+    // Module cards
     var modHtml='';
-    (APP.skills||[]).forEach(function(s){
-      if(!(s.topics&&s.topics.length))return;
-      modHtml+='<div style="font-weight:700;font-size:13px;letter-spacing:.06em;text-transform:uppercase;opacity:.65;margin:0 0 10px">Por módulo — '
-        +(typeof srsEsc==='function'?srsEsc(s.name):s.name)+'</div>'
-        +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:10px;margin-bottom:26px">';
-      s.topics.forEach(function(t){
-        var vDone=!!(state.done&&state.done[t.id+'::v']);
-        modHtml+=vDone?unlockedModCard(t):lockedModCard(t);
+    try{
+      (APP.skills||[]).forEach(function(s){
+        if(!(s.topics&&s.topics.length))return;
+        modHtml+='<div style="font-weight:700;font-size:12px;letter-spacing:.07em;text-transform:uppercase;opacity:.6;margin:0 0 10px">Por módulo — '+esc(s.name)+'</div>'
+          +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-bottom:26px">';
+        s.topics.forEach(function(t){
+          var vDone=!!(state&&state.done&&state.done[t.id+'::v']);
+          modHtml+=vDone?_unlocked(t):_locked(t);
+        });
+        modHtml+='</div>';
       });
-      modHtml+='</div>';
-    });
-    document.getElementById('statsModules').innerHTML=modHtml;
-  }
+    }catch(e){modHtml='<p style="color:red;font-size:12px">Erro: '+esc(String(e))+'</p>';}
 
-  // ── Card renderers ────────────────────────────────────────────────────────────
-  function esc(s){return typeof srsEsc==='function'?srsEsc(s):String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+    // ── Render all at once ──────────────────────────────────────────────────────
+    sv.innerHTML=
+      '<div style="max-width:900px;margin:0 auto;padding:18px 16px">'
+      +'<button id="statsBack" class="btn">← Voltar</button>'
+      +'<h2 style="font-family:Fraunces,serif;margin:14px 0 18px">Estatísticas</h2>'
+      +'<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:24px">'+topHtml+'</div>'
+      +'<div style="font-weight:700;font-size:12px;letter-spacing:.07em;text-transform:uppercase;opacity:.6;margin-bottom:10px">Praticar por absorção</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:28px;max-width:520px">'+hubHtml+'</div>'
+      +'<div style="font-weight:700;margin-bottom:8px">Revisões (14 dias)</div>'
+      +'<div style="display:flex;gap:4px;align-items:flex-end;height:100px;margin-bottom:26px">'+barsHtml+'</div>'
+      +modHtml
+      +'</div>';
 
-  function statCard(v,l){
-    return '<div style="background:var(--surface,#fff);border-radius:14px;padding:14px 18px;box-shadow:var(--shadow,0 1px 4px rgba(0,0,0,.08));min-width:80px">'
+    // Wire back button (after innerHTML is set)
+    var backBtn=document.getElementById('statsBack');
+    if(backBtn)backBtn.onclick=function(){
+      sv.style.display='none';
+      var ov=document.getElementById('overview');if(ov)ov.style.display='block';
+    };
+  };
+
+  // ── Card builders ─────────────────────────────────────────────────────────────
+  function _sCard(v,l){
+    return '<div style="background:var(--surface,#fff);border-radius:14px;padding:14px 18px;box-shadow:0 1px 4px rgba(0,0,0,.08);min-width:80px">'
       +'<div style="font-family:Fraunces,serif;font-size:26px;font-weight:700">'+v+'</div>'
       +'<div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;opacity:.6;margin-top:2px">'+l+'</div>'
       +'</div>';
   }
-
-  function hubCard(icon,label,total,due,onclick){
-    var hasContent=total>0;
-    var dueLabel=due>0?'<span style="color:#c0212e;font-weight:700"> · '+due+' vencidas</span>':'';
-    return '<div style="background:var(--surface,#fff);border:1px solid var(--border2,#e0d6c6);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:8px;cursor:'+(hasContent?'pointer':'default')+'" '+(hasContent?'onclick="'+onclick+'"':'')+'>'
-      +'<div style="font-size:24px">'+icon+'</div>'
+  function _hubCard(icon,label,total,due,oc){
+    var has=total>0;
+    var dueSpan=due>0?'<span style="color:#c0212e;font-weight:700"> · '+due+' vencidas</span>':'';
+    return '<div style="background:var(--surface,#fff);border:1px solid var(--border2,#e0d6c6);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:8px;cursor:'+(has?'pointer':'default')+'" '+(has?'onclick="'+oc+'"':'')+'>'
+      +'<div style="font-size:22px">'+icon+'</div>'
       +'<div style="font-weight:700;font-size:14px">'+label+'</div>'
-      +'<div style="font-size:22px;font-weight:800;color:var(--terra,#b85a28)">'+(hasContent?total:'—')+'</div>'
-      +'<div style="font-size:11px;opacity:.65">'+(hasContent?total+' liberadas'+dueLabel:'Conclua módulos para liberar')+'</div>'
-      +(hasContent?'<button class="btn" style="background:var(--terra,#b85a28);color:#fff;border:none;margin-top:4px" onclick="event.stopPropagation();'+onclick+'">▶ Treinar 20 menores</button>':'')
+      +'<div style="font-size:22px;font-weight:800;color:var(--terra,#b85a28)">'+(has?total:'—')+'</div>'
+      +'<div style="font-size:11px;opacity:.65">'+(has?total+' liberadas'+dueSpan:'Conclua módulos para liberar')+'</div>'
+      +(has?'<button class="btn" style="background:var(--terra,#b85a28);color:#fff;border:none;margin-top:4px" onclick="event.stopPropagation();'+oc+'">▶ Treinar 20 menores</button>':'')
       +'</div>';
   }
-
-  function lockedModCard(t){
+  function _locked(t){
     return '<div style="border:1px dashed var(--border2,#d0c8b8);border-radius:12px;background:var(--surface2,#f8f2e5);padding:12px;display:flex;flex-direction:column;gap:6px;min-height:90px">'
       +'<div style="font-size:16px">🔒</div>'
       +'<div style="font-weight:600;font-size:12px;color:var(--ink,#1c1408);line-height:1.35">'+esc(t.t||t.id)+'</div>'
       +'<div style="font-size:10px;color:var(--ink3,#888);margin-top:auto;line-height:1.3">Conclua o vocabulário para desbloquear</div>'
       +'</div>';
   }
-
-  function unlockedModCard(t){
+  function _unlocked(t){
     var vPct=typeof srsTopicPctDeck==='function'?Math.round(srsTopicPctDeck(t.id,'vocab')*100):0;
-    var fDone=!!(state.done&&state.done[t.id+'::f']);
+    var fDone=!!(state&&state.done&&state.done[t.id+'::f']);
     var fPct=fDone&&typeof srsTopicPctDeck==='function'?Math.round(srsTopicPctDeck(t.id,'phrases')*100):0;
     function col(p){return p>=60?'#4f7a3a':p>=30?'#e8a020':'#c0212e';}
     function bar(p,c){return '<div style="height:3px;background:#e8e0d0;border-radius:2px;margin:2px 0 5px"><div style="height:100%;width:'+p+'%;background:'+c+';border-radius:2px"></div></div>';}
     return '<div style="border:1px solid var(--border2,#e0d6c6);border-radius:12px;background:var(--surface,#fff);padding:12px;display:flex;flex-direction:column;gap:3px;min-height:90px">'
       +'<div style="font-weight:700;font-size:12px;color:var(--ink,#1c1408);line-height:1.35;margin-bottom:4px">'+esc(t.t||t.id)+'</div>'
-      +'<div style="font-size:11px;opacity:.7">📖 <b style="color:'+col(vPct)+'">'+vPct+'%</b></div>'
-      +bar(vPct,col(vPct))
+      +'<div style="font-size:11px;opacity:.7">📖 <b style="color:'+col(vPct)+'">'+vPct+'%</b></div>'+bar(vPct,col(vPct))
       +(fDone?'<div style="font-size:11px;opacity:.7">💬 <b style="color:'+col(fPct)+'">'+fPct+'%</b></div>'+bar(fPct,col(fPct)):'')
       +'<div style="display:flex;gap:5px;margin-top:auto;flex-wrap:wrap">'
       +'<button class="btn" style="font-size:10px;padding:3px 7px;background:var(--terra,#b85a28);color:#fff;border:none" onclick="openReview(\''+t.id+'\',\'vocab\')">Vocab</button>'
       +(fDone?'<button class="btn" style="font-size:10px;padding:3px 7px" onclick="openReview(\''+t.id+'\',\'phrases\')">Frases</button>':'')
-      +'</div>'
-      +'</div>';
+      +'</div></div>';
   }
 
-  window.openStats=openStats;
   window.addEventListener('load',function(){setTimeout(paintBadge,600);});
 })();
 
