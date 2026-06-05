@@ -306,7 +306,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 
 <header class="top"><div class="top-in">
   <div class="brand">
-    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0605.1834</span></div>
+    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0605.1838</span></div>
     <h1><em>Minha Jornada</em></h1>
   </div>
   <div class="tools">
@@ -3329,7 +3329,19 @@ try{ if(typeof RICH!=='undefined'){
 (function(){
   // ── Helpers ──────────────────────────────────────────────────────────────────
   function today(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);}
-  function ensureStats(){if(!state.stats)state.stats={hist:{},streak:0,last:null,goal:20};return state.stats;}
+
+  // Normaliza state.stats — garante que todos os campos existam mesmo se vieram
+  // da nuvem como objeto incompleto (ex: {} sem hist, streak, etc.)
+  function ensureStats(){
+    if(!state.stats)state.stats={};
+    var s=state.stats;
+    if(!s.hist||typeof s.hist!=='object')s.hist={};
+    if(typeof s.streak!=='number')s.streak=0;
+    if(s.last===undefined)s.last=null;
+    if(!s.goal)s.goal=20;
+    return s;
+  }
+
   function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
   // ── Streak tracking ───────────────────────────────────────────────────────────
@@ -3337,7 +3349,8 @@ try{ if(typeof RICH!=='undefined'){
     var st=ensureStats(),t=today();
     st.hist[t]=(st.hist[t]||0)+1;
     if(st.last!==t){
-      var y=new Date(Date.now()-86400000);var yk=y.getFullYear()+'-'+('0'+(y.getMonth()+1)).slice(-2)+'-'+('0'+y.getDate()).slice(-2);
+      var y=new Date(Date.now()-86400000);
+      var yk=y.getFullYear()+'-'+('0'+(y.getMonth()+1)).slice(-2)+'-'+('0'+y.getDate()).slice(-2);
       st.streak=(st.last===yk)?(st.streak||0)+1:1;
       st.last=t;
     }
@@ -3354,25 +3367,30 @@ try{ if(typeof RICH!=='undefined'){
     });});}catch(e){}
     return n;
   }
+
   function paintBadge(){
     var host=document.querySelector('header .tools');if(!host)return;
     var b=document.getElementById('dueBadge');
-    if(!b){b=document.createElement('button');b.id='dueBadge';b.className='btn';b.onclick=window.openStats;host.insertBefore(b,host.firstChild);}
+    if(!b){
+      b=document.createElement('button');b.id='dueBadge';b.className='btn';
+      // Referência tardia: avalia window.openStats no momento do clique
+      b.onclick=function(){if(typeof window.openStats==='function')window.openStats();};
+      host.insertBefore(b,host.firstChild);
+    }
     var st=ensureStats(),d=dueCount();
     b.innerHTML='🔥 '+(st.streak||0)+' · 🎴 '+d+' vencidas · '+(st.hist[today()]||0)+'/'+(st.goal||20);
   }
   window.paintDueBadge=paintBadge;
 
   // ── Maturity helpers ──────────────────────────────────────────────────────────
-  // Returns {new, learning, young, mature, total, due} counts for a list of card keys
   function matCounts(cards){
     var c={new:0,learning:0,young:0,mature:0,total:0,due:0};
-    cards.forEach(function(card){
+    try{cards.forEach(function(card){
       c.total++;
       var m=typeof srsMaturity==='function'?srsMaturity(card.key):'new';
-      c[m]=(c[m]||0)+1;
+      if(c.hasOwnProperty(m))c[m]++;
       if(typeof srsDue==='function'&&srsDue(card.key))c.due++;
-    });
+    });}catch(e){}
     return c;
   }
 
@@ -3383,8 +3401,7 @@ try{ if(typeof RICH!=='undefined'){
     try{
       (APP.skills||[]).forEach(function(s){
         (s.topics||[]).forEach(function(t){
-          var done=state&&state.done&&state.done[t.id+'::v'];
-          if(!done)return;
+          if(!(state&&state.done&&state.done[t.id+'::v']))return;
           var cards=typeof srsCardsForTopic==='function'?srsCardsForTopic(t.id,section||'vocab'):[];
           cards.forEach(function(c){
             if(all.some(function(x){return x.key===c.key;}))return;
@@ -3394,11 +3411,13 @@ try{ if(typeof RICH!=='undefined'){
       });
     }catch(e){}
     all.sort(function(a,b){
-      var wa=typeof MAT!=='undefined'?MAT[srsMaturity(a.key)].w:0;
-      var wb=typeof MAT!=='undefined'?MAT[srsMaturity(b.key)].w:0;
-      if(wa!==wb)return wa-wb;
-      var sa=state&&state.srs&&state.srs[a.key],sb=state&&state.srs&&state.srs[b.key];
-      return ((sa&&sa.due)||0)-((sb&&sb.due)||0);
+      try{
+        var wa=typeof MAT!=='undefined'?MAT[srsMaturity(a.key)].w:0;
+        var wb=typeof MAT!=='undefined'?MAT[srsMaturity(b.key)].w:0;
+        if(wa!==wb)return wa-wb;
+        var sa=state&&state.srs&&state.srs[a.key],sb=state&&state.srs&&state.srs[b.key];
+        return ((sa&&sa.due)||0)-((sb&&sb.due)||0);
+      }catch(e){return 0;}
     });
     return all.slice(0,cap);
   }
@@ -3424,24 +3443,49 @@ try{ if(typeof RICH!=='undefined'){
   };
 
   // ── Stats page ────────────────────────────────────────────────────────────────
-  window.openStats=function openStats(){
+  function openStats(){
     var sv=document.getElementById('statsView');
     if(!sv){sv=document.createElement('div');sv.id='statsView';document.body.appendChild(sv);}
+
+    // Hide other views BEFORE building content (evita flash de tela branca)
     ['overview','detail','srsView','matView','pronuncView','fillView'].forEach(
       function(id){var e=document.getElementById(id);if(e)e.style.display='none';}
     );
+
+    // Constrói todo o HTML ANTES de mostrar a view — evita blank page em caso de erro
+    var html='';
+    try{
+      html=buildStatsHTML();
+    }catch(err){
+      html='<div style="max-width:900px;margin:0 auto;padding:18px">'
+        +'<button id="statsBack" class="btn">← Voltar</button>'
+        +'<p style="color:red;margin-top:20px">Erro ao carregar estatísticas: '+esc(String(err))+'</p>'
+        +'</div>';
+    }
+
+    sv.innerHTML=html;
     sv.style.display='block';
     window.scrollTo({top:0,behavior:'smooth'});
 
+    var backBtn=document.getElementById('statsBack');
+    if(backBtn)backBtn.onclick=function(){
+      sv.style.display='none';
+      var ov=document.getElementById('overview');if(ov)ov.style.display='block';
+    };
+  }
+  window.openStats=openStats;
+
+  // ── HTML builder (separado para try-catch limpo) ──────────────────────────────
+  function buildStatsHTML(){
     var st=ensureStats();
 
-    // ── Top stat cards ──────────────────────────────────────────────────────────
+    // Top stat cards
     var topHtml=
       _sCard('🔥 '+(st.streak||0),'dias seguidos')+
       _sCard((st.hist[today()]||0)+'/'+(st.goal||20),'revisões hoje')+
       _sCard(dueCount(),'vencidas agora');
 
-    // ── Aggregate maturity across all unlocked topics ───────────────────────────
+    // Aggregate maturity
     var globV={new:0,learning:0,young:0,mature:0,total:0,due:0};
     var globP={new:0,learning:0,young:0,mature:0,total:0,due:0};
     try{
@@ -3456,26 +3500,29 @@ try{ if(typeof RICH!=='undefined'){
       });
     }catch(e){}
 
-    // ── Hub + maturity panel ────────────────────────────────────────────────────
     var hubHtml=
-      _hubCard('🎴','Todo Vocabulário',globV,   "openAllVocabReview('vocab')")+
+      _hubCard('🎴','Todo Vocabulário',globV,"openAllVocabReview('vocab')")+
       _hubCard('💬','Todas as Frases', globP,"openAllVocabReview('phrases')");
 
-    // ── Bar chart ───────────────────────────────────────────────────────────────
-    var days=[],max=1;
-    for(var i=13;i>=0;i--){
-      var dd=new Date(Date.now()-i*86400000);
-      var kk=dd.getFullYear()+'-'+('0'+(dd.getMonth()+1)).slice(-2)+'-'+('0'+dd.getDate()).slice(-2);
-      var cv=st.hist[kk]||0;max=Math.max(max,cv);days.push([kk.slice(5),cv]);
-    }
-    var barsHtml=days.map(function(d){
-      var h=Math.round(d[1]/max*88);
-      return '<div style="flex:1;text-align:center">'
-        +'<div title="'+d[1]+'" style="height:'+h+'px;min-height:'+(d[1]?2:0)+'px;background:var(--it-green,#007a3d);border-radius:3px 3px 0 0"></div>'
-        +'<div style="font-size:8px;opacity:.55;margin-top:3px">'+d[0]+'</div></div>';
-    }).join('');
+    // Bar chart (try-catch isolado)
+    var barsHtml='';
+    try{
+      var days=[],max=1;
+      for(var i=13;i>=0;i--){
+        var dd=new Date(Date.now()-i*86400000);
+        var kk=dd.getFullYear()+'-'+('0'+(dd.getMonth()+1)).slice(-2)+'-'+('0'+dd.getDate()).slice(-2);
+        var cv=(st.hist&&st.hist[kk])||0;
+        max=Math.max(max,cv);days.push([kk.slice(5),cv]);
+      }
+      barsHtml=days.map(function(d){
+        var h=Math.round(d[1]/max*88);
+        return '<div style="flex:1;text-align:center">'
+          +'<div title="'+d[1]+'" style="height:'+h+'px;min-height:'+(d[1]?2:0)+'px;background:var(--it-green,#007a3d);border-radius:3px 3px 0 0"></div>'
+          +'<div style="font-size:8px;opacity:.55;margin-top:3px">'+d[0]+'</div></div>';
+      }).join('');
+    }catch(e){barsHtml='<span style="font-size:11px;opacity:.5">sem dados</span>';}
 
-    // ── Module cards ────────────────────────────────────────────────────────────
+    // Module cards
     var modHtml='';
     try{
       (APP.skills||[]).forEach(function(s){
@@ -3488,11 +3535,9 @@ try{ if(typeof RICH!=='undefined'){
         });
         modHtml+='</div>';
       });
-    }catch(e){modHtml='<p style="color:red;font-size:12px">Erro: '+esc(String(e))+'</p>';}
+    }catch(e){modHtml='<p style="color:red;font-size:12px">Erro módulos: '+esc(String(e))+'</p>';}
 
-    // ── Render ──────────────────────────────────────────────────────────────────
-    sv.innerHTML=
-      '<div style="max-width:900px;margin:0 auto;padding:18px 16px">'
+    return '<div style="max-width:900px;margin:0 auto;padding:18px 16px">'
       +'<button id="statsBack" class="btn">← Voltar</button>'
       +'<h2 style="font-family:Fraunces,serif;margin:14px 0 18px">Estatísticas</h2>'
       +'<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:24px">'+topHtml+'</div>'
@@ -3502,13 +3547,7 @@ try{ if(typeof RICH!=='undefined'){
       +'<div style="display:flex;gap:4px;align-items:flex-end;height:100px;margin-bottom:26px">'+barsHtml+'</div>'
       +modHtml
       +'</div>';
-
-    var backBtn=document.getElementById('statsBack');
-    if(backBtn)backBtn.onclick=function(){
-      sv.style.display='none';
-      var ov=document.getElementById('overview');if(ov)ov.style.display='block';
-    };
-  };
+  }
 
   // ── Card builders ─────────────────────────────────────────────────────────────
   function _sCard(v,l){
@@ -3518,42 +3557,27 @@ try{ if(typeof RICH!=='undefined'){
       +'</div>';
   }
 
-  // m = matCounts object {new, learning, young, mature, total, due}
   function _hubCard(icon,label,m,oc){
     var has=m.total>0;
     var pct=m.total?Math.round(((m.young||0)+(m.mature||0))/m.total*100):0;
     var col=pct>=60?'#4f7a3a':pct>=30?'#e8a020':'#c0212e';
-
-    // Mini maturity bar
-    function seg(count,color,title){
-      if(!count||!m.total)return'';
-      var w=Math.round(count/m.total*100);
-      return '<div title="'+title+': '+count+'" style="height:100%;width:'+w+'%;background:'+color+';"></div>';
-    }
-    var matBar=has
-      ? '<div style="display:flex;height:6px;border-radius:3px;overflow:hidden;background:#e8e0d0;margin:4px 0 2px">'
-        +seg(m.mature,'#4f7a3a','Madura')
-        +seg(m.young,'#2e7fa8','Jovem')
-        +seg(m.learning,'#c49820','Aprendendo')
-        +seg(m.new,'#c9ccd6','Nova')
-        +'</div>'
-      : '';
-
-    var matLegend=has
-      ? '<div style="display:flex;flex-wrap:wrap;gap:6px;font-size:10px;opacity:.7;margin-top:2px">'
-        +(m.new?'<span>⚪ '+m.new+' novas</span>':'')
-        +(m.learning?'<span>🟡 '+m.learning+' aprend.</span>':'')
-        +(m.young?'<span>🔵 '+m.young+' jovens</span>':'')
-        +(m.mature?'<span>🟢 '+m.mature+' maduras</span>':'')
-        +(m.due?'<span style="color:#c0212e;font-weight:700">⏰ '+m.due+' vencidas</span>':'')
-        +'</div>'
-      : '<div style="font-size:11px;opacity:.6">Conclua módulos para liberar</div>';
-
+    function seg(n,c,tt){if(!n||!m.total)return'';return '<div title="'+tt+': '+n+'" style="height:100%;width:'+Math.round(n/m.total*100)+'%;background:'+c+'"></div>';}
+    var matBar=has?'<div style="display:flex;height:6px;border-radius:3px;overflow:hidden;background:#e8e0d0;margin:4px 0 2px">'
+      +seg(m.mature,'#4f7a3a','Madura')+seg(m.young,'#2e7fa8','Jovem')
+      +seg(m.learning,'#c49820','Aprendendo')+seg(m.new,'#c9ccd6','Nova')
+      +'</div>':'';
+    var matLeg=has?'<div style="display:flex;flex-wrap:wrap;gap:6px;font-size:10px;opacity:.7;margin-top:2px">'
+      +(m.new?'<span>⚪ '+m.new+' novas</span>':'')
+      +(m.learning?'<span>🟡 '+m.learning+' aprend.</span>':'')
+      +(m.young?'<span>🔵 '+m.young+' jovens</span>':'')
+      +(m.mature?'<span>🟢 '+m.mature+' maduras</span>':'')
+      +(m.due?'<span style="color:#c0212e;font-weight:700">⏰ '+m.due+' vencidas</span>':'')
+      +'</div>':'<div style="font-size:11px;opacity:.6">Conclua módulos para liberar</div>';
     return '<div style="background:var(--surface,#fff);border:1px solid var(--border2,#e0d6c6);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:6px;cursor:'+(has?'pointer':'default')+'" '+(has?'onclick="'+oc+'"':'')+'>'
       +'<div style="font-size:22px">'+icon+'</div>'
       +'<div style="font-weight:700;font-size:14px">'+label+'</div>'
       +'<div style="font-size:22px;font-weight:800;color:'+(has?col:'#aaa')+'">'+(has?m.total:'—')+'</div>'
-      +matBar+matLegend
+      +matBar+matLeg
       +(has?'<button class="btn" style="background:var(--terra,#b85a28);color:#fff;border:none;margin-top:6px" onclick="event.stopPropagation();'+oc+'">▶ Treinar 20 menores</button>':'')
       +'</div>';
   }
@@ -3569,33 +3593,28 @@ try{ if(typeof RICH!=='undefined'){
   function _unlocked(t){
     var vc=typeof srsCardsForTopic==='function'?srsCardsForTopic(t.id,'vocab'):[];
     var pc=typeof srsCardsForTopic==='function'?srsCardsForTopic(t.id,'phrases'):[];
-    var mv=matCounts(vc), mp=matCounts(pc);
+    var mv=matCounts(vc),mp=matCounts(pc);
     var fDone=!!(state&&state.done&&state.done[t.id+'::f']);
-
     function col(p){return p>=60?'#4f7a3a':p>=30?'#e8a020':'#c0212e';}
     function pctOf(m){return m.total?Math.round(((m.young||0)+(m.mature||0))/m.total*100):0;}
-
     function miniBar(m){
       if(!m.total)return'';
       function s(n,c){return n?'<div style="height:100%;width:'+Math.round(n/m.total*100)+'%;background:'+c+'"></div>':'';}
       return '<div style="display:flex;height:3px;border-radius:2px;overflow:hidden;background:#e8e0d0;margin:1px 0 5px">'
         +s(m.mature,'#4f7a3a')+s(m.young,'#2e7fa8')+s(m.learning,'#c49820')+s(m.new,'#c9ccd6')+'</div>';
     }
-
-    function counts(m,label){
+    function rowLabel(m,label){
+      var parts=[m.new?m.new+'n':'',m.learning?m.learning+'a':'',m.young?m.young+'j':'',m.mature?m.mature+'m':''].filter(Boolean).join(' ');
       return '<div style="font-size:10px;opacity:.65;margin-bottom:1px">'+label
         +' <b style="color:'+col(pctOf(m))+'">'+pctOf(m)+'%</b>'
         +(m.due?' <span style="color:#c0212e">⏰'+m.due+'</span>':'')
-        +'<span style="opacity:.6"> ('+
-        [m.new?m.new+'n':'', m.learning?m.learning+'a':'', m.young?m.young+'j':'', m.mature?m.mature+'m':'']
-        .filter(Boolean).join(' ')+')</span>'
+        +(parts?' <span style="opacity:.55">('+parts+')</span>':'')
         +'</div>';
     }
-
     return '<div style="border:1px solid var(--border2,#e0d6c6);border-radius:12px;background:var(--surface,#fff);padding:12px;display:flex;flex-direction:column;gap:2px;min-height:90px">'
       +'<div style="font-weight:700;font-size:12px;color:var(--ink,#1c1408);line-height:1.35;margin-bottom:4px">'+esc(t.t||t.id)+'</div>'
-      +counts(mv,'📖 Vocab')+miniBar(mv)
-      +(fDone?counts(mp,'💬 Frases')+miniBar(mp):'')
+      +rowLabel(mv,'📖')+miniBar(mv)
+      +(fDone?rowLabel(mp,'💬')+miniBar(mp):'')
       +'<div style="display:flex;gap:5px;margin-top:auto;flex-wrap:wrap">'
       +'<button class="btn" style="font-size:10px;padding:3px 7px;background:var(--terra,#b85a28);color:#fff;border:none" onclick="openReview(\''+t.id+'\',\'vocab\')">Vocab</button>'
       +(fDone?'<button class="btn" style="font-size:10px;padding:3px 7px" onclick="openReview(\''+t.id+'\',\'phrases\')">Frases</button>':'')
