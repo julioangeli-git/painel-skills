@@ -1549,7 +1549,7 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progre
   if(document.getElementById('loginBtn')) wireLogin();
   else document.addEventListener('DOMContentLoaded',wireLogin);
 
-  // ── API pública para outros módulos (ex: painel de ajustes) ──────────────
+  // API publica para outros modulos (ex: painel de ajustes)
   window.updateDisplayName=async function(nome){
     if(!nome||!sb) return false;
     try{
@@ -1560,6 +1560,7 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progre
     }catch(e){ return false; }
   };
 
+  // Restaurar sessao persistida
   (async function(){
     if(!sb) return;
     var r=await sb.auth.getSession();
