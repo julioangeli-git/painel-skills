@@ -263,6 +263,8 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 .login-box label{display:block;text-align:left;font-size:12px;font-weight:600;margin:10px 0 4px;opacity:.8}
 .login-box select,.login-box input{width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #ccc;border-radius:10px;font-size:15px;background:#fff;color:#222}
 .login-box button{width:100%;margin-top:16px;padding:11px;border:none;border-radius:10px;background:#2e7d32;color:#fff;font-size:15px;font-weight:600;cursor:pointer}
+.login-box .btn-secondary{background:transparent;border:1.5px solid #ccc!important;color:#444;margin-top:8px}
+.auth-sub{margin:0 0 16px;font-size:13px;opacity:.7;line-height:1.5}
 .login-flag{display:flex;width:46px;height:30px;margin:0 auto 8px;border-radius:5px;overflow:hidden}
 .login-flag span{flex:1}.login-flag span:nth-child(1){background:#2e7d32}.login-flag span:nth-child(2){background:#fff}.login-flag span:nth-child(3){background:#c62828}
 .login-msg{margin-top:10px;font-size:13px;color:#c62828;min-height:18px}
@@ -278,23 +280,58 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
     <div class="login-flag"><span></span><span></span><span></span></div>
     <h2>Central de Aprendizagem</h2>
 
-    <!-- Tela 1: login / cadastro -->
-    <div id="loginForm">
-      <p id="loginSubtitle">Entre para ver e salvar seu progresso</p>
+    <!-- Passo 1: e-mail (entrada unica) -->
+    <div id="authStepEmail">
+      <p class="auth-sub">Entre ou crie sua conta gratuita</p>
       <label>E-mail</label>
-      <input id="loginNome" type="email" autocomplete="email" placeholder="seu e-mail">
-      <label>Senha</label>
-      <input id="loginPin" type="password" autocomplete="current-password" placeholder="senha">
-      <button id="loginBtn">Entrar</button>
+      <input id="loginNome" type="email" autocomplete="email" placeholder="seu@email.com">
       <div id="loginMsg" class="login-msg"></div>
-      <p class="login-toggle">Não tem conta? <a href="#" id="toggleModeBtn">Cadastrar-se</a></p>
+      <button id="authBtnCadastrar" style="margin-bottom:8px">Cadastrar-se</button>
+      <button id="authBtnEntrar" class="btn-secondary">Ja tenho conta - Entrar</button>
     </div>
 
-    <!-- Tela 2: nome de exibição (pós-auth) -->
+    <!-- Passo 2a: senha (login de conta existente) -->
+    <div id="authStepLogin" style="display:none">
+      <p class="auth-sub">Digite sua senha para entrar</p>
+      <label>E-mail</label>
+      <input id="loginNomeLogin" type="email" autocomplete="email" readonly style="opacity:.6">
+      <label>Senha</label>
+      <input id="loginPin" type="password" autocomplete="current-password" placeholder="sua senha">
+      <button id="loginBtn">Entrar</button>
+      <div id="loginMsg2" class="login-msg"></div>
+      <p class="login-toggle"><a href="#" id="authBackLogin">Trocar e-mail</a></p>
+    </div>
+
+    <!-- Passo 2b: codigo OTP (cadastro) -->
+    <div id="authStepOtp" style="display:none">
+      <p class="auth-sub">Enviamos um codigo de 6 digitos para<br><b id="otpEmailLabel"></b></p>
+      <label>Codigo de verificacao</label>
+      <input id="otpInput" type="text" inputmode="numeric" maxlength="6" placeholder="000000" style="letter-spacing:.3em;font-size:22px;text-align:center">
+      <button id="otpVerifyBtn">Verificar codigo</button>
+      <div id="otpMsg" class="login-msg"></div>
+      <p class="login-toggle"><a href="#" id="otpResendBtn">Reenviar codigo</a> &nbsp;&middot;&nbsp; <a href="#" id="otpBackBtn">Voltar</a></p>
+    </div>
+
+    <!-- Passo 3: perfil (pos-verificacao OTP - novo usuario) -->
+    <div id="authStepProfile" style="display:none">
+      <p class="auth-sub">E-mail verificado! Configure seu perfil:</p>
+      <label>Crie uma senha <span style="opacity:.5;font-weight:400">(min. 6 caracteres)</span></label>
+      <input id="profilePassword" type="password" autocomplete="new-password" placeholder="••••••••">
+      <label>Como quer ser chamado</label>
+      <input id="profileNome" type="text" autocomplete="nickname" placeholder="Seu nome ou apelido">
+      <label>Nome do seu projeto</label>
+      <input id="profileProjeto" type="text" placeholder="Ex: Mudanca para a Italia">
+      <button id="profileSaveBtn">Comecar</button>
+      <div id="profileMsg" class="login-msg"></div>
+    </div>
+
+    <!-- Passo compat: nome de exibicao (usuario antigo sem nome) -->
     <div id="nomeStep" style="display:none">
       <p>Bem-vindo! Como quer ser chamado?</p>
-      <label>Nome de exibição</label>
+      <label>Nome de exibicao</label>
       <input id="nomeInput" type="text" autocomplete="nickname" placeholder="Seu nome ou apelido">
+      <label style="margin-top:10px">Nome do projeto</label>
+      <input id="nomeProjetoInput" type="text" placeholder="Ex: Mudanca para a Italia">
       <button id="nomeBtn">Confirmar</button>
       <div id="nomeMsg" class="login-msg"></div>
     </div>
@@ -306,12 +343,12 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 
 <header class="top"><div class="top-in">
   <div class="brand">
-    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0605.1921</span></div>
-    <h1><em>Minha Jornada</em></h1>
+    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0605.2004</span></div>
+    <h1><em id="appTitle">Minha Jornada</em></h1>
   </div>
   <div class="tools">
-    <div class="date-field">Início<input type="date" id="startDate"></div>
-    <button class="btn" id="saveBtn">💾 Salvar agora</button><span id="cloudStatus" class="cloud-status"></span><span class="whoami-wrap">👤 <b id="whoami"></b></span><button class="btn" id="logoutBtn">Sair</button><button class="btn" id="expBtn">Exportar</button>
+    <div class="date-field">Inicio<input type="date" id="startDate"></div>
+    <button class="btn" id="saveBtn">Salvar agora</button><span id="cloudStatus" class="cloud-status"></span><span class="whoami-wrap">&#128100; <b id="whoami"></b></span><button class="btn" id="ajustesBtn" style="display:none">Ajustes</button><button class="btn" id="logoutBtn">Sair</button><button class="btn" id="expBtn">Exportar</button>
     <button class="btn" id="impBtn">Importar</button>
     <button class="btn" id="resetBtn">Zerar</button>
     <input type="file" id="impFile" accept="application/json" style="display:none">
@@ -319,7 +356,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 </div></header>
 
 <div class="wrap">
-<div class="banner" id="banner">Salvamento automático indisponível neste preview. Use <b>Exportar</b>.</div>
+<div class="banner" id="banner">Salvamento automatico indisponivel neste preview. Use Exportar.</div>
 
 <section id="overview">
   <div class="hero">
@@ -336,26 +373,26 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 
   <div class="sec">
     <div class="sec-flag"><span class="g"></span><span class="w"></span><span class="r"></span></div>
-    <span class="sec-label">Em foco agora · Prioridade crítica</span>
+    <span class="sec-label">Em foco agora - Prioridade critica</span>
   </div>
   <div class="focus-grid" id="focusGrid"></div>
 
   <div class="sec">
     <div class="sec-flag"><span class="g"></span><span class="w"></span><span class="r"></span></div>
-    <span class="sec-label">Em desenvolvimento · Prioridade alta</span>
+    <span class="sec-label">Em desenvolvimento - Prioridade alta</span>
   </div>
   <div class="dev-grid" id="devGrid"></div>
 
   <div class="sec">
     <div class="sec-flag" style="opacity:.45"><span class="g"></span><span class="w"></span><span class="r"></span></div>
-    <span class="sec-label">No radar · Demais skills mapeadas</span>
+    <span class="sec-label">No radar - Demais skills mapeadas</span>
   </div>
-  <div class="sec-sub">Skills já sólidas ou que entram em foco nas próximas fases — clique para detalhar</div>
+  <div class="sec-sub">Skills ja solidas ou que entram em foco nas proximas fases - clique para detalhar</div>
   <div class="radar-grid" id="radarGrid"></div>
 </section>
 
 <section class="detail" id="detail">
-  <button class="back" id="back">← voltar ao panorama</button>
+  <button class="back" id="back">voltar ao panorama</button>
   <div class="selrow">
     <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em">Skill</span>
     <select id="skillSel"></select>
@@ -368,6 +405,20 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
   <div class="spine" id="spine"></div>
   <div class="dnote" id="dnote"></div>
 </section>
+</div>
+
+<!-- Modal: Ajustes de perfil -->
+<div id="ajustesModal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.45);align-items:center;justify-content:center">
+  <div class="login-box" style="position:relative;max-width:360px;width:90%">
+    <button onclick="window.closeAjustes()" style="position:absolute;top:12px;right:14px;background:none;border:none;font-size:18px;cursor:pointer;color:var(--ink3);line-height:1">x</button>
+    <h3 style="margin:0 0 18px;font-size:16px">Ajustes de perfil</h3>
+    <label>Como quer ser chamado</label>
+    <input id="ajustesNome" type="text" autocomplete="nickname" placeholder="Seu nome ou apelido">
+    <label style="margin-top:10px">Nome do projeto</label>
+    <input id="ajustesProjeto" type="text" placeholder="Ex: Mudanca para a Italia">
+    <button id="ajustesSaveBtn" style="margin-top:14px">Salvar</button>
+    <div id="ajustesMsg" class="login-msg"></div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1482,11 +1533,17 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progre
 
 </script>
 <script>
-/* ===== 08-supabase-auth.js — login + cadastro via Supabase Auth (e-mail+senha) =====
-   - Login: e-mail + senha existentes
-   - Cadastro: e-mail + senha -> cria conta -> pede nome de exibicao
-   - Nome: salvo em user_metadata.display_name (sem alterar banco)
-   - Sessao persistida automaticamente pelo supabase-js */
+/* ===== 08-supabase-auth.js — auth com OTP (cadastro) + senha (login) =====
+   Fluxo de cadastro:
+     1. Usuário entra com e-mail → "Cadastrar-se"
+     2. Supabase envia código OTP de 6 dígitos por e-mail
+        (requer que o template de e-mail use {{ .Token }} no dashboard do Supabase)
+     3. Usuário insere o código → verificado via verifyOtp
+     4. Usuário define: senha, nome de exibição, nome do projeto
+   Fluxo de login:
+     1. Usuário entra com e-mail → "Já tenho conta"
+     2. Insere a senha → signInWithPassword
+*/
 (function(){
   const SUPABASE_URL = "https://iimyqfnxlyjpsolnwgst.supabase.co";
   const SUPABASE_KEY = "sb_publishable_sKx3adUH-u4r1cAqA1t-Zw_R-hY-Ws6";
@@ -1495,14 +1552,34 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progre
   let cloudTimer=null;
   window.currentUser=null;
 
+  // ── Helpers ───────────────────────────────────────────────────────────────────
   function setStatus(t){ var el=document.getElementById('cloudStatus'); if(el)el.textContent=t; }
   function setMsg(id,t){ var el=document.getElementById(id); if(el)el.textContent=t; }
+  function showStep(id){
+    ['authStepEmail','authStepLogin','authStepOtp','authStepProfile','nomeStep'].forEach(function(s){
+      var el=document.getElementById(s);if(el)el.style.display='none';
+    });
+    var el=document.getElementById(id);if(el)el.style.display='block';
+  }
+  function getEmail(){ return (document.getElementById('loginNome')||{}).value||''; }
+
+  function applyProjectName(name){
+    var h=document.getElementById('appTitle');
+    if(h)h.textContent=name||'Minha Jornada';
+    try{if(name)localStorage.setItem('painelTitle',name);}catch(e){}
+  }
 
   function nomeFromUser(user){
     return (user.user_metadata&&user.user_metadata.display_name)||
            (user.email||'').split('@')[0];
   }
+  function projectFromUser(user){
+    return (user.user_metadata&&user.user_metadata.project_name)||
+           (typeof localStorage!=='undefined'&&localStorage.getItem('painelTitle'))||
+           'Minha Jornada';
+  }
 
+  // ── Cloud sync ────────────────────────────────────────────────────────────────
   async function pushCloud(){
     if(!sb||!window.currentUser) return;
     var r=await sb.rpc('salvar_progresso',{
@@ -1515,7 +1592,7 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progre
     clearTimeout(cloudTimer); setStatus('salvando...');
     cloudTimer=setTimeout(async function(){
       try{ await pushCloud(); setStatus('salvo na nuvem'); }
-      catch(e){ setStatus('sem conexao - salvo no aparelho'); }
+      catch(e){ setStatus('sem conexão - salvo no aparelho'); }
     },800);
   };
   var _origSave=save; save=function(){ _origSave(); window.scheduleCloudSave(); };
@@ -1525,9 +1602,10 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progre
     var btn=document.getElementById('saveBtn');
     if(!sb||!window.currentUser){ setStatus('entre para salvar na nuvem'); return; }
     clearTimeout(cloudTimer); setStatus('salvando...'); if(btn)btn.disabled=true;
-    try{ await pushCloud(); setStatus('salvo na nuvem');
-      if(btn){var o=btn.textContent;btn.textContent='Salvo';setTimeout(function(){btn.textContent=o;},1400);} }
-    catch(e){ setStatus('erro ao salvar - tente de novo'); }
+    try{
+      await pushCloud(); setStatus('salvo na nuvem');
+      if(btn){var o=btn.textContent;btn.textContent='Salvo';setTimeout(function(){btn.textContent=o;},1400);}
+    }catch(e){ setStatus('erro ao salvar - tente de novo'); }
     finally{ if(btn)btn.disabled=false; }
   };
 
@@ -1541,136 +1619,231 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progre
   }
 
   function applyUser(user){
+    window._rawUser=user;
     window.currentUser={id:user.id, nome:nomeFromUser(user)};
     var w=document.getElementById('whoami'); if(w)w.textContent=window.currentUser.nome;
+    applyProjectName(projectFromUser(user));
     setStatus('salvo na nuvem');
+    var ab=document.getElementById('ajustesBtn');if(ab)ab.style.display='';
   }
 
   async function afterAuth(user){
-    // Cancela qualquer save pendente do usuário anterior para evitar race condition
     clearTimeout(cloudTimer); cloudTimer=null;
     applyUser(user);
-    try{
-      await applyCloud();
-      // Persiste imediatamente no localStorage para evitar que dados do usuário
-      // anterior contaminem caso a pagina feche antes do proximo save()
-      _origSave();
-    }catch(e){ console.error('carregar progresso',e); }
+    try{ await applyCloud(); _origSave(); }catch(e){ console.error('carregar progresso',e); }
     var temNome=user.user_metadata&&user.user_metadata.display_name;
-    if(!temNome){ showNomeStep(); } else { closeOverlay(); }
+    if(!temNome){ showStep('nomeStep'); }
+    else{ closeOverlay(); }
   }
 
   function closeOverlay(){
-    document.getElementById('loginOverlay').style.display='none';
+    var lo=document.getElementById('loginOverlay');if(lo)lo.style.display='none';
     try{ renderOverview(); }catch(e){}
   }
 
-  function showNomeStep(){
-    document.getElementById('loginForm').style.display='none';
-    document.getElementById('nomeStep').style.display='block';
-    setTimeout(function(){ var n=document.getElementById('nomeInput'); if(n)n.focus(); },100);
+  // ── Fluxo Cadastro (OTP) ──────────────────────────────────────────────────────
+  async function doStartCadastro(){
+    var email=getEmail().trim();
+    if(!email||!email.includes('@')){ setMsg('loginMsg','Digite um e-mail válido.'); return; }
+    if(!sb){ setMsg('loginMsg','Sem conexão. Verifique a internet.'); return; }
+    setMsg('loginMsg','Enviando código...');
+    var r=await sb.auth.signInWithOtp({email:email, options:{shouldCreateUser:true}});
+    if(r.error){ setMsg('loginMsg',r.error.message||'Erro ao enviar código.'); return; }
+    setMsg('loginMsg','');
+    var lbl=document.getElementById('otpEmailLabel');if(lbl)lbl.textContent=email;
+    var inp=document.getElementById('otpInput');if(inp){inp.value='';inp.focus();}
+    showStep('authStepOtp');
   }
 
-  async function doSaveName(){
-    var input=document.getElementById('nomeInput');
-    var nome=(input&&input.value.trim())||'';
+  async function doVerifyOtp(){
+    var email=getEmail().trim();
+    var token=(document.getElementById('otpInput')||{}).value||'';
+    token=token.trim().replace(/\D/g,'');
+    if(token.length!==6){ setMsg('otpMsg','Digite os 6 dígitos do código.'); return; }
+    if(!sb){ setMsg('otpMsg','Sem conexão.'); return; }
+    setMsg('otpMsg','Verificando...');
+    var r=await sb.auth.verifyOtp({email:email, token:token, type:'email'});
+    if(r.error){
+      // Tentar com type:'signup' como fallback
+      var r2=await sb.auth.verifyOtp({email:email, token:token, type:'signup'});
+      if(r2.error){ setMsg('otpMsg','Código inválido ou expirado. Tente reenviar.'); return; }
+      r=r2;
+    }
+    setMsg('otpMsg','');
+    var user=r.data&&r.data.user;
+    if(!user){ setMsg('otpMsg','Erro de verificação. Tente novamente.'); return; }
+    // Verificado — se é novo usuário (sem nome), mostra tela de perfil
+    var temNome=user.user_metadata&&user.user_metadata.display_name;
+    if(!temNome){
+      var pi=document.getElementById('profileNome');if(pi)pi.focus();
+      showStep('authStepProfile');
+    } else {
+      await afterAuth(user);
+    }
+  }
+
+  async function doResendOtp(){
+    var email=getEmail().trim();
+    if(!email||!sb){ return; }
+    setMsg('otpMsg','Reenviando...');
+    var r=await sb.auth.signInWithOtp({email:email,options:{shouldCreateUser:true}});
+    if(r.error){ setMsg('otpMsg','Erro ao reenviar. Tente novamente.'); return; }
+    setMsg('otpMsg','Código reenviado! Verifique o e-mail.');
+  }
+
+  async function doSaveProfile(){
+    var password=(document.getElementById('profilePassword')||{}).value||'';
+    var nome=(document.getElementById('profileNome')||{}).value.trim()||'';
+    var projeto=(document.getElementById('profileProjeto')||{}).value.trim()||'';
+    if(password.length<6){ setMsg('profileMsg','Senha deve ter ao menos 6 caracteres.'); return; }
+    if(!nome){ setMsg('profileMsg','Digite como quer ser chamado.'); return; }
+    setMsg('profileMsg','Salvando...');
+    if(!sb){ setMsg('profileMsg','Sem conexão.'); return; }
+    var meta={display_name:nome};
+    if(projeto)meta.project_name=projeto;
+    var r=await sb.auth.updateUser({password:password, data:meta});
+    if(r.error){ setMsg('profileMsg',r.error.message||'Erro ao salvar perfil.'); return; }
+    setMsg('profileMsg','');
+    await afterAuth(r.data.user);
+  }
+
+  // ── Fluxo Login (senha) ───────────────────────────────────────────────────────
+  function doStartLogin(){
+    var email=getEmail().trim();
+    if(!email||!email.includes('@')){ setMsg('loginMsg','Digite um e-mail válido.'); return; }
+    var inp=document.getElementById('loginNomeLogin');if(inp)inp.value=email;
+    var pw=document.getElementById('loginPin');if(pw){pw.value='';pw.focus();}
+    setMsg('loginMsg2','');
+    showStep('authStepLogin');
+  }
+
+  async function doLogin(){
+    var email=getEmail().trim();
+    var senha=(document.getElementById('loginPin')||{}).value||'';
+    setMsg('loginMsg2','Entrando...');
+    if(!sb){ setMsg('loginMsg2','Sem conexão. Verifique a internet.'); return; }
+    var r=await sb.auth.signInWithPassword({email:email, password:senha});
+    if(r.error){ setMsg('loginMsg2','E-mail ou senha incorretos.'); return; }
+    await afterAuth(r.data.user);
+  }
+
+  // ── Passo compat: nome de exibição (usuários antigos) ─────────────────────────
+  async function doSaveNomeLegacy(){
+    var nome=(document.getElementById('nomeInput')||{}).value.trim()||'';
+    var projeto=(document.getElementById('nomeProjetoInput')||{}).value.trim()||'';
     if(!nome){ setMsg('nomeMsg','Digite um nome para continuar.'); return; }
     setMsg('nomeMsg','Salvando...');
+    var meta={display_name:nome};
+    if(projeto)meta.project_name=projeto;
     try{
-      if(sb){ await sb.auth.updateUser({data:{display_name:nome}}); }
+      if(sb){ await sb.auth.updateUser({data:meta}); }
       window.currentUser.nome=nome;
       var w=document.getElementById('whoami'); if(w)w.textContent=nome;
+      if(projeto)applyProjectName(projeto);
       closeOverlay();
-    } catch(e){ setMsg('nomeMsg','Erro ao salvar nome. Tente de novo.'); }
+    } catch(e){ setMsg('nomeMsg','Erro ao salvar. Tente de novo.'); }
   }
 
-  async function doLogin(email,senha){
-    setMsg('loginMsg','Entrando...');
-    if(!sb){ setMsg('loginMsg','Sem conexao. Verifique a internet.'); return; }
-    var r=await sb.auth.signInWithPassword({email:email, password:senha});
-    if(r.error){ setMsg('loginMsg','E-mail ou senha incorretos.'); return; }
-    await afterAuth(r.data.user);
-  }
+  // ── Wiring ────────────────────────────────────────────────────────────────────
+  function wireAuth(){
+    // Step 1
+    var btnCad=document.getElementById('authBtnCadastrar');
+    var btnEnt=document.getElementById('authBtnEntrar');
+    var emailIn=document.getElementById('loginNome');
+    if(btnCad)btnCad.onclick=doStartCadastro;
+    if(btnEnt)btnEnt.onclick=doStartLogin;
+    if(emailIn)emailIn.addEventListener('keydown',function(e){if(e.key==='Enter')doStartCadastro();});
 
-  async function doSignUp(email,senha){
-    setMsg('loginMsg','Criando conta...');
-    if(!sb){ setMsg('loginMsg','Sem conexao. Verifique a internet.'); return; }
-    if(senha.length<6){ setMsg('loginMsg','Senha deve ter ao menos 6 caracteres.'); return; }
-    var r=await sb.auth.signUp({email:email, password:senha});
-    if(r.error){ setMsg('loginMsg',r.error.message||'Erro ao criar conta.'); return; }
-    if(!r.data.session){ setMsg('loginMsg','Verifique seu e-mail para confirmar o cadastro.'); return; }
-    await afterAuth(r.data.user);
-  }
+    // Step 2a: login
+    var loginBtn=document.getElementById('loginBtn');
+    var loginPin=document.getElementById('loginPin');
+    var backLogin=document.getElementById('authBackLogin');
+    if(loginBtn)loginBtn.onclick=doLogin;
+    if(loginPin)loginPin.addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
+    if(backLogin)backLogin.onclick=function(e){e.preventDefault();showStep('authStepEmail');};
 
-  var modoAtual='login';
-  function setModo(modo){
-    modoAtual=modo;
-    var sub=document.getElementById('loginSubtitle');
-    var btn=document.getElementById('loginBtn');
-    var tog=document.getElementById('toggleModeBtn');
-    var pin=document.getElementById('loginPin');
-    if(modo==='cadastro'){
-      if(sub)sub.textContent='Crie sua conta gratuitamente';
-      if(btn)btn.textContent='Cadastrar-se';
-      if(tog)tog.textContent='Entrar';
-      if(pin)pin.setAttribute('autocomplete','new-password');
-    } else {
-      if(sub)sub.textContent='Entre para ver e salvar seu progresso';
-      if(btn)btn.textContent='Entrar';
-      if(tog)tog.textContent='Cadastrar-se';
-      if(pin)pin.setAttribute('autocomplete','current-password');
-    }
-    setMsg('loginMsg','');
-  }
+    // Step 2b: OTP
+    var otpVerify=document.getElementById('otpVerifyBtn');
+    var otpResend=document.getElementById('otpResendBtn');
+    var otpBack=document.getElementById('otpBackBtn');
+    var otpIn=document.getElementById('otpInput');
+    if(otpVerify)otpVerify.onclick=doVerifyOtp;
+    if(otpResend)otpResend.onclick=function(e){e.preventDefault();doResendOtp();};
+    if(otpBack)otpBack.onclick=function(e){e.preventDefault();showStep('authStepEmail');};
+    if(otpIn)otpIn.addEventListener('keydown',function(e){if(e.key==='Enter')doVerifyOtp();});
 
-  function wireLogin(){
-    var emailEl=document.getElementById('loginNome');
-    var senhaEl=document.getElementById('loginPin');
-    var btn=document.getElementById('loginBtn');
-    var tog=document.getElementById('toggleModeBtn');
+    // Step 3: profile
+    var profileSave=document.getElementById('profileSaveBtn');
+    var profilePw=document.getElementById('profilePassword');
+    if(profileSave)profileSave.onclick=doSaveProfile;
+    if(profilePw)profilePw.addEventListener('keydown',function(e){if(e.key==='Enter')doSaveProfile();});
+
+    // Legacy nome step
     var nomeBtn=document.getElementById('nomeBtn');
     var nomeInput=document.getElementById('nomeInput');
+    if(nomeBtn)nomeBtn.onclick=doSaveNomeLegacy;
+    if(nomeInput)nomeInput.addEventListener('keydown',function(e){if(e.key==='Enter')doSaveNomeLegacy();});
 
-    if(btn) btn.onclick=function(){
-      var email=(emailEl&&emailEl.value.trim())||'';
-      var senha=(senhaEl&&senhaEl.value.trim())||'';
-      if(modoAtual==='cadastro') doSignUp(email,senha);
-      else doLogin(email,senha);
-    };
-    if(senhaEl) senhaEl.addEventListener('keydown',function(e){ if(e.key==='Enter'&&btn)btn.click(); });
-    if(tog) tog.addEventListener('click',function(e){
-      e.preventDefault();
-      setModo(modoAtual==='login'?'cadastro':'login');
-    });
-    if(nomeBtn) nomeBtn.onclick=doSaveName;
-    if(nomeInput) nomeInput.addEventListener('keydown',function(e){ if(e.key==='Enter')doSaveName(); });
+    // Ajustes
+    var ajBtn=document.getElementById('ajustesBtn');
+    if(ajBtn)ajBtn.onclick=window.openAjustes;
+    var ajSave=document.getElementById('ajustesSaveBtn');
+    if(ajSave)ajSave.onclick=window.saveAjustes;
+    var ajNi=document.getElementById('ajustesNome');
+    if(ajNi)ajNi.addEventListener('keydown',function(e){if(e.key==='Enter')window.saveAjustes();});
+    var ajModal=document.getElementById('ajustesModal');
+    if(ajModal)ajModal.addEventListener('click',function(e){if(e.target===ajModal)window.closeAjustes();});
 
+    // Save + Logout
     var sv=document.getElementById('saveBtn'); if(sv)sv.onclick=window.salvarAgora;
     var out=document.getElementById('logoutBtn');
     if(out) out.onclick=async function(){
-      // Cancela saves pendentes para não salvar estado deste usuario depois do logout
       clearTimeout(cloudTimer); cloudTimer=null;
       try{ if(sb) await sb.auth.signOut(); }catch(e){}
       window.currentUser=null;
-      // Limpa estado em memoria e localStorage para não contaminar proximo login
       state.done={};state.pace={};state.startDate=APP.startDate;
       state.srs={};state.pos={};state.started={};state.stats=null;
       _origSave();
-      var loginForm=document.getElementById('loginForm');
-      var nomeStep=document.getElementById('nomeStep');
-      if(loginForm)loginForm.style.display='block';
-      if(nomeStep)nomeStep.style.display='none';
-      if(senhaEl)senhaEl.value='';
+      applyProjectName('Minha Jornada');
+      var ab=document.getElementById('ajustesBtn');if(ab)ab.style.display='none';
+      window._rawUser=null;
+      var lo=document.getElementById('loginOverlay');if(lo)lo.style.display='flex';
+      var pin=document.getElementById('loginPin');if(pin)pin.value='';
       setMsg('loginMsg','');
-      setModo('login');
-      document.getElementById('loginOverlay').style.display='flex';
+      showStep('authStepEmail');
     };
   }
 
-  if(document.getElementById('loginBtn')) wireLogin();
-  else document.addEventListener('DOMContentLoaded',wireLogin);
+  // ── Modal Ajustes ─────────────────────────────────────────────────────────────
+  window.openAjustes=function(){
+    var u=window._rawUser;
+    var ni=document.getElementById('ajustesNome');
+    var pi=document.getElementById('ajustesProjeto');
+    if(ni)ni.value=(u&&u.user_metadata&&u.user_metadata.display_name)||'';
+    if(pi)pi.value=(u&&u.user_metadata&&u.user_metadata.project_name)||'';
+    setMsg('ajustesMsg','');
+    var m=document.getElementById('ajustesModal');if(m)m.style.display='flex';
+    if(ni)ni.focus();
+  };
+  window.closeAjustes=function(){
+    var m=document.getElementById('ajustesModal');if(m)m.style.display='none';
+  };
+  window.saveAjustes=async function(){
+    var nome=(document.getElementById('ajustesNome')||{}).value.trim();
+    var projeto=(document.getElementById('ajustesProjeto')||{}).value.trim();
+    if(!nome){setMsg('ajustesMsg','Nome não pode ser vazio.');return;}
+    if(!sb){setMsg('ajustesMsg','Sem conexão.');return;}
+    setMsg('ajustesMsg','Salvando...');
+    var meta={display_name:nome};
+    if(projeto)meta.project_name=projeto;
+    var r=await sb.auth.updateUser({data:meta});
+    if(r.error){setMsg('ajustesMsg',r.error.message||'Erro ao salvar.');return;}
+    applyUser(r.data.user);
+    setMsg('ajustesMsg','✓ Salvo!');
+    setTimeout(window.closeAjustes,900);
+  };
 
-  // API publica para outros modulos (ex: painel de ajustes)
+  // API pública para atualizar nome/projeto
   window.updateDisplayName=async function(nome){
     if(!nome||!sb) return false;
     try{
@@ -1680,8 +1853,19 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progre
       return true;
     }catch(e){ return false; }
   };
+  window.updateProjectName=async function(nome){
+    if(!sb) return false;
+    try{
+      await sb.auth.updateUser({data:{project_name:nome}});
+      applyProjectName(nome);
+      return true;
+    }catch(e){ return false; }
+  };
 
-  // Restaurar sessao persistida
+  if(document.getElementById('authBtnCadastrar')) wireAuth();
+  else document.addEventListener('DOMContentLoaded',wireAuth);
+
+  // ── Restaurar sessão persistida ───────────────────────────────────────────────
   (async function(){
     if(!sb) return;
     clearTimeout(cloudTimer); cloudTimer=null;
@@ -1689,11 +1873,8 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progre
     if(r.data&&r.data.session&&r.data.session.user){
       var user=r.data.session.user;
       applyUser(user);
-      try{
-        await applyCloud();
-        _origSave(); // persiste estado da nuvem no localStorage imediatamente
-      }catch(e){ console.error('restaurar progresso',e); }
-      document.getElementById('loginOverlay').style.display='none';
+      try{ await applyCloud(); _origSave(); }catch(e){ console.error('restaurar progresso',e); }
+      var lo=document.getElementById('loginOverlay');if(lo)lo.style.display='none';
       try{ renderOverview(); }catch(e){}
       setStatus('salvo na nuvem');
     }
