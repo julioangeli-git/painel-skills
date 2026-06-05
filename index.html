@@ -1123,7 +1123,7 @@ function srsCardHtml(id){
     +'<div><div style="font-weight:700">🎴 Revisar ('+n+' cartões)</div><div style="font-size:11px;opacity:.65">revisão por cartões · clique para abrir</div></div>'
     +'<div style="text-align:right"><div style="font-weight:700;font-size:18px">'+pct+'%</div><div style="font-size:10px;opacity:.6">dominado</div></div></div>';
 }
-var _srsQueue=[],_srsIdx=0,_srsTopic=null,_srsShown=false;
+var _srsQueue=[],_srsIdx=0,_srsTopic=null,_srsShown=false,_srsRetries={};
 function ensureSrsView(){
   if(document.getElementById('srsView'))return;
   var v=document.createElement('div');v.id='srsView';v.style.display='none';
@@ -1548,6 +1548,17 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progre
 
   if(document.getElementById('loginBtn')) wireLogin();
   else document.addEventListener('DOMContentLoaded',wireLogin);
+
+  // ── API pública para outros módulos (ex: painel de ajustes) ──────────────
+  window.updateDisplayName=async function(nome){
+    if(!nome||!sb) return false;
+    try{
+      await sb.auth.updateUser({data:{display_name:nome}});
+      if(window.currentUser) window.currentUser.nome=nome;
+      var w=document.getElementById('whoami'); if(w)w.textContent=nome;
+      return true;
+    }catch(e){ return false; }
+  };
 
   (async function(){
     if(!sb) return;
@@ -2131,16 +2142,23 @@ function srsApplyTitle(t){
   try{localStorage.setItem('painelTitle',t||'');}catch(e){}
 }
 function srsOpenConfig(){
-  loadEmailState();
   var ov=document.getElementById('cfgOverlay');
   if(!ov){ov=document.createElement('div');ov.id='cfgOverlay';ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:3000;display:flex;align-items:center;justify-content:center';ov.onclick=function(e){if(e.target===ov)ov.style.display='none';};document.body.appendChild(ov);}
   var cur='';try{cur=localStorage.getItem('painelTitle')||'';}catch(e){}
   var curDate=state&&state.startDate?state.startDate:'';
   var sw=Object.keys(THEMES).map(function(n){var c=THEMES[n]['--bg']||'#f2ead8';var a=THEMES[n]['--terra']||'#b85a28';return '<button onclick="srsApplyTheme(\''+srsJsq(n)+'\')" style="cursor:pointer;border:1px solid #ccc;border-radius:10px;padding:8px 10px;margin:4px;background:'+c+';color:'+(n==='Noite'?'#f2ecdd':'#1c1408')+';font-weight:600;font-size:13px"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+a+';margin-right:6px"></span>'+srsEsc(n)+'</button>';}).join('');
   var isFirst=!localStorage.getItem('painelAjustesShown');
+  var nomeAtual=(window.currentUser&&window.currentUser.nome)||'';
   ov.innerHTML='<div onclick="event.stopPropagation()" style="background:var(--surface,#fdf9f2);color:var(--ink,#1c1408);border-radius:16px;padding:24px;max-width:480px;width:94%;max-height:92vh;overflow-y:auto;box-shadow:0 12px 44px rgba(0,0,0,.3)">'
     +(isFirst?'<div style="font-size:13px;color:var(--terra,#b85a28);margin-bottom:14px;padding:10px 14px;background:rgba(184,90,40,.08);border-radius:10px;border-left:3px solid var(--terra,#b85a28)">👋 Bem-vindo! Personalize o painel antes de começar.</div>':'')
     +'<div style="font-weight:700;font-size:18px;margin-bottom:16px">⚙ Ajustes</div>'
+    +'<label style="font-size:13px;font-weight:600">Como sou chamado</label>'
+    +'<div style="display:flex;gap:6px;margin:4px 0 14px">'
+    +'<input id="cfgDisplayName" value="'+srsEsc(nomeAtual)+'" placeholder="Seu nome ou apelido" style="flex:1;padding:9px;border:1px solid #ccc;border-radius:8px;font-size:14px">'
+    +'<button class="btn" onclick="cfgSaveName()">Salvar</button>'
+    +'</div>'
+    +'<div id="cfgNameMsg" style="font-size:12px;color:#2e7d32;margin-top:-10px;margin-bottom:10px;min-height:16px"></div>'
+    +'<hr style="border:none;border-top:1px solid var(--border,#e0d0b0);margin:4px 0 14px">'
     +'<label style="font-size:13px;font-weight:600">Data de início do projeto</label>'
     +'<input type="date" id="cfgStartDate" value="'+curDate+'" style="width:100%;padding:8px;margin:4px 0 14px;border:1px solid #ccc;border-radius:8px;font-size:14px">'
     +'<label style="font-size:13px;font-weight:600">Nome do seu projeto</label>'
@@ -2150,13 +2168,6 @@ function srsOpenConfig(){
     +'<div id="avatarGrid" style="display:flex;flex-wrap:wrap;margin-bottom:16px">'+srsAvatarHtml()+'</div>'
     +'<div style="font-size:13px;font-weight:600;margin-bottom:8px">Tema de cores</div>'
     +'<div style="display:flex;flex-wrap:wrap;margin-bottom:4px">'+sw+'</div>'
-    +'<hr style="border:none;border-top:1px solid var(--border,#e0d0b0);margin:18px 0">'
-    +'<div style="font-size:13px;font-weight:600;margin-bottom:8px">E-mail e segurança</div>'
-    +'<div style="margin-bottom:10px">'+emailStatusHtml()+'</div>'
-    +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px">'
-    +'<button class="btn" onclick="srsOpenEmailRegister()">📧 '+((_emailState.email&&_emailState.verified)?'Alterar e-mail':'Cadastrar e-mail')+'</button>'
-    +((_emailState.verified)?'<button class="btn" onclick="srsOpenChangePIN()">🔑 Trocar senha</button>':'')
-    +'</div>'
     +'<div style="text-align:right;margin-top:18px">'
     +'<button class="btn" style="background:var(--terra,#b85a28);color:#fff;border:none;font-weight:700" onclick="srsCloseAjustes()">Pronto ✓</button>'
     +'</div></div>';
@@ -2189,6 +2200,24 @@ function srsRender(){
     return;
   }
   var c=_srsQueue[_srsIdx];
+
+  // ── Cartão de contexto (frase com a palavra após 2º erro) ─────────────────
+  if(c.type==='sentence'){
+    var word=c._forCard?srsEsc(typeof srsApplyPlaceholders==='function'?srsApplyPlaceholders(c._forCard.f):c._forCard.f):'';
+    var phrase=srsEsc(typeof srsApplyPlaceholders==='function'?srsApplyPlaceholders(c.f):c.f);
+    var trans=srsEsc(typeof srsApplyPlaceholders==='function'?srsApplyPlaceholders(c.b):c.b);
+    if(word){var rx=new RegExp('('+word.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi');phrase=phrase.replace(rx,'<b style="color:#b85a28">$1</b>');}
+    box.innerHTML='<div style="text-align:center;padding:20px 10px">'
+      +'<div style="font-size:11px;font-weight:700;color:#b85a28;letter-spacing:.08em;margin-bottom:14px;text-transform:uppercase">💡 Veja como a palavra é usada</div>'
+      +'<div style="font-size:22px;font-weight:600;line-height:1.5;margin-bottom:10px">'+phrase+'</div>'
+      +'<div style="font-size:15px;opacity:.65;font-style:italic;margin-bottom:16px">'+trans+'</div>'
+      +'<button class="btn" style="font-size:14px" onclick="srsSpeakKaraoke(''+srsJsq(c.f)+'','')">🔊 ouvir</button>'
+      +'</div>';
+    btns.innerHTML='<button class="btn" style="background:#2e7d32;color:#fff" onclick="srsNextSentence()">Entendi →</button>';
+    setTimeout(function(){srsSpeakKaraoke(c.f,'');},300);
+    return;
+  }
+
   var cf=typeof srsApplyPlaceholders==='function'?srsApplyPlaceholders(c.f):c.f;
   var cb=typeof srsApplyPlaceholders==='function'?srsApplyPlaceholders(c.b):c.b;
   var pron=srsPronFor(cf,_srsTopic)||cf.replace(/[.,?!]/g,'').split(/\s+/).filter(Boolean).join('-');
@@ -2199,8 +2228,9 @@ function srsRender(){
   var img=c.img?'<img src="'+srsEsc(c.img)+'" alt="" style="max-width:90px;max-height:90px;border-radius:10px;margin-bottom:10px">':'';
   var flagIT='<img src="https://flagcdn.com/w40/it.png" alt="IT" style="width:28px;border-radius:3px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,.2)">';
   var flagBR='<img src="https://flagcdn.com/w40/br.png" alt="BR" style="width:28px;border-radius:3px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.2)">';
+  var retryBadge=(_srsRetries[c.key]>=1)?'<div style="font-size:11px;color:#c0392b;margin-bottom:6px">🔁 repetindo esta sessão</div>':'';
   box.innerHTML='<div class="flip" id="srsFlip" onclick="srsShow()"><div class="flip-in">'
-    +'<div class="face front">'+flagIT+img
+    +'<div class="face front">'+flagIT+img+retryBadge
     +'<div style="font-size:27px;font-weight:700">'+srsEsc(cf)+'</div>'
     +pronHtml
     +'<button class="btn" style="margin-top:14px;font-size:14px" onclick="event.stopPropagation();srsOuvir()">🔊 ouvir</button>'
@@ -2211,6 +2241,7 @@ function srsRender(){
   btns.innerHTML='';
   setTimeout(function(){srsSpeakKaraoke(cf,pron);},280);
 }
+function srsNextSentence(){ _srsIdx++; srsRender(); }
 function srsOuvir(){
   var c=_srsQueue[_srsIdx];if(!c)return;
   var cf=typeof srsApplyPlaceholders==='function'?srsApplyPlaceholders(c.f):c.f;
@@ -2282,7 +2313,7 @@ function openReview(id,deck){
   _srsQueue=due.slice(0,BATCH);
   if(_srsQueue.length<BATCH)_srsQueue=_srsQueue.concat(newCards.slice(0,BATCH-_srsQueue.length));
   if(!_srsQueue.length)_srsQueue=cs.slice(0,BATCH);
-  _srsIdx=0;
+  _srsIdx=0;_srsRetries={};
   var detail=document.getElementById('detail');if(detail)detail.style.display='none';
   var ov=document.getElementById('overview');if(ov)ov.style.display='none';
   document.getElementById('srsView').style.display='block';
@@ -2293,22 +2324,66 @@ function openReview(id,deck){
   window.scrollTo({top:0,behavior:'smooth'});
   if(typeof srsRender==='function')srsRender();
 }
+/* Busca frase contextual contendo a palavra-alvo */
+function findContextSentence(card,topicId){
+  var d=RICH[topicId]||{};
+  var word=(card.f||'').toLowerCase().replace(/[.,!?]/g,'').trim();
+  var phrases=d.phrases||[];
+  for(var i=0;i<phrases.length;i++){
+    var ph=typeof srsApplyPlaceholders==='function'?srsApplyPlaceholders(phrases[i][0]):phrases[i][0];
+    if(ph.toLowerCase().includes(word)){
+      return {type:'sentence',f:ph,b:(typeof srsApplyPlaceholders==='function'?srsApplyPlaceholders(phrases[i][1]):phrases[i][1]),key:card.key+'::ctx',_forCard:card,img:null};
+    }
+  }
+  return null;
+}
+
 /* SM-2 mais exigente para frases: ao dar Easy, trata como Good (intervalo menor) */
 var _origSrsGrade=typeof srsGrade==='function'?srsGrade:null;
 function srsAns(g){
   var c=_srsQueue[_srsIdx];
+  if(!c)return;
   // Frases exigem mais: "fácil" vira "bom", "bom" vira "difícil"
   var actualG=g;
-  if(_srsDeck==='phrases'||c.f.includes(' ')){
+  if(_srsDeck==='phrases'||(c.f&&c.f.includes(' '))){
     if(g==='easy')actualG='good';
     else if(g==='good')actualG='hard';
   }
-  srsGrade(c.key,actualG);_srsIdx++;srsRender();
+  if(g==='again'){
+    var retries=(_srsRetries[c.key]||0);
+    if(retries===0){
+      // 1º erro: recoloca ao fim da fila atual
+      _srsRetries[c.key]=1;
+      _srsQueue.push(c);
+    } else if(retries===1){
+      // 2º erro: insere cartão de contexto + original logo após o atual
+      _srsRetries[c.key]=2;
+      var ctx=findContextSentence(c,_srsTopic);
+      if(ctx){ _srsQueue.splice(_srsIdx+1,0,ctx,c); }
+      else { _srsQueue.push(c); }
+    }
+    // 3º+ erro: sem requeue — apenas grava o "again"
+    srsGrade(c.key,actualG);
+  } else {
+    delete _srsRetries[c.key];
+    srsGrade(c.key,actualG);
+  }
+  _srsIdx++;srsRender();
 }
 
 function srsCloseAjustes(){
   try{localStorage.setItem('painelAjustesShown','1');}catch(e){}
   var ov=document.getElementById('cfgOverlay');if(ov)ov.style.display='none';
+}
+function cfgSaveName(){
+  var input=document.getElementById('cfgDisplayName');
+  var nome=input&&input.value.trim();
+  var msg=document.getElementById('cfgNameMsg');
+  if(!nome){if(msg)msg.textContent='Digite um nome.';return;}
+  if(msg)msg.textContent='Salvando...';
+  var fn=typeof window.updateDisplayName==='function'?window.updateDisplayName:null;
+  if(fn){fn(nome).then(function(ok){if(msg)msg.textContent=ok?'Nome salvo!':'Erro ao salvar.';setTimeout(function(){if(msg)msg.textContent='';},2500);});}
+  else{if(window.currentUser)window.currentUser.nome=nome;var w=document.getElementById('whoami');if(w)w.textContent=nome;if(msg)msg.textContent='Nome salvo!';setTimeout(function(){if(msg)msg.textContent='';},2500);}
 }
 function srsInitUI(){
   var anchor=document.getElementById('expBtn')||document.getElementById('logoutBtn');
@@ -3005,227 +3080,6 @@ async function sendEmailCode(toEmail, code, nome){
   });
 }
 
-/* Estado local do e-mail (carregado ao abrir Ajustes) */
-var _emailState = {email:null, verified:false, loaded:false};
-
-async function loadEmailState(){
-  if(!currentUser||!sb)return;
-  try{
-    var r=await sb.rpc('get_user_email',{p_user_id:currentUser.id});
-    if(r.data&&r.data.length>0){
-      _emailState.email=r.data[0].email||null;
-      _emailState.verified=!!r.data[0].email_verified;
-    }
-    _emailState.loaded=true;
-  }catch(e){_emailState.loaded=true;}
-}
-
-function emailStatusHtml(){
-  if(!currentUser)return '<div style="font-size:12px;color:#888">Faça login para gerenciar e-mail.</div>';
-  if(!_emailState.loaded)return '<div style="font-size:12px;opacity:.6">Carregando…</div>';
-  if(_emailState.email&&_emailState.verified){
-    return '<div style="font-size:13px;color:#4f7a3a">✓ '+srsEsc(_emailState.email)+' verificado</div>';
-  } else if(_emailState.email&&!_emailState.verified){
-    return '<div style="font-size:13px;color:#e8a020">⚡ '+srsEsc(_emailState.email)+' — aguardando verificação</div>';
-  }
-  return '<div style="font-size:13px;color:#888">Nenhum e-mail cadastrado</div>';
-}
-
-/* ── Fluxo: cadastrar e-mail ── */
-function srsOpenEmailRegister(){
-  var cur=_emailState.email||'';
-  var ov=document.getElementById('cfgOverlay');if(!ov)return;
-  ov.innerHTML='<div onclick="event.stopPropagation()" style="background:var(--surface,#fdf9f2);color:var(--ink,#1c1408);border-radius:16px;padding:24px;max-width:420px;width:92%;box-shadow:0 12px 44px rgba(0,0,0,.3)">'
-    +'<div style="font-weight:700;font-size:17px;margin-bottom:14px">📧 Cadastrar e-mail</div>'
-    +'<label style="font-size:13px;font-weight:600">Seu e-mail</label>'
-    +'<input id="emailInput" type="email" value="'+srsEsc(cur)+'" placeholder="nome@email.com" style="width:100%;padding:9px;margin:6px 0 12px;border:1px solid #ccc;border-radius:8px;font-size:14px">'
-    +'<div id="emailMsg" style="font-size:12px;min-height:18px;margin-bottom:10px"></div>'
-    +'<div style="display:flex;gap:8px;justify-content:flex-end">'
-    +'<button class="btn" onclick="srsOpenConfig()">← Voltar</button>'
-    +'<button class="btn" style="background:#1c6b8c;color:#fff;border:none;font-weight:700" onclick="srsSubmitEmail()">Enviar código</button>'
-    +'</div></div>';
-  ov.style.display='flex';
-}
-
-async function srsSubmitEmail(){
-  var input=document.getElementById('emailInput');
-  var msg=document.getElementById('emailMsg');
-  if(!input||!msg)return;
-  var email=input.value.trim();
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){msg.style.color='#c0212e';msg.textContent='E-mail inválido.';return;}
-  msg.style.color='#888';msg.textContent='Enviando código…';
-  var code=genCode();
-  var expires=new Date(Date.now()+15*60*1000).toISOString();
-  try{
-    await sb.rpc('set_email',{p_user_id:currentUser.id,p_email:email,p_code:code,p_expires:expires});
-    var result=await sendEmailCode(email,code,currentUser.nome);
-    if(result&&result.startsWith('dev:')){
-      // Dev mode: show code directly
-      msg.style.color='#e8a020';
-      msg.textContent='Modo dev — código: '+result.split(':')[1]+' (EmailJS não configurado)';
-    } else {
-      msg.style.color='#4f7a3a';msg.textContent='Código enviado para '+email;
-    }
-    setTimeout(function(){srsOpenEmailVerify(email,result&&result.startsWith('dev:')?result.split(':')[1]:null);},1200);
-  }catch(e){msg.style.color='#c0212e';msg.textContent='Erro: '+(e&&e.message?e.message:JSON.stringify(e));console.error('set_email error',e);}
-}
-
-function srsOpenEmailVerify(email, devCode){
-  var ov=document.getElementById('cfgOverlay');if(!ov)return;
-  var devHint=devCode?'<div style="background:#fff3cd;border-radius:8px;padding:8px;font-size:12px;margin-bottom:8px">Modo dev — código: <b>'+srsEsc(devCode)+'</b></div>':'';
-  ov.innerHTML='<div onclick="event.stopPropagation()" style="background:var(--surface,#fdf9f2);color:var(--ink,#1c1408);border-radius:16px;padding:24px;max-width:420px;width:92%;box-shadow:0 12px 44px rgba(0,0,0,.3)">'
-    +'<div style="font-weight:700;font-size:17px;margin-bottom:8px">🔐 Verificar e-mail</div>'
-    +'<div style="font-size:13px;opacity:.7;margin-bottom:14px">Insira o código de 6 dígitos enviado para <b>'+srsEsc(email)+'</b></div>'
-    +devHint
-    +'<input id="codeInput" type="number" inputmode="numeric" maxlength="6" placeholder="000000" style="width:100%;padding:12px;margin-bottom:12px;border:1px solid #ccc;border-radius:8px;font-size:20px;text-align:center;letter-spacing:4px">'
-    +'<div id="verifyMsg" style="font-size:12px;min-height:18px;margin-bottom:10px"></div>'
-    +'<div style="display:flex;gap:8px;justify-content:flex-end">'
-    +'<button class="btn" onclick="srsOpenEmailRegister()">← Voltar</button>'
-    +'<button class="btn" style="background:#4f7a3a;color:#fff;border:none;font-weight:700" onclick="srsVerifyCode()">Verificar</button>'
-    +'</div></div>';
-  ov.style.display='flex';
-  setTimeout(function(){var c=document.getElementById('codeInput');if(c)c.focus();},100);
-}
-
-async function srsVerifyCode(){
-  var input=document.getElementById('codeInput');
-  var msg=document.getElementById('verifyMsg');
-  if(!input||!msg)return;
-  var code=input.value.trim();
-  if(code.length!==6){msg.style.color='#c0212e';msg.textContent='Digite os 6 dígitos.';return;}
-  msg.style.color='#888';msg.textContent='Verificando…';
-  try{
-    var r=await sb.rpc('verify_email',{p_user_id:currentUser.id,p_code:code});
-    if(r.data===true){
-      _emailState.verified=true;
-      msg.style.color='#4f7a3a';msg.textContent='✓ E-mail verificado com sucesso!';
-      setTimeout(srsOpenConfig,1200);
-    } else {
-      msg.style.color='#c0212e';msg.textContent='Código incorreto ou expirado.';
-    }
-  }catch(e){msg.style.color='#c0212e';msg.textContent='Erro. Tente novamente.';}
-}
-
-/* ── Fluxo: trocar senha (PIN) ── */
-function srsOpenChangePIN(){
-  if(!_emailState.verified){alert('Cadastre e verifique um e-mail antes de trocar a senha.');return;}
-  var ov=document.getElementById('cfgOverlay');if(!ov)return;
-  ov.innerHTML='<div onclick="event.stopPropagation()" style="background:var(--surface,#fdf9f2);color:var(--ink,#1c1408);border-radius:16px;padding:24px;max-width:420px;width:92%;box-shadow:0 12px 44px rgba(0,0,0,.3)">'
-    +'<div style="font-weight:700;font-size:17px;margin-bottom:8px">🔑 Trocar senha</div>'
-    +'<div style="font-size:13px;opacity:.7;margin-bottom:14px">Enviaremos um código para <b>'+srsEsc(_emailState.email)+'</b></div>'
-    +'<div id="pinMsg" style="font-size:12px;min-height:18px;margin-bottom:10px"></div>'
-    +'<div style="display:flex;gap:8px;justify-content:flex-end">'
-    +'<button class="btn" onclick="srsOpenConfig()">← Voltar</button>'
-    +'<button class="btn" style="background:#1c6b8c;color:#fff;border:none;font-weight:700" onclick="srsSendPinCode()">Enviar código</button>'
-    +'</div></div>';
-  ov.style.display='flex';
-}
-
-async function srsSendPinCode(){
-  var msg=document.getElementById('pinMsg');if(!msg)return;
-  msg.style.color='#888';msg.textContent='Enviando código…';
-  var code=genCode();
-  var expires=new Date(Date.now()+15*60*1000).toISOString();
-  try{
-    var r=await sb.rpc('request_pin_change',{p_user_id:currentUser.id,p_code:code,p_expires:expires});
-    if(!r.data){msg.style.color='#c0212e';msg.textContent='Erro: e-mail não verificado.';return;}
-    var result=await sendEmailCode(_emailState.email,code,currentUser.nome);
-    var devCode=result&&result.startsWith('dev:')?result.split(':')[1]:null;
-    msg.style.color='#4f7a3a';msg.textContent='Código enviado!';
-    setTimeout(function(){srsOpenNewPIN(devCode);},900);
-  }catch(e){msg.style.color='#c0212e';msg.textContent='Erro. Tente novamente.';}
-}
-
-function srsOpenNewPIN(devCode){
-  var ov=document.getElementById('cfgOverlay');if(!ov)return;
-  var devHint=devCode?'<div style="background:#fff3cd;border-radius:8px;padding:8px;font-size:12px;margin-bottom:8px">Modo dev — código: <b>'+srsEsc(devCode)+'</b></div>':'';
-  ov.innerHTML='<div onclick="event.stopPropagation()" style="background:var(--surface,#fdf9f2);color:var(--ink,#1c1408);border-radius:16px;padding:24px;max-width:420px;width:92%;box-shadow:0 12px 44px rgba(0,0,0,.3)">'
-    +'<div style="font-weight:700;font-size:17px;margin-bottom:14px">🔑 Nova senha</div>'
-    +devHint
-    +'<label style="font-size:13px;font-weight:600">Código recebido</label>'
-    +'<input id="pinCode" type="number" inputmode="numeric" maxlength="6" placeholder="000000" style="width:100%;padding:10px;margin:6px 0 12px;border:1px solid #ccc;border-radius:8px;font-size:18px;text-align:center;letter-spacing:3px">'
-    +'<label style="font-size:13px;font-weight:600">Nova senha (mínimo 4 dígitos)</label>'
-    +'<input id="pinNew" type="password" inputmode="numeric" placeholder="••••" style="width:100%;padding:10px;margin:6px 0 12px;border:1px solid #ccc;border-radius:8px;font-size:16px">'
-    +'<label style="font-size:13px;font-weight:600">Confirmar nova senha</label>'
-    +'<input id="pinConfirm" type="password" inputmode="numeric" placeholder="••••" style="width:100%;padding:10px;margin:6px 0 12px;border:1px solid #ccc;border-radius:8px;font-size:16px">'
-    +'<div id="newPinMsg" style="font-size:12px;min-height:18px;margin-bottom:10px"></div>'
-    +'<div style="display:flex;gap:8px;justify-content:flex-end">'
-    +'<button class="btn" onclick="srsOpenConfig()">Cancelar</button>'
-    +'<button class="btn" style="background:#4f7a3a;color:#fff;border:none;font-weight:700" onclick="srsConfirmNewPIN()">Salvar senha</button>'
-    +'</div></div>';
-  ov.style.display='flex';
-}
-
-async function srsConfirmNewPIN(){
-  var code=document.getElementById('pinCode').value.trim();
-  var np=document.getElementById('pinNew').value.trim();
-  var nc=document.getElementById('pinConfirm').value.trim();
-  var msg=document.getElementById('newPinMsg');
-  if(code.length!==6){msg.style.color='#c0212e';msg.textContent='Código deve ter 6 dígitos.';return;}
-  if(np.length<4){msg.style.color='#c0212e';msg.textContent='Senha deve ter ao menos 4 dígitos.';return;}
-  if(np!==nc){msg.style.color='#c0212e';msg.textContent='As senhas não coincidem.';return;}
-  msg.style.color='#888';msg.textContent='Salvando…';
-  try{
-    var r=await sb.rpc('change_pin',{p_user_id:currentUser.id,p_code:code,p_new_pin:np});
-    if(r.data===true){
-      msg.style.color='#4f7a3a';msg.textContent='✓ Senha alterada com sucesso!';
-      setTimeout(srsCloseAjustes,1500);
-    } else {
-      msg.style.color='#c0212e';msg.textContent='Código incorreto ou expirado.';
-    }
-  }catch(e){msg.style.color='#c0212e';msg.textContent='Erro. Tente novamente.';}
-}
-
-/* ===== Hash routing: persiste a view atual na URL ===== */
-function srsHashSave(hash){
-  try{history.replaceState(null,'',location.pathname+(hash?'#'+hash:''));}catch(e){}
-}
-function srsHashRestore(){
-  var h=(location.hash||'').replace('#','');
-  if(!h)return;
-  var parts=h.split(':');
-  var view=parts[0];
-  if(view==='detail'&&parts[1]!=null){
-    var i=parseInt(parts[1],10);
-    if(!isNaN(i)&&APP.skills[i])openDetail(i);
-  } else if(view==='mat'&&parts[1]&&parts[2]){
-    var id=decodeURIComponent(parts[1]+'::'+parts[2]+(parts[3]?'::'+parts[3]:''));
-    var k=parts[parts.length-1];
-    // id tem o formato Italiano::1::0, k é v/f/m/i
-    var idFull=parts.slice(1,parts.length-1).join('::');
-    var skillIdx=APP.skills.findIndex(function(s){return idFull.startsWith(s.name);});
-    if(skillIdx>=0){openDetail(skillIdx);openMaterial(idFull,k);}
-  }
-}
-
-/* Journey mobile: botão para expandir etapas futuras */
-function srsInitJourneyMobile(){
-  if(window.innerWidth>600)return;
-  var j=document.getElementById('journey');if(!j||j._srsMobileInit)return;
-  j._srsMobileInit=true;
-  var btn=document.createElement('button');
-  btn.className='btn';btn.style.cssText='width:100%;margin-top:6px;font-size:12px';
-  btn.textContent='Ver próximas etapas ▾';
-  btn.onclick=function(){
-    j.classList.toggle('expanded');
-    btn.textContent=j.classList.contains('expanded')?'Ocultar etapas ▴':'Ver próximas etapas ▾';
-  };
-  j.parentNode.insertBefore(btn,j.nextSibling);
-}
-(function srsHookNav(){
-  if(window._srsNavPatched)return;window._srsNavPatched=true;
-  // openDetail: hash + tricolore
-  var _od=typeof openDetail==='function'?openDetail:null;
-  if(_od){window.openDetail=function(i){_od(i);srsHashSave('detail:'+i);var isIt=APP.skills[i]&&APP.skills[i].name==='Italiano';document.body.classList.toggle('showing-italian',!!isIt);};}
-  // openMaterial: hash
-  var _om=window.openMaterial;
-  if(_om){window.openMaterial=function(id,k){_om(id,k);srsHashSave('mat:'+id.replace(/::/g,':')+':'+k);};}
-  // closeMaterial: hash
-  var _cm=window.closeMaterial;
-  if(_cm){window.closeMaterial=function(){_cm();srsHashSave('detail:'+(typeof curIdx!=='undefined'?curIdx:0));};}
-  // Restaurar na carga
-  if(location.hash&&location.hash.length>1)srsHashRestore();
-})();
 
 </script>
 <script>
