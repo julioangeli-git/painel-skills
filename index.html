@@ -306,7 +306,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 
 <header class="top"><div class="top-in">
   <div class="brand">
-    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0605.1827</span></div>
+    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0605.1834</span></div>
     <h1><em>Minha Jornada</em></h1>
   </div>
   <div class="tools">
@@ -2329,8 +2329,26 @@ function srsRender(){
   document.getElementById('srsCounts').textContent=
     'Sessão: '+(_srsIdx+1)+'/'+_srsQueue.length+' · Total do deck: '+total;
   if(_srsIdx>=_srsQueue.length){
-    box.innerHTML='<div style="font-size:18px;text-align:center;padding:60px 0">✓ Sessão concluída!<br><span style="font-size:14px;opacity:.6">Volte amanhã para revisar as vencidas.</span></div>';
-    btns.innerHTML='<button class="btn" onclick="closeReview()">Voltar</button>';
+    var _deck=_srsDeck||_srsSection;
+    var _label=_deck==='phrases'?'frases':'palavras';
+    box.innerHTML=
+      '<div style="text-align:center;padding:40px 16px">'
+      +'<div style="font-size:48px;margin-bottom:12px">🎉</div>'
+      +'<div style="font-size:20px;font-weight:700;margin-bottom:10px">Sessão concluída!</div>'
+      +'<div style="font-size:14px;opacity:.7;line-height:1.6;max-width:340px;margin:0 auto 20px">'
+      +'Você viu todas as '+_label+' desta sessão. '
+      +'O sistema espaçará automaticamente as revisões com base no seu desempenho — '
+      +'cada card voltará no momento certo para fixar de forma duradoura.'
+      +'</div>'
+      +'<div style="font-size:13px;background:var(--surface2,#f8f2e5);border-radius:12px;padding:14px 18px;display:inline-block;text-align:left;line-height:1.7">'
+      +'<b>Quer praticar mais agora?</b><br>'
+      +'Em <b>Estatísticas → Praticar por absorção</b> você pode refazer<br>'
+      +'as práticas priorizando as '+_label+' com menor absorção.'
+      +'</div>'
+      +'</div>';
+    btns.innerHTML=
+      '<button class="btn" onclick="closeReview()">← Voltar</button>'
+      +'<button class="btn" style="background:var(--terra,#b85a28);color:#fff;border:none" onclick="closeReview();setTimeout(function(){if(typeof openStats===\'function\')openStats();},120)">Ver Estatísticas →</button>';
     return;
   }
   var c=_srsQueue[_srsIdx];
@@ -3345,6 +3363,19 @@ try{ if(typeof RICH!=='undefined'){
   }
   window.paintDueBadge=paintBadge;
 
+  // ── Maturity helpers ──────────────────────────────────────────────────────────
+  // Returns {new, learning, young, mature, total, due} counts for a list of card keys
+  function matCounts(cards){
+    var c={new:0,learning:0,young:0,mature:0,total:0,due:0};
+    cards.forEach(function(card){
+      c.total++;
+      var m=typeof srsMaturity==='function'?srsMaturity(card.key):'new';
+      c[m]=(c[m]||0)+1;
+      if(typeof srsDue==='function'&&srsDue(card.key))c.due++;
+    });
+    return c;
+  }
+
   // ── Cross-topic queue ─────────────────────────────────────────────────────────
   function buildAllVocabQueue(section,cap){
     cap=cap||20;
@@ -3392,14 +3423,11 @@ try{ if(typeof RICH!=='undefined'){
     if(typeof srsRender==='function')srsRender();
   };
 
-  // ── Stats page (rebuilt from scratch on every open) ───────────────────────────
+  // ── Stats page ────────────────────────────────────────────────────────────────
   window.openStats=function openStats(){
-    // Ensure container exists
     var sv=document.getElementById('statsView');
     if(!sv){sv=document.createElement('div');sv.id='statsView';document.body.appendChild(sv);}
-
-    // Hide other views
-    ['overview','detail','srsView','matView','pronuncView','fillView','pronuncView','fillView'].forEach(
+    ['overview','detail','srsView','matView','pronuncView','fillView'].forEach(
       function(id){var e=document.getElementById(id);if(e)e.style.display='none';}
     );
     sv.style.display='block';
@@ -3407,34 +3435,33 @@ try{ if(typeof RICH!=='undefined'){
 
     var st=ensureStats();
 
-    // ── Build HTML ──────────────────────────────────────────────────────────────
-    // Top stat cards
+    // ── Top stat cards ──────────────────────────────────────────────────────────
     var topHtml=
       _sCard('🔥 '+(st.streak||0),'dias seguidos')+
       _sCard((st.hist[today()]||0)+'/'+(st.goal||20),'revisões hoje')+
       _sCard(dueCount(),'vencidas agora');
 
-    // Hub cards
-    var allVocabCount=0,allPhraseCount=0,allVocabDue=0,allPhraseDue=0;
+    // ── Aggregate maturity across all unlocked topics ───────────────────────────
+    var globV={new:0,learning:0,young:0,mature:0,total:0,due:0};
+    var globP={new:0,learning:0,young:0,mature:0,total:0,due:0};
     try{
       (APP.skills||[]).forEach(function(s){
         (s.topics||[]).forEach(function(t){
           if(!(state&&state.done&&state.done[t.id+'::v']))return;
           var vc=typeof srsCardsForTopic==='function'?srsCardsForTopic(t.id,'vocab'):[];
           var pc=typeof srsCardsForTopic==='function'?srsCardsForTopic(t.id,'phrases'):[];
-          allVocabCount+=vc.length; allPhraseCount+=pc.length;
-          if(typeof srsDue==='function'){
-            allVocabDue+=vc.filter(function(c){return srsDue(c.key);}).length;
-            allPhraseDue+=pc.filter(function(c){return srsDue(c.key);}).length;
-          }
+          var mv=matCounts(vc),mp=matCounts(pc);
+          ['new','learning','young','mature','total','due'].forEach(function(k){globV[k]+=mv[k];globP[k]+=mp[k];});
         });
       });
     }catch(e){}
-    var hubHtml=
-      _hubCard('🎴','Todo Vocabulário',allVocabCount,allVocabDue,"openAllVocabReview('vocab')")+
-      _hubCard('💬','Todas as Frases',allPhraseCount,allPhraseDue,"openAllVocabReview('phrases')");
 
-    // Bar chart
+    // ── Hub + maturity panel ────────────────────────────────────────────────────
+    var hubHtml=
+      _hubCard('🎴','Todo Vocabulário',globV,   "openAllVocabReview('vocab')")+
+      _hubCard('💬','Todas as Frases', globP,"openAllVocabReview('phrases')");
+
+    // ── Bar chart ───────────────────────────────────────────────────────────────
     var days=[],max=1;
     for(var i=13;i>=0;i--){
       var dd=new Date(Date.now()-i*86400000);
@@ -3448,13 +3475,13 @@ try{ if(typeof RICH!=='undefined'){
         +'<div style="font-size:8px;opacity:.55;margin-top:3px">'+d[0]+'</div></div>';
     }).join('');
 
-    // Module cards
+    // ── Module cards ────────────────────────────────────────────────────────────
     var modHtml='';
     try{
       (APP.skills||[]).forEach(function(s){
         if(!(s.topics&&s.topics.length))return;
         modHtml+='<div style="font-weight:700;font-size:12px;letter-spacing:.07em;text-transform:uppercase;opacity:.6;margin:0 0 10px">Por módulo — '+esc(s.name)+'</div>'
-          +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-bottom:26px">';
+          +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:10px;margin-bottom:26px">';
         s.topics.forEach(function(t){
           var vDone=!!(state&&state.done&&state.done[t.id+'::v']);
           modHtml+=vDone?_unlocked(t):_locked(t);
@@ -3463,20 +3490,19 @@ try{ if(typeof RICH!=='undefined'){
       });
     }catch(e){modHtml='<p style="color:red;font-size:12px">Erro: '+esc(String(e))+'</p>';}
 
-    // ── Render all at once ──────────────────────────────────────────────────────
+    // ── Render ──────────────────────────────────────────────────────────────────
     sv.innerHTML=
       '<div style="max-width:900px;margin:0 auto;padding:18px 16px">'
       +'<button id="statsBack" class="btn">← Voltar</button>'
       +'<h2 style="font-family:Fraunces,serif;margin:14px 0 18px">Estatísticas</h2>'
       +'<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:24px">'+topHtml+'</div>'
       +'<div style="font-weight:700;font-size:12px;letter-spacing:.07em;text-transform:uppercase;opacity:.6;margin-bottom:10px">Praticar por absorção</div>'
-      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:28px;max-width:520px">'+hubHtml+'</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:28px;max-width:560px">'+hubHtml+'</div>'
       +'<div style="font-weight:700;margin-bottom:8px">Revisões (14 dias)</div>'
       +'<div style="display:flex;gap:4px;align-items:flex-end;height:100px;margin-bottom:26px">'+barsHtml+'</div>'
       +modHtml
       +'</div>';
 
-    // Wire back button (after innerHTML is set)
     var backBtn=document.getElementById('statsBack');
     if(backBtn)backBtn.onclick=function(){
       sv.style.display='none';
@@ -3491,17 +3517,47 @@ try{ if(typeof RICH!=='undefined'){
       +'<div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;opacity:.6;margin-top:2px">'+l+'</div>'
       +'</div>';
   }
-  function _hubCard(icon,label,total,due,oc){
-    var has=total>0;
-    var dueSpan=due>0?'<span style="color:#c0212e;font-weight:700"> · '+due+' vencidas</span>':'';
-    return '<div style="background:var(--surface,#fff);border:1px solid var(--border2,#e0d6c6);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:8px;cursor:'+(has?'pointer':'default')+'" '+(has?'onclick="'+oc+'"':'')+'>'
+
+  // m = matCounts object {new, learning, young, mature, total, due}
+  function _hubCard(icon,label,m,oc){
+    var has=m.total>0;
+    var pct=m.total?Math.round(((m.young||0)+(m.mature||0))/m.total*100):0;
+    var col=pct>=60?'#4f7a3a':pct>=30?'#e8a020':'#c0212e';
+
+    // Mini maturity bar
+    function seg(count,color,title){
+      if(!count||!m.total)return'';
+      var w=Math.round(count/m.total*100);
+      return '<div title="'+title+': '+count+'" style="height:100%;width:'+w+'%;background:'+color+';"></div>';
+    }
+    var matBar=has
+      ? '<div style="display:flex;height:6px;border-radius:3px;overflow:hidden;background:#e8e0d0;margin:4px 0 2px">'
+        +seg(m.mature,'#4f7a3a','Madura')
+        +seg(m.young,'#2e7fa8','Jovem')
+        +seg(m.learning,'#c49820','Aprendendo')
+        +seg(m.new,'#c9ccd6','Nova')
+        +'</div>'
+      : '';
+
+    var matLegend=has
+      ? '<div style="display:flex;flex-wrap:wrap;gap:6px;font-size:10px;opacity:.7;margin-top:2px">'
+        +(m.new?'<span>⚪ '+m.new+' novas</span>':'')
+        +(m.learning?'<span>🟡 '+m.learning+' aprend.</span>':'')
+        +(m.young?'<span>🔵 '+m.young+' jovens</span>':'')
+        +(m.mature?'<span>🟢 '+m.mature+' maduras</span>':'')
+        +(m.due?'<span style="color:#c0212e;font-weight:700">⏰ '+m.due+' vencidas</span>':'')
+        +'</div>'
+      : '<div style="font-size:11px;opacity:.6">Conclua módulos para liberar</div>';
+
+    return '<div style="background:var(--surface,#fff);border:1px solid var(--border2,#e0d6c6);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:6px;cursor:'+(has?'pointer':'default')+'" '+(has?'onclick="'+oc+'"':'')+'>'
       +'<div style="font-size:22px">'+icon+'</div>'
       +'<div style="font-weight:700;font-size:14px">'+label+'</div>'
-      +'<div style="font-size:22px;font-weight:800;color:var(--terra,#b85a28)">'+(has?total:'—')+'</div>'
-      +'<div style="font-size:11px;opacity:.65">'+(has?total+' liberadas'+dueSpan:'Conclua módulos para liberar')+'</div>'
-      +(has?'<button class="btn" style="background:var(--terra,#b85a28);color:#fff;border:none;margin-top:4px" onclick="event.stopPropagation();'+oc+'">▶ Treinar 20 menores</button>':'')
+      +'<div style="font-size:22px;font-weight:800;color:'+(has?col:'#aaa')+'">'+(has?m.total:'—')+'</div>'
+      +matBar+matLegend
+      +(has?'<button class="btn" style="background:var(--terra,#b85a28);color:#fff;border:none;margin-top:6px" onclick="event.stopPropagation();'+oc+'">▶ Treinar 20 menores</button>':'')
       +'</div>';
   }
+
   function _locked(t){
     return '<div style="border:1px dashed var(--border2,#d0c8b8);border-radius:12px;background:var(--surface2,#f8f2e5);padding:12px;display:flex;flex-direction:column;gap:6px;min-height:90px">'
       +'<div style="font-size:16px">🔒</div>'
@@ -3509,16 +3565,37 @@ try{ if(typeof RICH!=='undefined'){
       +'<div style="font-size:10px;color:var(--ink3,#888);margin-top:auto;line-height:1.3">Conclua o vocabulário para desbloquear</div>'
       +'</div>';
   }
+
   function _unlocked(t){
-    var vPct=typeof srsTopicPctDeck==='function'?Math.round(srsTopicPctDeck(t.id,'vocab')*100):0;
+    var vc=typeof srsCardsForTopic==='function'?srsCardsForTopic(t.id,'vocab'):[];
+    var pc=typeof srsCardsForTopic==='function'?srsCardsForTopic(t.id,'phrases'):[];
+    var mv=matCounts(vc), mp=matCounts(pc);
     var fDone=!!(state&&state.done&&state.done[t.id+'::f']);
-    var fPct=fDone&&typeof srsTopicPctDeck==='function'?Math.round(srsTopicPctDeck(t.id,'phrases')*100):0;
+
     function col(p){return p>=60?'#4f7a3a':p>=30?'#e8a020':'#c0212e';}
-    function bar(p,c){return '<div style="height:3px;background:#e8e0d0;border-radius:2px;margin:2px 0 5px"><div style="height:100%;width:'+p+'%;background:'+c+';border-radius:2px"></div></div>';}
-    return '<div style="border:1px solid var(--border2,#e0d6c6);border-radius:12px;background:var(--surface,#fff);padding:12px;display:flex;flex-direction:column;gap:3px;min-height:90px">'
+    function pctOf(m){return m.total?Math.round(((m.young||0)+(m.mature||0))/m.total*100):0;}
+
+    function miniBar(m){
+      if(!m.total)return'';
+      function s(n,c){return n?'<div style="height:100%;width:'+Math.round(n/m.total*100)+'%;background:'+c+'"></div>':'';}
+      return '<div style="display:flex;height:3px;border-radius:2px;overflow:hidden;background:#e8e0d0;margin:1px 0 5px">'
+        +s(m.mature,'#4f7a3a')+s(m.young,'#2e7fa8')+s(m.learning,'#c49820')+s(m.new,'#c9ccd6')+'</div>';
+    }
+
+    function counts(m,label){
+      return '<div style="font-size:10px;opacity:.65;margin-bottom:1px">'+label
+        +' <b style="color:'+col(pctOf(m))+'">'+pctOf(m)+'%</b>'
+        +(m.due?' <span style="color:#c0212e">⏰'+m.due+'</span>':'')
+        +'<span style="opacity:.6"> ('+
+        [m.new?m.new+'n':'', m.learning?m.learning+'a':'', m.young?m.young+'j':'', m.mature?m.mature+'m':'']
+        .filter(Boolean).join(' ')+')</span>'
+        +'</div>';
+    }
+
+    return '<div style="border:1px solid var(--border2,#e0d6c6);border-radius:12px;background:var(--surface,#fff);padding:12px;display:flex;flex-direction:column;gap:2px;min-height:90px">'
       +'<div style="font-weight:700;font-size:12px;color:var(--ink,#1c1408);line-height:1.35;margin-bottom:4px">'+esc(t.t||t.id)+'</div>'
-      +'<div style="font-size:11px;opacity:.7">📖 <b style="color:'+col(vPct)+'">'+vPct+'%</b></div>'+bar(vPct,col(vPct))
-      +(fDone?'<div style="font-size:11px;opacity:.7">💬 <b style="color:'+col(fPct)+'">'+fPct+'%</b></div>'+bar(fPct,col(fPct)):'')
+      +counts(mv,'📖 Vocab')+miniBar(mv)
+      +(fDone?counts(mp,'💬 Frases')+miniBar(mp):'')
       +'<div style="display:flex;gap:5px;margin-top:auto;flex-wrap:wrap">'
       +'<button class="btn" style="font-size:10px;padding:3px 7px;background:var(--terra,#b85a28);color:#fff;border:none" onclick="openReview(\''+t.id+'\',\'vocab\')">Vocab</button>'
       +(fDone?'<button class="btn" style="font-size:10px;padding:3px 7px" onclick="openReview(\''+t.id+'\',\'phrases\')">Frases</button>':'')
