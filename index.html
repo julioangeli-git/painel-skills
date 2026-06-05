@@ -306,7 +306,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 
 <header class="top"><div class="top-in">
   <div class="brand">
-    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0605.1912</span></div>
+    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0605.1921</span></div>
     <h1><em>Minha Jornada</em></h1>
   </div>
   <div class="tools">
@@ -1172,6 +1172,7 @@ function srsCardHtml(id){
     +'<div style="text-align:right"><div style="font-weight:700;font-size:18px">'+pct+'%</div><div style="font-size:10px;opacity:.6">dominado</div></div></div>';
 }
 var _srsQueue=[],_srsIdx=0,_srsTopic=null,_srsSection=null,_srsShown=false,_srsWrong={},_srsMode='card',_srsCtx='';
+var _srsRetries={}; // declarado globalmente para ser acessível em qualquer caminho de abertura
 var _srsAudioTimer=null; // evita duplo disparo de áudio quando srsRender é chamado 2× seguidos
 function ensureSrsView(){
   if(document.getElementById('srsView'))return;
@@ -2391,7 +2392,7 @@ function srsRender(){
   var img=c.img?'<img src="'+srsEsc(c.img)+'" alt="" style="max-width:90px;max-height:90px;border-radius:10px;margin-bottom:10px">':'';
   var flagIT='<img src="https://flagcdn.com/w40/it.png" alt="IT" style="width:28px;border-radius:3px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,.2)">';
   var flagBR='<img src="https://flagcdn.com/w40/br.png" alt="BR" style="width:28px;border-radius:3px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.2)">';
-  var retryBadge=(_srsRetries[c.key]>=1)?'<div style="font-size:11px;color:#c0392b;margin-bottom:6px">🔁 repetindo esta sessão</div>':'';
+  var retryBadge=(typeof _srsRetries!=='undefined'&&_srsRetries&&_srsRetries[c.key]>=1)?'<div style="font-size:11px;color:#c0392b;margin-bottom:6px">🔁 repetindo esta sessão</div>':'';
   box.innerHTML='<div class="flip" id="srsFlip" onclick="srsShow()"><div class="flip-in">'
     +'<div class="face front">'+flagIT+img+retryBadge
     +'<div style="font-size:27px;font-weight:700">'+srsEsc(cf)+'</div>'
@@ -3441,8 +3442,7 @@ try{ if(typeof RICH!=='undefined'){
     if(!queue.length){alert('Nenhum módulo desbloqueado ainda.');return;}
     window._srsTopic='__all__';window._srsDeck=section||'vocab';window._srsSection=section||'vocab';
     window._srsQueue=queue;window._srsIdx=0;
-    if(typeof window._srsRetries!=='undefined')window._srsRetries={};
-    window._srsWrong={};window._srsMode='card';
+    window._srsRetries={};window._srsWrong={};window._srsMode='card';
     ['detail','overview','statsView','pronuncView','fillView'].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display='none';});
     document.getElementById('srsView').style.display='block';
     var label=(section==='phrases'?'Frases':'Vocabulário')+(skillName?' — '+skillName:'');
