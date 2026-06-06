@@ -395,7 +395,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 
 <header class="top"><div class="top-in">
   <div class="brand">
-    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0606.0141</span></div>
+    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0606.0148</span></div>
     <h1><em id="appTitle">Minha Jornada</em></h1>
   </div>
   <div class="tools">
@@ -2652,7 +2652,7 @@ function srsApplyTheme(name){
   document.querySelectorAll('.login-flag').forEach(function(f){
     if(t['_theme']){
       f.style.cssText='display:flex;align-items:center;justify-content:center;width:64px;height:64px;margin:0 auto 10px;';
-      f.innerHTML='<img src="img/mascote.png" style="width:64px;height:64px;object-fit:contain" alt="SquuiLui">';
+      f.innerHTML='<img src="img/mascote-hd.png" onerror="this.src=\'img/mascote.png\'" style="width:64px;height:64px;object-fit:contain" alt="SquuiLui">';
     } else {
       f.style.cssText='';
       f.innerHTML='<span></span><span></span><span></span>';
@@ -2667,20 +2667,16 @@ function srsApplyTheme(name){
       document.body.insertBefore(bar,document.body.firstChild);
     }
     document.querySelectorAll('.sec-flag').forEach(function(f){f.setAttribute('data-squilui','1');f.innerHTML='<span class="sqf-sq"></span>';});
-  // mascot badge in header
-  var mascot=document.getElementById('squiluiMascot');
-  if(t['_theme']==='squilui'){
-    if(!mascot){
-      mascot=document.createElement('img');mascot.id='squiluiMascot';
-      mascot.src='img/mascote.png';mascot.alt='SquuiLui';
-      var brand=document.querySelector('.brand');if(brand)brand.insertBefore(mascot,brand.firstChild);
-    }
-  } else {
-    if(mascot)mascot.remove();
-  }
   } else {
     if(existing)existing.remove();
     document.querySelectorAll('.sec-flag[data-squilui]').forEach(function(f){f.removeAttribute('data-squilui');f.innerHTML='<span class="g"></span><span class="w"></span><span class="r"></span>';});
+  }
+  // mascot badge in header — todos os temas
+  var mascot=document.getElementById('squiluiMascot');
+  if(!mascot){
+    mascot=document.createElement('img');mascot.id='squiluiMascot';
+    mascot.src='img/mascote-hd.png';mascot.alt='SquuiLui';
+    var brand=document.querySelector('.brand');if(brand)brand.insertBefore(mascot,brand.firstChild);
   }
 }
 function srsApplyTitle(t){
@@ -3124,8 +3120,7 @@ function srsInitUI(){
       /* SquuiLui: hero compact + hero left stripe */
       +'[data-theme=squilui] .hero::after{background:linear-gradient(to bottom,#c4620a,#e07820,#d4982a)!important}'
       +'[data-theme=squilui] .radar-hero svg{width:170px!important;height:160px!important}'
-      +'#squiluiMascot{width:52px;height:52px;object-fit:contain;margin-right:8px;cursor:pointer;display:none;mix-blend-mode:multiply}'
-      +'[data-theme=squilui] #squiluiMascot{display:inline-flex!important;align-items:center;animation:mascotBob 2.5s ease-in-out infinite}'
+      +'#squiluiMascot{width:52px;height:52px;object-fit:contain;margin-right:8px;cursor:pointer;display:inline-flex;align-items:center;animation:mascotBob 2.5s ease-in-out infinite}'
       +'@keyframes mascotBob{0%,100%{transform:translateY(0) rotate(0deg)}40%{transform:translateY(-4px) rotate(-5deg)}60%{transform:translateY(-4px) rotate(5deg)}}'
       /* SquuiLui: brand gradient */
       +'[data-theme=squilui] .brand h1 em{background:linear-gradient(95deg,#8B3A0A,#c4620a,#e07820)!important;-webkit-background-clip:text!important;background-clip:text!important;-webkit-text-fill-color:transparent!important}'
