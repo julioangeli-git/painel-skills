@@ -395,7 +395,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 
 <header class="top"><div class="top-in">
   <div class="brand">
-    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0606.0136</span></div>
+    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0606.0141</span></div>
     <h1><em id="appTitle">Minha Jornada</em></h1>
   </div>
   <div class="tools">
@@ -3035,8 +3035,7 @@ function srsInitUI(){
     window._srsGaugePatch=true;
     var _hgOrig=heroGauge;
     window.heroGauge=function(pct,size){
-      if(document.documentElement.getAttribute('data-theme')==='squilui')return _hgOrig(pct,110);
-      return _hgOrig(pct,size);
+      return _hgOrig(pct,110);
     };
   }
   // Patch renderOverview: ajusta container do gauge + enriquece hero no squilui
@@ -3047,7 +3046,7 @@ function srsInitUI(){
       _roSq.apply(this,arguments);
       var isSq=document.documentElement.getAttribute('data-theme')==='squilui';
       var g=document.getElementById('heroGauge');
-      if(g){g.style.width=isSq?'110px':'164px';g.style.height=isSq?'110px':'164px';}
+      if(g){g.style.width='110px';g.style.height='110px';}
       if(!isSq)return;
       // Dias de jornada
       var hs=document.getElementById('heroStats');
