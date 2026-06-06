@@ -272,26 +272,52 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 .cloud-status{font-size:12px;opacity:.65;margin-right:6px;white-space:nowrap}
 .whoami-wrap{font-size:13px;margin-right:6px;white-space:nowrap}
 
-/* ── Landing page ─────────────────────────────────────────────────────────── */
-#landing{display:none;min-height:100vh;background:var(--bg)}
-.lp-hero{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:64px 24px 48px;gap:14px}
-.lp-mascot{width:88px;height:auto;margin-bottom:4px;mix-blend-mode:multiply}
-.lp-hero h1{font-family:'Fraunces',serif;font-size:clamp(26px,5vw,46px);font-weight:600;color:var(--ink);margin:0;line-height:1.2}
-.lp-hero h1 em{color:var(--terra);font-style:normal}
-.lp-hero .lp-sub{font-size:16px;color:var(--ink2);max-width:500px;line-height:1.65;margin:0}
-.lp-btns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:10px}
-.lp-btn-primary{background:var(--terra);color:#fff;border:none;padding:14px 30px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .15s}
-.lp-btn-primary:hover{opacity:.88}
-.lp-btn-ghost{background:transparent;border:1.5px solid var(--border2);color:var(--ink2);padding:13px 24px;border-radius:12px;font-size:15px;cursor:pointer;font-family:inherit;transition:border-color .15s}
-.lp-btn-ghost:hover{border-color:var(--ink3)}
-.lp-features{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px;max-width:880px;margin:0 auto;padding:0 24px 56px}
-.lp-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:26px 22px}
-.lp-card-icon{font-size:26px;margin-bottom:12px}
-.lp-card h3{font-family:'Fraunces',serif;font-size:17px;color:var(--ink);margin:0 0 8px;font-weight:500}
-.lp-card p{font-size:13.5px;color:var(--ink2);line-height:1.6;margin:0}
-.lp-bottom{text-align:center;padding:44px 24px 64px;background:var(--bg2);border-top:1px solid var(--border)}
-.lp-bottom h2{font-family:'Fraunces',serif;font-size:22px;color:var(--ink);margin:0 0 10px;font-weight:500}
-.lp-bottom p{font-size:14px;color:var(--ink2);margin:0 0 24px}
+/* ── Landing page (dark Apple-style) ──────────────────────────────────────── */
+#landing{display:none;min-height:100vh;background:#050508;color:#f5f5f7;font-family:'Spline Sans','Helvetica Neue',sans-serif}
+/* Nav */
+.lp-nav{position:fixed;top:0;left:0;right:0;z-index:900;display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:52px;background:rgba(5,5,8,.82);backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid rgba(255,255,255,.08)}
+.lp-nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:#f5f5f7;font-weight:600;font-size:16px}
+.lp-nav-mascot{width:28px;height:28px;object-fit:contain;border-radius:6px}
+.lp-nav-links{display:flex;gap:28px}
+.lp-nav-links a{color:rgba(245,245,247,.75);font-size:13px;text-decoration:none;transition:color .2s}
+.lp-nav-links a:hover{color:#f5f5f7}
+.lp-nav-auth{display:flex;gap:10px}
+.lp-btn-nav-ghost{background:transparent;border:1px solid rgba(255,255,255,.25);color:#f5f5f7;padding:7px 18px;border-radius:20px;font-size:13px;cursor:pointer;font-family:inherit;transition:border-color .2s}
+.lp-btn-nav-ghost:hover{border-color:rgba(255,255,255,.6)}
+.lp-btn-nav-primary{background:#0071e3;border:none;color:#fff;padding:7px 18px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .2s}
+.lp-btn-nav-primary:hover{background:#0077ed}
+/* Hero */
+.lp-hero{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:140px 24px 80px;min-height:100vh;gap:0;position:relative;overflow:hidden}
+.lp-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 70% 60% at 50% 30%,rgba(0,113,227,.18) 0%,transparent 70%);pointer-events:none}
+.lp-mascot-glow{position:relative;margin-bottom:32px}
+.lp-mascot-glow::after{content:'';position:absolute;inset:-20%;border-radius:50%;background:radial-gradient(circle,rgba(0,113,227,.35) 0%,transparent 70%);filter:blur(30px);z-index:0}
+.lp-hero-mascot{width:180px;height:180px;object-fit:contain;position:relative;z-index:1;filter:drop-shadow(0 0 40px rgba(0,113,227,.5))}
+.lp-hero h1{font-family:'Fraunces',serif;font-size:clamp(32px,5.5vw,64px);font-weight:600;color:#f5f5f7;margin:0 0 16px;line-height:1.1;letter-spacing:-.02em}
+.lp-hero h1 em{background:linear-gradient(135deg,#58a6ff,#0071e3);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-style:normal}
+.lp-hero-sub{font-size:clamp(15px,2vw,19px);color:rgba(245,245,247,.65);max-width:520px;line-height:1.6;margin:0 0 36px}
+.lp-btns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.lp-btn-primary{background:#0071e3;color:#fff;border:none;padding:14px 30px;border-radius:980px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .2s}
+.lp-btn-primary:hover{background:#0077ed}
+.lp-btn-ghost{background:transparent;border:1px solid rgba(255,255,255,.3);color:#f5f5f7;padding:13px 28px;border-radius:980px;font-size:15px;cursor:pointer;font-family:inherit;transition:border-color .2s}
+.lp-btn-ghost:hover{border-color:rgba(255,255,255,.7)}
+/* Scroll indicator */
+.lp-scroll{position:absolute;bottom:32px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;opacity:.4;font-size:11px;color:#f5f5f7;letter-spacing:.08em;text-transform:uppercase}
+.lp-scroll-dot{width:4px;height:4px;border-radius:50%;background:#f5f5f7;animation:lp-bounce .8s infinite alternate}
+@keyframes lp-bounce{from{opacity:.3}to{opacity:1}}
+/* Features section */
+.lp-section{padding:80px 24px;max-width:960px;margin:0 auto}
+.lp-section-label{font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#58a6ff;margin-bottom:14px}
+.lp-section h2{font-family:'Fraunces',serif;font-size:clamp(24px,4vw,40px);color:#f5f5f7;margin:0 0 48px;line-height:1.2;font-weight:500}
+.lp-features{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.lp-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:28px 24px;transition:border-color .2s}
+.lp-card:hover{border-color:rgba(88,166,255,.4)}
+.lp-card-icon{font-size:28px;margin-bottom:14px}
+.lp-card h3{font-family:'Fraunces',serif;font-size:18px;color:#f5f5f7;margin:0 0 10px;font-weight:500}
+.lp-card p{font-size:14px;color:rgba(245,245,247,.6);line-height:1.65;margin:0}
+/* Divider */
+.lp-divider{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.1),transparent);margin:0 24px}
+/* Footer */
+.lp-footer{padding:32px 24px;text-align:center;font-size:12px;color:rgba(245,245,247,.3);border-top:1px solid rgba(255,255,255,.06)}
 
 </style>
 <link rel="manifest" href="manifest.webmanifest">
@@ -364,7 +390,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 
 <header class="top"><div class="top-in">
   <div class="brand">
-    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0605.2230</span></div>
+    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0606.0007</span></div>
     <h1><em id="appTitle">Minha Jornada</em></h1>
   </div>
   <div class="tools">
@@ -378,34 +404,97 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 
 
 <section id="landing" style="display:none">
+
+  <!-- Nav bar -->
+  <nav class="lp-nav">
+    <a class="lp-nav-logo" href="#">
+      <img src="img/mascote-hd.png" onerror="this.src='img/mascote.png'" class="lp-nav-mascot" alt="SquuiLui">
+      SquuiLui
+    </a>
+    <div class="lp-nav-links">
+      <a href="#lp-metodo">Metodologia</a>
+      <a href="#lp-cursos">Cursos</a>
+    </div>
+    <div class="lp-nav-auth">
+      <button class="lp-btn-nav-ghost" id="lpEntrarBtn">Entrar</button>
+      <button class="lp-btn-nav-primary" id="lpCadastrarBtn">Cadastrar</button>
+    </div>
+  </nav>
+
+  <!-- Hero -->
   <div class="lp-hero">
-    <img src="img/mascote.png" alt="SquuiLui" class="lp-mascot">
-    <div class="tricolore" style="margin:0 0 4px;width:48px;height:5px;border-radius:3px;overflow:hidden;display:flex"><span style="flex:1;background:var(--it-green)"></span><span style="flex:1;background:#fff;border-top:1px solid var(--border);border-bottom:1px solid var(--border)"></span><span style="flex:1;background:var(--it-red)"></span></div>
+    <div class="lp-mascot-glow">
+      <img src="img/mascote-hd.png" onerror="this.src='img/mascote.png'" class="lp-hero-mascot" alt="SquuiLui">
+    </div>
     <h1>Aprenda com proposito,<br><em>avance com metodo</em></h1>
-    <p class="lp-sub">Uma jornada de aprendizagem personalizada com revisao inteligente e progresso visivel. Do zero ao fluente, no seu ritmo.</p>
+    <p class="lp-hero-sub">Uma jornada de aprendizagem personalizada com revisao inteligente e progresso visivel. Do zero ao fluente, no seu ritmo.</p>
     <div class="lp-btns">
-      <button class="lp-btn-primary" id="lpCadastrarBtn">Comecar agora &mdash; e gratis</button>
-      <button class="lp-btn-ghost" id="lpEntrarBtn">Ja tenho conta</button>
+      <button class="lp-btn-primary" id="lpCadastrarBtn2">Comecar agora &mdash; e gratis</button>
+      <button class="lp-btn-ghost" id="lpEntrarBtn2">Ja tenho conta</button>
+    </div>
+    <div class="lp-scroll">
+      <div class="lp-scroll-dot"></div>
+      Descubra mais
     </div>
   </div>
 
-  <div class="lp-features">
-    <div class="lp-card">
-      <div class="lp-card-icon">&#128506;</div>
-      <h3>Jornada estruturada</h3>
-      <p>Um mapa claro do que aprender e em qual ordem, organizado em blocos progressivos. Sem perder tempo com conteudo irrelevante.</p>
-    </div>
-    <div class="lp-card">
-      <div class="lp-card-icon">&#128260;</div>
-      <h3>Revisao inteligente</h3>
-      <p>Sistema de repeticao espacada que te lembra do conteudo no momento certo &mdash; para fixar de verdade, sem decorar a forca.</p>
-    </div>
-    <div class="lp-card">
-      <div class="lp-card-icon">&#128202;</div>
-      <h3>Progresso visivel</h3>
-      <p>Acompanhe sua evolucao com estatisticas claras. Cada sessao conta &mdash; e voce vai sentir cada passo dado na jornada.</p>
+  <!-- Metodologia -->
+  <div class="lp-divider"></div>
+  <div class="lp-section" id="lp-metodo">
+    <div class="lp-section-label">Como funciona</div>
+    <h2>Metodologia que realmente funciona</h2>
+    <div class="lp-features">
+      <div class="lp-card">
+        <div class="lp-card-icon">&#128506;</div>
+        <h3>Jornada estruturada</h3>
+        <p>Um mapa claro do que aprender e em qual ordem, organizado em blocos progressivos. Sem perder tempo com conteudo irrelevante.</p>
+      </div>
+      <div class="lp-card">
+        <div class="lp-card-icon">&#128260;</div>
+        <h3>Revisao inteligente</h3>
+        <p>Sistema de repeticao espacada que te lembra do conteudo no momento certo &mdash; para fixar de verdade, sem decorar a forca.</p>
+      </div>
+      <div class="lp-card">
+        <div class="lp-card-icon">&#127908;</div>
+        <h3>Pronuncia real</h3>
+        <p>Pratique falar com reconhecimento de voz. Veja seu percentual de acerto e evolua sua pronuncia com feedback imediato.</p>
+      </div>
+      <div class="lp-card">
+        <div class="lp-card-icon">&#128202;</div>
+        <h3>Progresso visivel</h3>
+        <p>Estatisticas claras mostram sua evolucao. Cada sessao conta &mdash; e voce vai sentir cada passo dado na jornada.</p>
+      </div>
     </div>
   </div>
+
+  <!-- Cursos -->
+  <div class="lp-divider"></div>
+  <div class="lp-section" id="lp-cursos">
+    <div class="lp-section-label">Disponivel agora</div>
+    <h2>Cursos disponíveis</h2>
+    <div class="lp-features">
+      <div class="lp-card">
+        <div class="lp-card-icon">&#127470;&#127481;</div>
+        <h3>Italiano</h3>
+        <p>Do A1 ao B2. Vocabulario, frases, gramatica e cultura para quem quer se comunicar de verdade na Italia.</p>
+      </div>
+      <div class="lp-card">
+        <div class="lp-card-icon">&#127468;&#127463;</div>
+        <h3>Ingles</h3>
+        <p>Foco em fluencia pratica. Vocabulario de alta frequencia e estruturas essenciais para comunicacao cotidiana e profissional.</p>
+      </div>
+      <div class="lp-card" style="border-style:dashed;opacity:.6">
+        <div class="lp-card-icon">&#128640;</div>
+        <h3>Em breve</h3>
+        <p>Mais idiomas e trilhas especializadas chegando em breve. Cadastre-se para ser o primeiro a saber.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="lp-footer">
+    &copy; SquuiLui &nbsp;&middot;&nbsp; Aprendizagem inteligente
+  </div>
+
 </section>
 
 <div class="wrap" style="display:none">
@@ -1876,10 +1965,9 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progre
     var lpc=document.getElementById('lpCadastrarBtn');if(lpc)lpc.onclick=openAuthOverlay;
     var lpc2=document.getElementById('lpCadastrarBtn2');if(lpc2)lpc2.onclick=openAuthOverlay;
     var lpe=document.getElementById('lpEntrarBtn');
-    if(lpe)lpe.onclick=function(){
-      var lo=document.getElementById('loginOverlay');if(lo)lo.style.display='flex';
-      showStep('authStepEmail');
-    };
+    if(lpe)lpe.onclick=function(){var lo=document.getElementById('loginOverlay');if(lo)lo.style.display='flex';showStep('authStepEmail');};
+    var lpe2=document.getElementById('lpEntrarBtn2');
+    if(lpe2)lpe2.onclick=function(){var lo=document.getElementById('loginOverlay');if(lo)lo.style.display='flex';showStep('authStepEmail');};
 
     // Save + Logout
     var sv=document.getElementById('saveBtn'); if(sv)sv.onclick=window.salvarAgora;
@@ -2494,7 +2582,6 @@ function srsRender(){
 }
 /* ===== Configurações: paleta de cores e título ===== */
 var THEMES={
-  'Itália (padrão)':{},
   'SquuiLui':{
     '--bg':'#f5ead0','--bg2':'#ede0c0','--surface':'#fffbf2','--surface2':'#f9f0dd',
     '--ink':'#2a1a08','--ink2':'#6b3d10','--ink3':'#a0682a',
@@ -2502,6 +2589,15 @@ var THEMES={
     '--terra':'#c4620a','--terra-g':'#e07820','--gold':'#d4982a',
     '--it-green':'#c4620a','--it-red':'#8B3A0A',
     '_theme':'squilui'
+  },
+  'Tech':{
+    '--bg':'#0d1117','--bg2':'#161b22','--surface':'#21262d','--surface2':'#30363d',
+    '--ink':'#e6edf3','--ink2':'#8b949e','--ink3':'#484f58',
+    '--border':'rgba(48,54,61,.9)','--border2':'rgba(56,63,72,1)',
+    '--terra':'#58a6ff','--terra-g':'#79c0ff','--gold':'#e3b341',
+    '--it-green':'#3fb950','--it-red':'#f85149',
+    '--sub-done-bg':'#0d2c14',
+    '_theme':'tech'
   },
   'Noite':{
     '--bg':'#1e1b16','--bg2':'#26221b','--surface':'#2a261e','--surface2':'#332e24',
@@ -2512,7 +2608,8 @@ var THEMES={
   },
   'Oceano':{'--bg':'#eaf2f7','--bg2':'#dde9f1','--surface':'#f7fbfe','--surface2':'#eef5fa','--terra':'#1c6b8c','--terra-g':'#2e8bb0','--gold':'#3a7ca5','--ink':'#10222c','--ink2':'#33586b'},
   'Floresta':{'--bg':'#eef3e7','--bg2':'#e2ead6','--surface':'#f8fbf3','--surface2':'#eef4e6','--terra':'#4f7a3a','--terra-g':'#67995a','--gold':'#7a9a3a','--ink':'#16240f','--ink2':'#33502a'},
-  'Rosé':{'--bg':'#f7ecec','--bg2':'#f1dede','--surface':'#fdf6f6','--surface2':'#f8eaea','--terra':'#b8485f','--terra-g':'#d46a80','--gold':'#c4708a','--ink':'#2a1218','--ink2':'#6b3340'}
+  'Rosé':{'--bg':'#f7ecec','--bg2':'#f1dede','--surface':'#fdf6f6','--surface2':'#f8eaea','--terra':'#b8485f','--terra-g':'#d46a80','--gold':'#c4708a','--ink':'#2a1218','--ink2':'#6b3340'},
+  'Itália':{}
 };
 var THEME_VARS=['--bg','--bg2','--surface','--surface2','--ink','--ink2','--ink3','--terra','--terra-g','--gold','--border','--border2','--sub-done-bg'];
 function srsApplyTheme(name){
@@ -2558,7 +2655,7 @@ function srsOpenConfig(){
   if(!ov){ov=document.createElement('div');ov.id='cfgOverlay';ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:3000;display:flex;align-items:center;justify-content:center';ov.onclick=function(e){if(e.target===ov)ov.style.display='none';};document.body.appendChild(ov);}
   var cur='';try{cur=localStorage.getItem('painelTitle')||'';}catch(e){}
   var curDate=state&&state.startDate?state.startDate:'';
-  var sw=Object.keys(THEMES).map(function(n){var c=THEMES[n]['--bg']||'#f2ead8';var a=THEMES[n]['--terra']||'#b85a28';return '<button onclick="srsApplyTheme(\''+srsJsq(n)+'\')" style="cursor:pointer;border:1px solid #ccc;border-radius:10px;padding:8px 10px;margin:4px;background:'+c+';color:'+(n==='Noite'?'#f2ecdd':'#1c1408')+';font-weight:600;font-size:13px"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+a+';margin-right:6px"></span>'+srsEsc(n)+'</button>';}).join('');
+  var sw=Object.keys(THEMES).map(function(n){var c=THEMES[n]['--bg']||'#f2ead8';var a=THEMES[n]['--terra']||'#b85a28';return '<button onclick="srsApplyTheme(\''+srsJsq(n)+'\')" style="cursor:pointer;border:1px solid #ccc;border-radius:10px;padding:8px 10px;margin:4px;background:'+c+';color:'+(n==='Noite'||n==='Tech'?'#e6edf3':'#1c1408')+';font-family:inherit;font-weight:600;font-size:13px"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+a+';margin-right:6px"></span>'+srsEsc(n)+'</button>';}).join('');
   var isFirst=!localStorage.getItem('painelAjustesShown');
   var nomeAtual=(window.currentUser&&window.currentUser.nome)||'';
   ov.innerHTML='<div onclick="event.stopPropagation()" style="background:var(--surface,#fdf9f2);color:var(--ink,#1c1408);border-radius:16px;padding:24px;max-width:480px;width:94%;max-height:92vh;overflow-y:auto;box-shadow:0 12px 44px rgba(0,0,0,.3)">'
