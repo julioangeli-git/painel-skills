@@ -406,7 +406,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 
 <header class="top"><div class="top-in">
   <div class="brand">
-    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0606.0313</span></div>
+    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0606.0319</span></div>
     <h1><em id="appTitle">Minha Jornada</em></h1>
   </div>
   <div class="tools">
@@ -557,10 +557,10 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
     var cC=Array.from(document.querySelectorAll('#lp-cursos .lp-card'));
     var all=mC.concat(cC);
     var CFG=[
-      {xOff:-110,rot:-140,yS:0.30},{xOff:120,rot:100,yS:0.25},
-      {xOff:-55,rot:-115,yS:0.38},{xOff:90,rot:130,yS:0.28},
-      {xOff:35,rot:-125,yS:0.33},{xOff:-85,rot:95,yS:0.26},
-      {xOff:65,rot:-105,yS:0.35}
+      {xOff:-110,rot:-140,yS:0.44},{xOff:120,rot:100,yS:0.40},
+      {xOff:-55,rot:-115,yS:0.52},{xOff:90,rot:130,yS:0.46},
+      {xOff:35,rot:-125,yS:0.48},{xOff:-85,rot:95,yS:0.42},
+      {xOff:65,rot:-105,yS:0.50}
     ];
     var sE={'lp-metodo':document.getElementById('lp-metodo'),
             'lp-cursos':document.getElementById('lp-cursos')};
@@ -591,7 +591,10 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
         var sz=lerp(96,64,ep);
         var x=lerp(vw/2+it.c.xOff-sz/2,cx-32,ep);
         var y=lerp(it.c.yS*vh,cr.top-32,eI(p));
-        var rot=it.c.rot*(1-ep);
+        /* 2+ voltas completas + desacelera até parar (easeOut) */
+        var spinDir=it.c.rot>=0?1:-1;
+        var totalRot=it.c.rot+spinDir*760;
+        var rot=lerp(totalRot,0,ep);
         var el=it.el;
         el.style.transform='translate('+x.toFixed(1)+'px,'+y.toFixed(1)+'px) rotate('+rot.toFixed(1)+'deg)';
         el.style.width=sz.toFixed(1)+'px';el.style.height=sz.toFixed(1)+'px';
