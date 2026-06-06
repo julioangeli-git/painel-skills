@@ -326,9 +326,9 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 .lp-card.noz-ready{border-color:rgba(164,94,32,.72)!important;background:linear-gradient(155deg,rgba(139,70,20,.13),rgba(100,50,10,.06))!important;box-shadow:0 0 0 1px rgba(180,100,30,.24),0 16px 48px rgba(139,70,20,.28)!important;border-radius:24px 24px 18px 18px!important}
 .lp-card.noz-ready h3{color:#f5d4a0!important}
 .lp-card.noz-ready .lp-card-icon{opacity:.3}
-/* Acorn flyer — scroll-driven */
+/* Acorn flyer — scroll-driven, sem borda ou fundo */
 #noz-scatter-layer{position:fixed;inset:0;pointer-events:none;z-index:25}
-.noz-flyer{position:absolute;left:0;top:0;pointer-events:none;overflow:hidden;will-change:transform,opacity;background:rgba(110,55,12,.1);border:1.5px solid rgba(164,94,32,.35);box-shadow:0 8px 28px rgba(0,0,0,.35)}
+.noz-flyer{position:absolute;left:0;top:0;pointer-events:none;overflow:hidden;will-change:transform,opacity}
 .noz-flyer img{width:100%;height:100%;object-fit:contain;display:block}
 /* Divider */
 .lp-divider{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.1),transparent);margin:0 24px}
@@ -406,7 +406,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 
 <header class="top"><div class="top-in">
   <div class="brand">
-    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0606.0228</span></div>
+    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0606.0248</span></div>
     <h1><em id="appTitle">Minha Jornada</em></h1>
   </div>
   <div class="tools">
@@ -522,130 +522,110 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 
   <script>
   (function(){
+    /* Nav highlight: usa 60% da altura como threshold para pegar Cursos */
     function lpUpdateNav(){
       var ids=['lp-hero','lp-metodo','lp-cursos'];
       var active='lp-hero';
+      var threshold=window.innerHeight*0.55;
       ids.forEach(function(id){
         var el=document.getElementById(id);
-        if(el&&el.getBoundingClientRect().top<=80) active=id;
+        if(el&&el.getBoundingClientRect().top<threshold) active=id;
       });
       document.querySelectorAll('.lp-nav-links a').forEach(function(a){
         var href=(a.getAttribute('href')||'').replace('#','');
-        a.classList.toggle('lp-nav-active', href===active);
+        a.classList.toggle('lp-nav-active',href===active);
       });
     }
-    var lSection=document.getElementById('landing');
-    if(lSection){
-      lSection.addEventListener('scroll',lpUpdateNav,{passive:true});
-      // fallback: window scroll
-      window.addEventListener('scroll',lpUpdateNav,{passive:true});
-    }
+    window.addEventListener('scroll',lpUpdateNav,{passive:true});
     lpUpdateNav();
+
+    /* Scroll lento ao clicar nos links (para ver as bolotas caindo) */
+    document.querySelectorAll('.lp-nav-links a[href^="#"]').forEach(function(a){
+      a.addEventListener('click',function(e){
+        var target=document.getElementById((a.getAttribute('href')||'').slice(1));
+        if(!target)return;
+        e.preventDefault();
+        var start=window.pageYOffset;
+        var end=target.getBoundingClientRect().top+window.pageYOffset-52;
+        var dur=1400; /* ms — devagar para ver as bolotas */
+        var t0=performance.now();
+        function step(t){
+          var elapsed=t-t0;
+          var p=Math.min(elapsed/dur,1);
+          /* ease in-out cúbico */
+          var ep=p<0.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
+          window.scrollTo(0,start+(end-start)*ep);
+          if(p<1)requestAnimationFrame(step);
+        }
+        requestAnimationFrame(step);
+      });
+    });
   })();
   </script>
 
   <script>
-  /* === Bolota scroll-driven: desliza continuamente com o scroll === */
+  /* === Bolota: cai do chão da seção, rolando, até encaixar no topo do card === */
   (function(){
     var LAYER=document.getElementById('noz-scatter-layer');
     if(!LAYER)return;
     var metodCards=Array.from(document.querySelectorAll('#lp-metodo .lp-card'));
     var cursosCards=Array.from(document.querySelectorAll('#lp-cursos .lp-card'));
     var allCards=metodCards.concat(cursosCards);
-
-    /* Posições iniciais: alternadas esquerda/direita fora da tela, Y variado */
-    var STARTS=[
-      {left:true,  y:0.25}, /* → metodo card 0 */
-      {left:false, y:0.18}, /* → metodo card 1 */
-      {left:true,  y:0.52}, /* → metodo card 2 */
-      {left:false, y:0.60}, /* → metodo card 3 */
-      {left:false, y:0.35}, /* → cursos card 0 */
-      {left:true,  y:0.72}, /* → cursos card 1 */
-      {left:true,  y:0.85}, /* → cursos card 2 */
+    var CFG=[
+      {xOff:-50,rot:-130,rd:1},{xOff:55,rot:90,rd:-1},
+      {xOff:-35,rot:-100,rd:1},{xOff:45,rot:120,rd:-1},
+      {xOff:40,rot:-110,rd:1},{xOff:-45,rot:80,rd:-1},
+      {xOff:20,rot:-95,rd:1}
     ];
-
-    var items=[], snapped=[];
+    var sEls={'lp-metodo':document.getElementById('lp-metodo'),'lp-cursos':document.getElementById('lp-cursos')};
+    var items=[],snapped=[];
     allCards.forEach(function(card,i){
-      if(i>=STARTS.length)return;
-      var div=document.createElement('div');
-      div.className='noz-flyer';
-      var img=document.createElement('img');
-      img.src='img/noz.png';img.alt='';img.setAttribute('aria-hidden','true');
-      div.appendChild(img);
-      LAYER.appendChild(div);
-      items.push({el:div, s:STARTS[i], card:card, sid:i<metodCards.length?'lp-metodo':'lp-cursos'});
+      if(i>=CFG.length)return;
+      var div=document.createElement('div');div.className='noz-flyer';
+      var img=document.createElement('img');img.src='img/noz.png';img.alt='';img.setAttribute('aria-hidden','true');
+      div.appendChild(img);LAYER.appendChild(div);
+      items.push({el:div,c:CFG[i],card:card,sid:i<metodCards.length?'lp-metodo':'lp-cursos'});
       snapped.push(false);
     });
-
-    var sEls={
-      'lp-metodo':document.getElementById('lp-metodo'),
-      'lp-cursos':document.getElementById('lp-cursos')
-    };
-
     function lerp(a,b,t){return a+(b-a)*t;}
     function easeOut(t){return 1-Math.pow(1-t,3);}
+    function easeIn(t){return t*t*t;}
     function clamp(v,lo,hi){return v<lo?lo:v>hi?hi:v;}
-
     var raf=null;
     function tick(){
       raf=null;
-      var vw=window.innerWidth, vh=window.innerHeight;
-
-      /* Leitura em lote */
+      var vw=window.innerWidth,vh=window.innerHeight;
       var sTops={};
-      Object.keys(sEls).forEach(function(k){
-        sTops[k]=sEls[k]?sEls[k].getBoundingClientRect().top:vh;
-      });
+      Object.keys(sEls).forEach(function(k){sTops[k]=sEls[k]?sEls[k].getBoundingClientRect().top:vh;});
       var cRects=items.map(function(it){return it.card.getBoundingClientRect();});
-
-      /* Escrita em lote */
       items.forEach(function(it,i){
-        var cr=cRects[i];
-        /* p: 0 quando seção entra pela base, 1 quando está visível */
-        var p=clamp((vh-sTops[it.sid])/(vh*0.72),0,1);
+        var cr=cRects[i],sTop=sTops[it.sid];
+        var floorY=sTop+160;
+        var p=clamp((vh-floorY)/(vh*0.62),0,1);
         var ep=easeOut(p);
-
-        /* Início: fora da tela (esquerda ou direita), Y fixo no viewport */
-        var sx=it.s.left?-150:vw+80;
-        var sy=it.s.y*vh;
-
-        /* Destino: posição exata do card (com 32px acima p/ o cap) */
-        var ex=cr.left, ey=cr.top-32;
-        var ew=cr.width, eh=cr.height+32;
-
-        var cx=lerp(sx,ex,ep);
-        var cy=lerp(sy,ey,ep);
-        var cw=lerp(110,ew,ep);
-        var ch=lerp(120,eh,ep);
-
-        /* Border-radius: oval → retangular */
-        var brt=lerp(55,22,easeOut(clamp(p*1.5,0,1)));
-        var brb=lerp(42,18,easeOut(clamp(p*1.5,0,1)));
-        var rot=lerp(it.s.left?-11:11, 0, ep);
-
+        var cardCX=cr.left+cr.width/2;
+        var x=lerp(cardCX+it.c.xOff-60,cardCX-32,ep);
+        var y=lerp(floorY,cr.top-32,easeIn(ep));
+        var sz=lerp(120,64,ep);
+        var rot=lerp(it.c.rot,0,ep);
         var el=it.el;
-        el.style.transform='translate('+cx.toFixed(1)+'px,'+cy.toFixed(1)+'px) rotate('+rot.toFixed(2)+'deg)';
-        el.style.width=cw.toFixed(1)+'px';
-        el.style.height=ch.toFixed(1)+'px';
-        el.style.borderRadius=brt.toFixed(1)+'px '+brt.toFixed(1)+'px '+brb.toFixed(1)+'px '+brb.toFixed(1)+'px';
-
-        /* Snap: quando chega ao destino */
+        el.style.transform='translate('+x.toFixed(1)+'px,'+y.toFixed(1)+'px) rotate('+rot.toFixed(1)+'deg)';
+        el.style.width=sz.toFixed(1)+'px';
+        el.style.height=sz.toFixed(1)+'px';
+        el.style.borderRadius='50%';
+        el.style.opacity=(p<=0.01)?'0':'1';
         if(p>=0.97&&!snapped[i]){
           snapped[i]=true;
-          el.style.transition='opacity 0.4s';
-          el.style.opacity='0';
-          setTimeout(function(){it.card.classList.add('noz-ready');},380);
+          el.style.transition='opacity 0.3s';el.style.opacity='0';
+          (function(card){setTimeout(function(){card.classList.add('noz-ready');},300);})(it.card);
         }
-        /* Volta: se o usuário rolar de volta */
-        if(p<0.78&&snapped[i]){
+        if(p<0.75&&snapped[i]){
           snapped[i]=false;
-          el.style.transition='opacity 0.3s';
-          el.style.opacity='1';
+          el.style.transition='opacity 0.25s';el.style.opacity='1';
           it.card.classList.remove('noz-ready');
         }
       });
     }
-
     function onScroll(){if(!raf)raf=requestAnimationFrame(tick);}
     window.addEventListener('scroll',onScroll,{passive:true});
     window.addEventListener('resize',onScroll,{passive:true});
