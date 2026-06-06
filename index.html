@@ -364,7 +364,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 
 <header class="top"><div class="top-in">
   <div class="brand">
-    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0605.2216</span></div>
+    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0605.2222</span></div>
     <h1><em id="appTitle">Minha Jornada</em></h1>
   </div>
   <div class="tools">
@@ -2272,16 +2272,16 @@ function matSubcardsHtml(t,lang){
     +'<div class="sub-row">'
     +theoryCard('v','Vocabulário',vDone,vStarted,vTot,vSeen,vPct,vCrit)
     +practiceCard('Revisão','🎴',vSrsPct,vReviewOC,!vDone,'Conclua o Vocabulário para liberar')
-    +practiceCard('Pronúncia','🎤',vPrnPct,vPrnOC,!vDone,'Conclua o Vocabulário para liberar')
+    +practiceCard('Pronúncia','🎤',vLeiPct,"openLeitura('"+id+"','vocab')",!vDone,'Conclua o Vocabulário para liberar')
+    +practiceCard('Tradução','🗣️',vPrnPct,vPrnOC,!vDone,'Conclua o Vocabulário para liberar')
     +fillCard('✏️ Preencha',vFillPct,"openFill('"+id+"','vocab')",!vDone||vFillLocked,'Conclua o Vocabulário para liberar')
-    +'</div>'
     /* ── Row 2: Frases ── */
     +'<div class="sub-row">'
     +theoryCard('f','Frases-chave',fDone,fStarted,fTot,fSeen,fPct,fCrit)
     +practiceCard('Revisão','🎴',fSrsPct,fReviewOC,!fDone,'Conclua as Frases para liberar')
-    +practiceCard('Pronúncia','🎤',fPrnPct,fPrnOC,!fDone,'Conclua as Frases para liberar')
+    +practiceCard('Pronúncia','🎤',fLeiPct,"openLeitura('"+id+"','phrases')",!fDone,'Conclua as Frases para liberar')
+    +practiceCard('Tradução','🗣️',fPrnPct,fPrnOC,!fDone,'Conclua as Frases para liberar')
     +fillCard('✏️ Preencha',fFillPct,"openFill('"+id+"','phrases')",!fDone,'Conclua as Frases para liberar')
-    +'</div>'
     /* ── Row 3+4: locked ── */
     +lockedComing('Música','🎵')
     +lockedComing('Imersão real','🌍')
