@@ -395,7 +395,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 
 <header class="top"><div class="top-in">
   <div class="brand">
-    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0606.0129</span></div>
+    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0606.0136</span></div>
     <h1><em id="appTitle">Minha Jornada</em></h1>
   </div>
   <div class="tools">
@@ -2638,19 +2638,6 @@ var THEMES={
     '--sub-done-bg':'#f0fff4',
     '_theme':'branco'
   },
-  'Oceano':{'--bg':'#eaf2f7','--bg2':'#dde9f1','--surface':'#f7fbfe','--surface2':'#eef5fa','--terra':'#1c6b8c','--terra-g':'#2e8bb0','--gold':'#3a7ca5','--ink':'#10222c','--ink2':'#33586b'},
-  'Floresta':{'--bg':'#eef3e7','--bg2':'#e2ead6','--surface':'#f8fbf3','--surface2':'#eef4e6','--terra':'#4f7a3a','--terra-g':'#67995a','--gold':'#7a9a3a','--ink':'#16240f','--ink2':'#33502a'},
-  'Azul Metalico':{
-    '--bg':'#0e1520','--bg2':'#141c2a','--surface':'#1a2333','--surface2':'#1f2b3e',
-    '--ink':'#cdd8e8','--ink2':'#7a94b0','--ink3':'#4a6080',
-    '--border':'rgba(90,130,180,.15)','--border2':'rgba(90,130,180,.28)',
-    '--terra':'#4a80b0','--terra-g':'#5c9acd','--gold':'#8ab0d0',
-    '--it-green':'#3fb950','--it-red':'#f85149',
-    '--sub-done-bg':'#0d1e30',
-    '--shadow':'0 1px 3px rgba(0,15,40,.4),0 8px 24px rgba(0,15,40,.5),0 0 0 1px rgba(90,130,180,.15)',
-    '_theme':'azul'
-  },
-  'Rosé':{'--bg':'#f7ecec','--bg2':'#f1dede','--surface':'#fdf6f6','--surface2':'#f8eaea','--terra':'#b8485f','--terra-g':'#d46a80','--gold':'#c4708a','--ink':'#2a1218','--ink2':'#6b3340'},
   'Itália':{}
 };
 var THEME_VARS=['--bg','--bg2','--surface','--surface2','--ink','--ink2','--ink3','--terra','--terra-g','--gold','--border','--border2','--sub-done-bg'];
@@ -3096,8 +3083,18 @@ function srsInitUI(){
   // Injetar CSS global para: tema escuro, sec-flags ocultas, tricolore condicional
   if(!document.getElementById('srsGlobalStyles')){
     var css=document.createElement('style');css.id='srsGlobalStyles';css.textContent=
+      /* ===== Layout universal (igual ao SquuiLui em todos os temas) ===== */
+      '.hero{padding:16px 24px!important;gap:20px!important;align-items:center!important}'
+      +'.gaugewrap .big{font-size:24px!important;font-weight:600!important;line-height:1!important}'
+      +'.gaugewrap .lab{font-size:8px!important;letter-spacing:.14em!important}'
+      +'.herostats{display:flex!important;align-items:stretch!important;gap:0!important}'
+      +'.hs{padding:4px 20px!important;text-align:center!important}'
+      +'.hs .v{font-size:26px!important;font-weight:600!important;line-height:1!important}'
+      +'.hs .v small{font-size:14px!important;opacity:.7!important}'
+      +'.hs .l{font-size:8px!important;margin-top:4px!important;text-align:center!important}'
+      +'.hs+.hs::before{left:0!important;top:8px!important;bottom:8px!important}'
       /* sec-flags: remover banderinhas italianas hardcoded do header da overview */
-      '.sec-flag{display:none!important}'
+      +'.sec-flag{display:none!important}'
       /* tricolore: oculto por padrão, só aparece com .showing-italian no body */
       +'.tricolore{display:none!important}'
       +'body.showing-italian .tricolore{display:grid!important}'
@@ -3170,31 +3167,6 @@ function srsInitUI(){
       +'[data-theme=branco] .mat-card-front{background:linear-gradient(135deg,#e8f4fc,#d4ebf8)!important;border-color:#0071e3!important}'
       +'[data-theme=branco] .mat-word{color:#0071e3!important}'
       +'[data-theme=branco] .mat-card-back{background:linear-gradient(135deg,#e8fce8,#d4f8d4)!important;border-color:#34c759!important}'
-      /* ===== Azul Metalico theme ===== */
-      +'[data-theme=azul] header.top{background:rgba(14,21,32,.88)!important;border-color:rgba(90,130,180,.18)!important;box-shadow:0 1px 0 rgba(90,130,180,.1)!important}'
-      +'[data-theme=azul] .kicker{color:#4a80b0!important;opacity:1!important}'
-      +'[data-theme=azul] .back,[data-theme=azul] .login-toggle a{color:#4a80b0!important;font-weight:500}'
-      +'[data-theme=azul] .back:hover{color:#5c9acd!important;font-weight:700!important;background:rgba(74,128,176,.1)!important;padding:8px 14px!important;border-radius:20px!important;box-shadow:inset 0 0 0 1px rgba(74,128,176,.2)!important}'
-      +'[data-theme=azul] a{color:#4a80b0}'
-      +'[data-theme=azul] a:hover{color:#5c9acd}'
-      +'[data-theme=azul] .mat-card-front{background:linear-gradient(135deg,#1a2333,#0e1520)!important;border-color:#4a80b0!important}'
-      +'[data-theme=azul] .mat-word{color:#5c9acd!important}'
-      +'[data-theme=azul] .mat-card-back{background:linear-gradient(135deg,#0d1e30,#071509)!important;border-color:#3fb950!important;color:#c8e6c0!important}'
-      +'[data-theme=azul] .cat-card{background:#1a2333!important;color:#cdd8e8}'
-      +'[data-theme=azul] .cat-card.cat-done{background:#0d1e30!important;border-color:#4a80b0!important}'
-      +'[data-theme=azul] .sub-card{background:#1a2333!important}'
-      +'[data-theme=azul] .sub-card.sub-done{background:#0d1e30!important}'
-      +'[data-theme=azul] #matWhy{background:#141c2a!important;color:#7a94b0!important}'
-      +'[data-theme=azul] #matView{color:#cdd8e8}'
-      +'[data-theme=azul] .brand h1 em{background:linear-gradient(95deg,#4a80b0,#5c9acd,#8ab0d0)!important;-webkit-background-clip:text!important;background-clip:text!important;-webkit-text-fill-color:transparent!important}'
-      +'[data-theme=azul] .hero{border-color:rgba(90,130,180,.18)!important}'
-      +'[data-theme=azul] .hero::after{background:linear-gradient(to bottom,#4a80b0,#5c9acd)!important}'
-      +'[data-theme=azul] .jstep.active{background:rgba(74,128,176,.08)!important}'
-      +'[data-theme=azul] .jstep.active::after{background:linear-gradient(90deg,#2a5a8a,#4a80b0,#5c9acd)!important}'
-      +'[data-theme=azul] .jstep.done::after{background:#4a80b0!important}'
-      +'[data-theme=azul] .login-box{background:#1a2333!important;color:#cdd8e8!important}'
-      +'[data-theme=azul] .login-box input{background:#0e1520!important;color:#cdd8e8!important;border-color:rgba(90,130,180,.25)!important}'
-      +'[data-theme=azul] .login-box button{background:#4a80b0!important;color:#0e1520!important}'
       /* ===== Transition animations (all themes) ===== */
       +'.macro-card,.sub-card,.cat-card,.focus-card{transition:transform .2s ease,box-shadow .2s ease,opacity .2s ease}'
       +'.macro-card:hover,.focus-card:hover{transform:translateY(-2px)}'
