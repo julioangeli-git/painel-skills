@@ -272,10 +272,31 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 .cloud-status{font-size:12px;opacity:.65;margin-right:6px;white-space:nowrap}
 .whoami-wrap{font-size:13px;margin-right:6px;white-space:nowrap}
 
+/* ── Landing page ─────────────────────────────────────────────────────────── */
+#landing{display:none;min-height:100vh;background:var(--bg)}
+.lp-hero{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:64px 24px 48px;gap:14px}
+.lp-mascot{width:88px;height:auto;margin-bottom:4px}
+.lp-hero h1{font-family:'Fraunces',serif;font-size:clamp(26px,5vw,46px);font-weight:600;color:var(--ink);margin:0;line-height:1.2}
+.lp-hero h1 em{color:var(--terra);font-style:normal}
+.lp-hero .lp-sub{font-size:16px;color:var(--ink2);max-width:500px;line-height:1.65;margin:0}
+.lp-btns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:10px}
+.lp-btn-primary{background:var(--terra);color:#fff;border:none;padding:14px 30px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .15s}
+.lp-btn-primary:hover{opacity:.88}
+.lp-btn-ghost{background:transparent;border:1.5px solid var(--border2);color:var(--ink2);padding:13px 24px;border-radius:12px;font-size:15px;cursor:pointer;font-family:inherit;transition:border-color .15s}
+.lp-btn-ghost:hover{border-color:var(--ink3)}
+.lp-features{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px;max-width:880px;margin:0 auto;padding:0 24px 56px}
+.lp-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:26px 22px}
+.lp-card-icon{font-size:26px;margin-bottom:12px}
+.lp-card h3{font-family:'Fraunces',serif;font-size:17px;color:var(--ink);margin:0 0 8px;font-weight:500}
+.lp-card p{font-size:13.5px;color:var(--ink2);line-height:1.6;margin:0}
+.lp-bottom{text-align:center;padding:44px 24px 64px;background:var(--bg2);border-top:1px solid var(--border)}
+.lp-bottom h2{font-family:'Fraunces',serif;font-size:22px;color:var(--ink);margin:0 0 10px;font-weight:500}
+.lp-bottom p{font-size:14px;color:var(--ink2);margin:0 0 24px}
+
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 </head><body>
-<div id="loginOverlay" class="login-ov">
+<div id="loginOverlay" class="login-ov" style="display:none">
   <div class="login-box">
     <div class="login-flag"><span></span><span></span><span></span></div>
     <h2>Central de Aprendizagem</h2>
@@ -343,7 +364,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 
 <header class="top"><div class="top-in">
   <div class="brand">
-    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0605.2019</span></div>
+    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0605.2110</span></div>
     <h1><em id="appTitle">Minha Jornada</em></h1>
   </div>
   <div class="tools">
@@ -354,6 +375,46 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
     <input type="file" id="impFile" accept="application/json" style="display:none">
   </div>
 </div></header>
+
+
+<section id="landing" style="display:none">
+  <div class="lp-hero">
+    <img src="img/mascote.png" alt="SquuiLui" class="lp-mascot">
+    <div class="tricolore" style="margin:0 0 4px;width:48px;height:5px;border-radius:3px;overflow:hidden;display:flex"><span style="flex:1;background:var(--it-green)"></span><span style="flex:1;background:#fff;border-top:1px solid var(--border);border-bottom:1px solid var(--border)"></span><span style="flex:1;background:var(--it-red)"></span></div>
+    <h1>Aprenda com proposito,<br><em>avance com metodo</em></h1>
+    <p class="lp-sub">Uma jornada de aprendizagem personalizada com revisao inteligente e progresso visivel. Do zero ao fluente, no seu ritmo.</p>
+    <div class="lp-btns">
+      <button class="lp-btn-primary" id="lpCadastrarBtn">Comecar agora &mdash; e gratis</button>
+      <button class="lp-btn-ghost" id="lpEntrarBtn">Ja tenho conta</button>
+    </div>
+  </div>
+
+  <div class="lp-features">
+    <div class="lp-card">
+      <div class="lp-card-icon">&#128506;</div>
+      <h3>Jornada estruturada</h3>
+      <p>Um mapa claro do que aprender e em qual ordem, organizado em blocos progressivos. Sem perder tempo com conteudo irrelevante.</p>
+    </div>
+    <div class="lp-card">
+      <div class="lp-card-icon">&#128260;</div>
+      <h3>Revisao inteligente</h3>
+      <p>Sistema de repeticao espacada que te lembra do conteudo no momento certo &mdash; para fixar de verdade, sem decorar a forca.</p>
+    </div>
+    <div class="lp-card">
+      <div class="lp-card-icon">&#128202;</div>
+      <h3>Progresso visivel</h3>
+      <p>Acompanhe sua evolucao com estatisticas claras. Cada sessao conta &mdash; e voce vai sentir cada passo dado na jornada.</p>
+    </div>
+  </div>
+
+  <div class="lp-bottom">
+    <h2>Pronto para comecar sua jornada?</h2>
+    <p>Crie sua conta gratuita e comece hoje.</p>
+    <div class="lp-btns">
+      <button class="lp-btn-primary" id="lpCadastrarBtn2">Criar conta gratis</button>
+    </div>
+  </div>
+</section>
 
 <div class="wrap">
 <div class="banner" id="banner">Salvamento automatico indisponivel neste preview. Use Exportar.</div>
@@ -1636,7 +1697,21 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progre
     else{ closeOverlay(); }
   }
 
+
+  function showLanding(){
+    var l=document.getElementById('landing');if(l)l.style.display='block';
+    var w=document.querySelector('.wrap');if(w)w.style.display='none';
+    var t=document.querySelector('.tools');if(t)t.style.display='none';
+    var lo=document.getElementById('loginOverlay');if(lo)lo.style.display='none';
+  }
+  function hideLanding(){
+    var l=document.getElementById('landing');if(l)l.style.display='none';
+    var w=document.querySelector('.wrap');if(w)w.style.display='';
+    var t=document.querySelector('.tools');if(t)t.style.display='';
+  }
+
   function closeOverlay(){
+    hideLanding();
     var lo=document.getElementById('loginOverlay');if(lo)lo.style.display='none';
     try{ renderOverview(); }catch(e){}
   }
@@ -1807,10 +1882,10 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progre
       applyProjectName('Minha Jornada');
       var ab=document.getElementById('ajustesBtn');if(ab)ab.style.display='none';
       window._rawUser=null;
-      var lo=document.getElementById('loginOverlay');if(lo)lo.style.display='flex';
       var pin=document.getElementById('loginPin');if(pin)pin.value='';
       setMsg('loginMsg','');
       showStep('authStepEmail');
+      showLanding();
     };
   }
 
@@ -1867,16 +1942,19 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progre
 
   // ── Restaurar sessão persistida ───────────────────────────────────────────────
   (async function(){
-    if(!sb) return;
+    if(!sb){ showLanding(); return; }
     clearTimeout(cloudTimer); cloudTimer=null;
     var r=await sb.auth.getSession();
     if(r.data&&r.data.session&&r.data.session.user){
       var user=r.data.session.user;
       applyUser(user);
       try{ await applyCloud(); _origSave(); }catch(e){ console.error('restaurar progresso',e); }
+      hideLanding();
       var lo=document.getElementById('loginOverlay');if(lo)lo.style.display='none';
       try{ renderOverview(); }catch(e){}
       setStatus('salvo na nuvem');
+    } else {
+      showLanding();
     }
   })();
 
