@@ -395,7 +395,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 
 <header class="top"><div class="top-in">
   <div class="brand">
-    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0606.0150</span></div>
+    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0606.0207</span></div>
     <h1><em id="appTitle">Minha Jornada</em></h1>
   </div>
   <div class="tools">
@@ -3088,6 +3088,7 @@ function srsInitUI(){
       +'.hs .v small{font-size:14px!important;opacity:.7!important}'
       +'.hs .l{font-size:8px!important;margin-top:4px!important;text-align:center!important}'
       +'.hs+.hs::before{left:0!important;top:8px!important;bottom:8px!important}'
+      +'.radar-hero svg{width:170px!important;height:160px!important}'
       /* sec-flags: remover banderinhas italianas hardcoded do header da overview */
       +'.sec-flag{display:none!important}'
       /* tricolore: oculto por padrão, só aparece com .showing-italian no body */
@@ -3119,7 +3120,6 @@ function srsInitUI(){
       +'[data-theme=squilui] .sec-flag{display:flex!important;width:auto!important;height:18px!important;background:none!important;overflow:visible!important;align-items:center!important}'
       /* SquuiLui: hero compact + hero left stripe */
       +'[data-theme=squilui] .hero::after{background:linear-gradient(to bottom,#c4620a,#e07820,#d4982a)!important}'
-      +'[data-theme=squilui] .radar-hero svg{width:170px!important;height:160px!important}'
       +'#squiluiMascot{width:52px;height:52px;object-fit:contain;margin-right:8px;cursor:pointer;display:inline-flex;align-items:center;animation:mascotBob 2.5s ease-in-out infinite}'
       +'@keyframes mascotBob{0%,100%{transform:translateY(0) rotate(0deg)}40%{transform:translateY(-4px) rotate(-5deg)}60%{transform:translateY(-4px) rotate(5deg)}}'
       /* SquuiLui: brand gradient */
