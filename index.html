@@ -406,7 +406,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 
 <header class="top"><div class="top-in">
   <div class="brand">
-    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0606.0248</span></div>
+    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0606.0256</span></div>
     <h1><em id="appTitle">Minha Jornada</em></h1>
   </div>
   <div class="tools">
@@ -564,25 +564,30 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
   </script>
 
   <script>
-  /* === Bolota: cai do chão da seção, rolando, até encaixar no topo do card === */
+  /* === Bolota: parte do topo (hero), cai rolando até encaixar nos cards === */
   (function(){
     var LAYER=document.getElementById('noz-scatter-layer');
     if(!LAYER)return;
     var metodCards=Array.from(document.querySelectorAll('#lp-metodo .lp-card'));
     var cursosCards=Array.from(document.querySelectorAll('#lp-cursos .lp-card'));
     var allCards=metodCards.concat(cursosCards);
+    /* xOff=dispersão horizontal relativa ao centro do card; rot=rotação inicial */
     var CFG=[
-      {xOff:-50,rot:-130,rd:1},{xOff:55,rot:90,rd:-1},
-      {xOff:-35,rot:-100,rd:1},{xOff:45,rot:120,rd:-1},
-      {xOff:40,rot:-110,rd:1},{xOff:-45,rot:80,rd:-1},
-      {xOff:20,rot:-95,rd:1}
+      {xOff:-60,rot:-140,yStart:0.12},{xOff:70,rot:100,yStart:0.08},
+      {xOff:-40,rot:-110,yStart:0.16},{xOff:55,rot:125,yStart:0.10},
+      {xOff:50,rot:-120,yStart:0.14},{xOff:-55,rot:90,yStart:0.09},
+      {xOff:30,rot:-100,yStart:0.13}
     ];
-    var sEls={'lp-metodo':document.getElementById('lp-metodo'),'lp-cursos':document.getElementById('lp-cursos')};
+    var sEls={
+      'lp-metodo':document.getElementById('lp-metodo'),
+      'lp-cursos':document.getElementById('lp-cursos')
+    };
     var items=[],snapped=[];
     allCards.forEach(function(card,i){
       if(i>=CFG.length)return;
       var div=document.createElement('div');div.className='noz-flyer';
-      var img=document.createElement('img');img.src='img/noz.png';img.alt='';img.setAttribute('aria-hidden','true');
+      var img=document.createElement('img');img.src='img/noz.png';img.alt='';
+      img.setAttribute('aria-hidden','true');
       div.appendChild(img);LAYER.appendChild(div);
       items.push({el:div,c:CFG[i],card:card,sid:i<metodCards.length?'lp-metodo':'lp-cursos'});
       snapped.push(false);
@@ -595,33 +600,49 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
     function tick(){
       raf=null;
       var vw=window.innerWidth,vh=window.innerHeight;
+      /* Leitura em lote */
       var sTops={};
-      Object.keys(sEls).forEach(function(k){sTops[k]=sEls[k]?sEls[k].getBoundingClientRect().top:vh;});
+      Object.keys(sEls).forEach(function(k){
+        sTops[k]=sEls[k]?sEls[k].getBoundingClientRect().top:vh*2;
+      });
       var cRects=items.map(function(it){return it.card.getBoundingClientRect();});
       items.forEach(function(it,i){
-        var cr=cRects[i],sTop=sTops[it.sid];
-        var floorY=sTop+160;
-        var p=clamp((vh-floorY)/(vh*0.62),0,1);
+        var cr=cRects[i];
+        var sTop=sTops[it.sid];
+        /* Progresso: 0 quando seção está 130% abaixo do viewport,
+           1 quando seção está 25% abaixo do topo */
+        var p=clamp((vh*1.3-sTop)/(vh*1.05),0,1);
         var ep=easeOut(p);
         var cardCX=cr.left+cr.width/2;
-        var x=lerp(cardCX+it.c.xOff-60,cardCX-32,ep);
-        var y=lerp(floorY,cr.top-32,easeIn(ep));
-        var sz=lerp(120,64,ep);
+        /* Início: topo da tela (yStart fraction) perto da coluna do card */
+        var startX=cardCX+it.c.xOff-60;
+        var startY=it.c.yStart*vh;       /* bem no topo, abaixo do nav */
+        /* Fim: topo do card */
+        var endX=cardCX-32;
+        var endY=cr.top-32;
+        var x=lerp(startX,endX,ep);
+        /* easeIn na vertical = aceleração de queda */
+        var y=lerp(startY,endY,easeIn(ep));
+        /* Encolhe de 110px para 64px */
+        var sz=lerp(110,64,ep);
+        /* Gira até parar */
         var rot=lerp(it.c.rot,0,ep);
         var el=it.el;
         el.style.transform='translate('+x.toFixed(1)+'px,'+y.toFixed(1)+'px) rotate('+rot.toFixed(1)+'deg)';
         el.style.width=sz.toFixed(1)+'px';
         el.style.height=sz.toFixed(1)+'px';
         el.style.borderRadius='50%';
-        el.style.opacity=(p<=0.01)?'0':'1';
+        el.style.opacity=(p<0.02)?'0':'1';
         if(p>=0.97&&!snapped[i]){
           snapped[i]=true;
-          el.style.transition='opacity 0.3s';el.style.opacity='0';
-          (function(card){setTimeout(function(){card.classList.add('noz-ready');},300);})(it.card);
+          el.style.transition='opacity 0.3s';
+          el.style.opacity='0';
+          (function(c){setTimeout(function(){c.classList.add('noz-ready');},300);})(it.card);
         }
-        if(p<0.75&&snapped[i]){
+        if(p<0.80&&snapped[i]){
           snapped[i]=false;
-          el.style.transition='opacity 0.25s';el.style.opacity='1';
+          el.style.transition='opacity 0.2s';
+          el.style.opacity='1';
           it.card.classList.remove('noz-ready');
         }
       });
