@@ -288,7 +288,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 .lp-btn-nav-primary{background:#0071e3;border:none;color:#fff;padding:7px 18px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .2s}
 .lp-btn-nav-primary:hover{background:#0077ed}
 /* Hero */
-.lp-hero{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:44px 24px 10px;min-height:100vh;height:100vh;gap:0;position:relative;overflow:hidden;box-sizing:border-box}
+.lp-hero{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:44px 24px 10px;min-height:100vh;height:100vh;gap:0;position:relative;overflow:hidden;box-sizing:border-box;z-index:2}
 .lp-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 70% 60% at 50% 30%,rgba(0,113,227,.18) 0%,transparent 70%);pointer-events:none}
 .lp-mascot-glow{position:relative;margin-bottom:4px;width:350px;height:350px}
 .lp-mascot-glow::before{content:'';position:absolute;top:-50%;left:-75%;width:40%;height:200%;background:linear-gradient(to right,transparent,rgba(255,255,255,.18),transparent);transform:rotate(25deg);animation:lp-wave-sweep 3.5s ease-in-out infinite;z-index:2;pointer-events:none}
@@ -310,7 +310,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 @keyframes lp-wave-sweep{0%{left:-75%;opacity:0}10%{opacity:1}55%{left:130%;opacity:0}100%{left:130%;opacity:0}}
 @keyframes lp-glow-pulse{0%,100%{opacity:.6}50%{opacity:.95}}
 /* Features section */
-.lp-section{padding:80px 24px;max-width:960px;margin:0 auto}
+.lp-section{padding:80px 24px;max-width:960px;margin:0 auto;position:relative;z-index:2}
 .lp-section-label{font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#58a6ff;margin-bottom:14px}
 .lp-section h2{font-family:'Fraunces',serif;font-size:clamp(24px,4vw,40px);color:#f5f5f7;margin:0 0 48px;line-height:1.2;font-weight:500}
 .lp-features{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
@@ -327,7 +327,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 .lp-card.noz-ready h3{color:#f5d4a0!important}
 .lp-card.noz-ready .lp-card-icon{opacity:.3}
 /* Acorn flyer — scroll-driven, sem borda ou fundo */
-#noz-scatter-layer{position:fixed;inset:0;pointer-events:none;z-index:25}
+#noz-scatter-layer{position:fixed;inset:0;pointer-events:none;z-index:1}
 .noz-flyer{position:absolute;left:0;top:0;pointer-events:none;overflow:hidden;will-change:transform,opacity}
 .noz-flyer img{width:100%;height:100%;object-fit:contain;display:block}
 /* Divider */
@@ -406,7 +406,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 
 <header class="top"><div class="top-in">
   <div class="brand">
-    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0606.0331</span></div>
+    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0606.0338</span></div>
     <h1><em id="appTitle">Minha Jornada</em></h1>
   </div>
   <div class="tools">
@@ -531,9 +531,9 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
     function slowScroll(id){
       var t=document.getElementById(id);if(!t)return;
       var s=window.pageYOffset,e=t.getBoundingClientRect().top+window.pageYOffset-52;
-      var dur=1400,t0=performance.now();
+      var dur=1000,t0=performance.now();
       (function step(now){
-        var p=Math.min((now-t0)/dur,1),ep=p<0.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
+        var p=Math.min((now-t0)/dur,1),ep=1-Math.pow(1-p,2);
         window.scrollTo(0,s+(e-s)*ep);if(p<1)requestAnimationFrame(step);
       })(t0);
     }
