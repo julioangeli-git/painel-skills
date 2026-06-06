@@ -364,7 +364,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 
 <header class="top"><div class="top-in">
   <div class="brand">
-    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0605.2110</span></div>
+    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0605.2125</span></div>
     <h1><em id="appTitle">Minha Jornada</em></h1>
   </div>
   <div class="tools">
@@ -416,7 +416,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
   </div>
 </section>
 
-<div class="wrap">
+<div class="wrap" style="display:none">
 <div class="banner" id="banner">Salvamento automatico indisponivel neste preview. Use Exportar.</div>
 
 <section id="overview">
@@ -1868,6 +1868,20 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progre
     if(ajNi)ajNi.addEventListener('keydown',function(e){if(e.key==='Enter')window.saveAjustes();});
     var ajModal=document.getElementById('ajustesModal');
     if(ajModal)ajModal.addEventListener('click',function(e){if(e.target===ajModal)window.closeAjustes();});
+
+    // Landing page buttons
+    function openAuthOverlay(){
+      var lo=document.getElementById('loginOverlay');if(lo)lo.style.display='flex';
+      showStep('authStepEmail');
+      setTimeout(function(){var ni=document.getElementById('loginNome');if(ni)ni.focus();},50);
+    }
+    var lpc=document.getElementById('lpCadastrarBtn');if(lpc)lpc.onclick=openAuthOverlay;
+    var lpc2=document.getElementById('lpCadastrarBtn2');if(lpc2)lpc2.onclick=openAuthOverlay;
+    var lpe=document.getElementById('lpEntrarBtn');
+    if(lpe)lpe.onclick=function(){
+      var lo=document.getElementById('loginOverlay');if(lo)lo.style.display='flex';
+      showStep('authStepEmail');
+    };
 
     // Save + Logout
     var sv=document.getElementById('saveBtn'); if(sv)sv.onclick=window.salvarAgora;
