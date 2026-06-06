@@ -320,17 +320,16 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 .lp-card-icon{font-size:28px;margin-bottom:14px;transition:opacity .5s}
 .lp-card h3{font-family:'Fraunces',serif;font-size:18px;color:#f5f5f7;margin:0 0 10px;font-weight:500;transition:color .5s}
 .lp-card p{font-size:14px;color:rgba(245,245,247,.6);line-height:1.65;margin:0}
-/* Acorn cap — sits above card when snapped */
-.noz-cap{position:absolute;top:-30px;left:50%;transform:translateX(-50%) scale(0) rotate(-20deg);width:60px;height:60px;object-fit:contain;opacity:0;transition:transform .75s cubic-bezier(.34,1.56,.64,1),opacity .4s;pointer-events:none;z-index:5;filter:drop-shadow(0 4px 8px rgba(0,0,0,.4))}
+/* Acorn cap — aparece no topo do card ao encaixar */
+.noz-cap{position:absolute;top:-32px;left:50%;transform:translateX(-50%) scale(0) rotate(-20deg);width:64px;height:64px;object-fit:contain;opacity:0;transition:transform .8s cubic-bezier(.34,1.56,.64,1),opacity .4s;pointer-events:none;z-index:6;filter:drop-shadow(0 4px 10px rgba(0,0,0,.5))}
 .lp-card.noz-ready .noz-cap{transform:translateX(-50%) scale(1) rotate(0deg);opacity:1}
-.lp-card.noz-ready{border-color:rgba(164,94,32,.7)!important;background:linear-gradient(155deg,rgba(139,70,20,.12),rgba(100,50,10,.06))!important;box-shadow:0 0 0 1px rgba(180,100,30,.22),0 14px 44px rgba(139,70,20,.25)!important;border-radius:24px 24px 18px 18px!important}
+.lp-card.noz-ready{border-color:rgba(164,94,32,.72)!important;background:linear-gradient(155deg,rgba(139,70,20,.13),rgba(100,50,10,.06))!important;box-shadow:0 0 0 1px rgba(180,100,30,.24),0 16px 48px rgba(139,70,20,.28)!important;border-radius:24px 24px 18px 18px!important}
 .lp-card.noz-ready h3{color:#f5d4a0!important}
-.lp-card.noz-ready .lp-card-icon{opacity:.35}
-/* Acorn scatter layer */
-#noz-scatter-layer{position:fixed;inset:0;pointer-events:none;z-index:25;overflow:hidden}
-.noz-scatter{position:absolute;width:70px;height:70px;object-fit:contain;transition:transform 1.1s cubic-bezier(.22,1,.36,1),opacity .5s;will-change:transform,opacity;filter:drop-shadow(0 6px 14px rgba(0,0,0,.45))}
-@keyframes noz-float{0%,100%{transform:rotate(var(--r,0deg)) translateY(0)}50%{transform:rotate(calc(var(--r,0deg) + 6deg)) translateY(-14px)}}
-.noz-scatter.noz-floating{animation:noz-float var(--fd,3.5s) ease-in-out infinite}
+.lp-card.noz-ready .lp-card-icon{opacity:.3}
+/* Acorn flyer — scroll-driven */
+#noz-scatter-layer{position:fixed;inset:0;pointer-events:none;z-index:25}
+.noz-flyer{position:absolute;left:0;top:0;pointer-events:none;overflow:hidden;will-change:transform,opacity;background:rgba(110,55,12,.1);border:1.5px solid rgba(164,94,32,.35);box-shadow:0 8px 28px rgba(0,0,0,.35)}
+.noz-flyer img{width:100%;height:100%;object-fit:contain;display:block}
 /* Divider */
 .lp-divider{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.1),transparent);margin:0 24px}
 /* Footer */
@@ -407,7 +406,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 
 <header class="top"><div class="top-in">
   <div class="brand">
-    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0606.0217</span></div>
+    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0606.0228</span></div>
     <h1><em id="appTitle">Minha Jornada</em></h1>
   </div>
   <div class="tools">
@@ -546,61 +545,111 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
   </script>
 
   <script>
-  /* === Acorn scatter & snap animation === */
+  /* === Bolota scroll-driven: desliza continuamente com o scroll === */
   (function(){
-    var CFG=[
-      {side:'left', x:4,  y:16, r:-18, fd:3.2},
-      {side:'right',x:5,  y:27, r: 23, fd:3.8},
-      {side:'left', x:3,  y:52, r: -9, fd:3.5},
-      {side:'right',x:4,  y:67, r: 28, fd:4.1},
-      {side:'right',x:6,  y:40, r:-22, fd:3.7},
-      {side:'left', x:6,  y:75, r: 14, fd:3.3},
-      {side:'right',x:5,  y:82, r:-10, fd:4.0}
-    ];
-    var layer=document.getElementById('noz-scatter-layer');
-    if(!layer)return;
+    var LAYER=document.getElementById('noz-scatter-layer');
+    if(!LAYER)return;
     var metodCards=Array.from(document.querySelectorAll('#lp-metodo .lp-card'));
     var cursosCards=Array.from(document.querySelectorAll('#lp-cursos .lp-card'));
-    var nozEls=[];
+    var allCards=metodCards.concat(cursosCards);
 
-    CFG.forEach(function(cfg,i){
-      var total=metodCards.length+cursosCards.length;
-      if(i>=total)return;
+    /* Posições iniciais: alternadas esquerda/direita fora da tela, Y variado */
+    var STARTS=[
+      {left:true,  y:0.25}, /* → metodo card 0 */
+      {left:false, y:0.18}, /* → metodo card 1 */
+      {left:true,  y:0.52}, /* → metodo card 2 */
+      {left:false, y:0.60}, /* → metodo card 3 */
+      {left:false, y:0.35}, /* → cursos card 0 */
+      {left:true,  y:0.72}, /* → cursos card 1 */
+      {left:true,  y:0.85}, /* → cursos card 2 */
+    ];
+
+    var items=[], snapped=[];
+    allCards.forEach(function(card,i){
+      if(i>=STARTS.length)return;
+      var div=document.createElement('div');
+      div.className='noz-flyer';
       var img=document.createElement('img');
-      img.src='img/noz.png';img.className='noz-scatter';img.setAttribute('aria-hidden','true');
-      img.style.cssText=(cfg.side==='left'?'left:'+cfg.x+'%':'right:'+cfg.x+'%')
-        +';top:'+cfg.y+'%;--r:'+cfg.r+'deg;--fd:'+cfg.fd+'s;opacity:.85';
-      layer.appendChild(img);
-      nozEls.push(img);
-      setTimeout(function(){img.classList.add('noz-floating');},120+i*250);
+      img.src='img/noz.png';img.alt='';img.setAttribute('aria-hidden','true');
+      div.appendChild(img);
+      LAYER.appendChild(div);
+      items.push({el:div, s:STARTS[i], card:card, sid:i<metodCards.length?'lp-metodo':'lp-cursos'});
+      snapped.push(false);
     });
 
-    function snap(cards,group,base){
-      group.forEach(function(noz,i){
-        var card=cards[i];if(!card||!noz)return;
-        setTimeout(function(){
-          var nr=noz.getBoundingClientRect(),cr=card.getBoundingClientRect();
-          var tx=cr.left+cr.width/2-nr.left-35;
-          var ty=cr.top-nr.top-30;
-          noz.classList.remove('noz-floating');
-          noz.style.transition='transform 1s cubic-bezier(.22,1,.36,1),opacity .5s .55s';
-          noz.style.transform='translate('+tx.toFixed(0)+'px,'+ty.toFixed(0)+'px) rotate(0deg) scale(.65)';
-          noz.style.opacity='0';
-          setTimeout(function(){card.classList.add('noz-ready');},750);
-        },base+i*200);
+    var sEls={
+      'lp-metodo':document.getElementById('lp-metodo'),
+      'lp-cursos':document.getElementById('lp-cursos')
+    };
+
+    function lerp(a,b,t){return a+(b-a)*t;}
+    function easeOut(t){return 1-Math.pow(1-t,3);}
+    function clamp(v,lo,hi){return v<lo?lo:v>hi?hi:v;}
+
+    var raf=null;
+    function tick(){
+      raf=null;
+      var vw=window.innerWidth, vh=window.innerHeight;
+
+      /* Leitura em lote */
+      var sTops={};
+      Object.keys(sEls).forEach(function(k){
+        sTops[k]=sEls[k]?sEls[k].getBoundingClientRect().top:vh;
+      });
+      var cRects=items.map(function(it){return it.card.getBoundingClientRect();});
+
+      /* Escrita em lote */
+      items.forEach(function(it,i){
+        var cr=cRects[i];
+        /* p: 0 quando seção entra pela base, 1 quando está visível */
+        var p=clamp((vh-sTops[it.sid])/(vh*0.72),0,1);
+        var ep=easeOut(p);
+
+        /* Início: fora da tela (esquerda ou direita), Y fixo no viewport */
+        var sx=it.s.left?-150:vw+80;
+        var sy=it.s.y*vh;
+
+        /* Destino: posição exata do card (com 32px acima p/ o cap) */
+        var ex=cr.left, ey=cr.top-32;
+        var ew=cr.width, eh=cr.height+32;
+
+        var cx=lerp(sx,ex,ep);
+        var cy=lerp(sy,ey,ep);
+        var cw=lerp(110,ew,ep);
+        var ch=lerp(120,eh,ep);
+
+        /* Border-radius: oval → retangular */
+        var brt=lerp(55,22,easeOut(clamp(p*1.5,0,1)));
+        var brb=lerp(42,18,easeOut(clamp(p*1.5,0,1)));
+        var rot=lerp(it.s.left?-11:11, 0, ep);
+
+        var el=it.el;
+        el.style.transform='translate('+cx.toFixed(1)+'px,'+cy.toFixed(1)+'px) rotate('+rot.toFixed(2)+'deg)';
+        el.style.width=cw.toFixed(1)+'px';
+        el.style.height=ch.toFixed(1)+'px';
+        el.style.borderRadius=brt.toFixed(1)+'px '+brt.toFixed(1)+'px '+brb.toFixed(1)+'px '+brb.toFixed(1)+'px';
+
+        /* Snap: quando chega ao destino */
+        if(p>=0.97&&!snapped[i]){
+          snapped[i]=true;
+          el.style.transition='opacity 0.4s';
+          el.style.opacity='0';
+          setTimeout(function(){it.card.classList.add('noz-ready');},380);
+        }
+        /* Volta: se o usuário rolar de volta */
+        if(p<0.78&&snapped[i]){
+          snapped[i]=false;
+          el.style.transition='opacity 0.3s';
+          el.style.opacity='1';
+          it.card.classList.remove('noz-ready');
+        }
       });
     }
 
-    var md=false,cs=false;
-    var obs=new IntersectionObserver(function(entries){
-      entries.forEach(function(e){
-        if(!e.isIntersecting)return;
-        if(e.target.id==='lp-metodo'&&!md){md=true;snap(metodCards,nozEls.slice(0,metodCards.length),0);}
-        if(e.target.id==='lp-cursos'&&!cs){cs=true;snap(cursosCards,nozEls.slice(metodCards.length),80);}
-      });
-    },{threshold:0.2});
-    var e1=document.getElementById('lp-metodo'),e2=document.getElementById('lp-cursos');
-    if(e1)obs.observe(e1);if(e2)obs.observe(e2);
+    function onScroll(){if(!raf)raf=requestAnimationFrame(tick);}
+    window.addEventListener('scroll',onScroll,{passive:true});
+    window.addEventListener('resize',onScroll,{passive:true});
+    tick();
   })();
   </script>
 
