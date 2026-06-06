@@ -406,7 +406,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 
 <header class="top"><div class="top-in">
   <div class="brand">
-    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0606.0425</span></div>
+    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0606.0433</span></div>
     <h1><em id="appTitle">Minha Jornada</em></h1>
   </div>
   <div class="tools">
@@ -3168,6 +3168,24 @@ function srsInitUI(){
       return _hgOrig(pct,110);
     };
   }
+  // Patch radarSVG: troca cores quentes por azul metálico no tema escuro
+  if(typeof radarSVG==='function'&&!window._srsRadarPatch){
+    window._srsRadarPatch=true;
+    var _radarOrig=radarSVG;
+    window.radarSVG=function(){
+      var svg=_radarOrig();
+      var theme=document.documentElement.getAttribute('data-theme');
+      if(theme==='tech'||theme==='escuro'||theme==='azul'){
+        svg=svg
+          .replace(/rgba\(80,55,20,\.1\)/g,'rgba(74,124,180,.18)')
+          .replace(/rgba\(90,70,32,\.7\)/g,'#8baec8')
+          .replace(/#007a3d/g,'#5496d4')
+          .replace(/rgba\(0,122,61,\.25\)/g,'rgba(84,150,212,.22)')
+          .replace(/rgba\(0,122,61,\.05\)/g,'rgba(84,150,212,.05)');
+      }
+      return svg;
+    };
+  }
   // Patch renderOverview: ajusta container do gauge + enriquece hero no squilui
   if(typeof renderOverview==='function'&&!window._srsRoSqPatch){
     window._srsRoSqPatch=true;
@@ -3282,6 +3300,10 @@ function srsInitUI(){
       +'[data-theme=tech] .login-box input,[data-theme=escuro] .login-box input{background:#0d1520!important;color:#d8e6f5!important;border-color:rgba(74,124,180,.30)!important}'
       +'[data-theme=tech] .login-box button,[data-theme=escuro] .login-box button{background:#5496d4!important;color:#0d1520!important}'
       +'[data-theme=tech] .login-box .btn-secondary,[data-theme=escuro] .login-box .btn-secondary{background:transparent!important;color:#8baec8!important;border-color:rgba(74,124,180,.30)!important}'
+      +'[data-theme=tech] .btn,[data-theme=escuro] .btn{background:rgba(74,124,180,.1)!important;color:#8baec8!important;border-color:rgba(74,124,180,.32)!important}'
+      +'[data-theme=tech] .btn:hover,[data-theme=escuro] .btn:hover{background:rgba(74,124,180,.22)!important;color:#d8e6f5!important;border-color:rgba(74,124,180,.6)!important}'
+      +'[data-theme=tech] .whoami-wrap,[data-theme=escuro] .whoami-wrap{color:#8baec8!important}'
+      +'[data-theme=tech] .cloud-status,[data-theme=escuro] .cloud-status{color:#7aa0bc!important}'
       /* ===== Itália theme (tricolor restaurada) ===== */
       +'[data-theme=""] .hero::after{background:linear-gradient(to bottom,var(--it-green) 33.3%,rgba(80,55,20,.06) 33.3% 66.6%,var(--it-red) 66.6%)!important}'
       +'[data-theme=""] .jstep.active::after{background:linear-gradient(90deg,var(--it-green),var(--terra),var(--it-red))!important}'
