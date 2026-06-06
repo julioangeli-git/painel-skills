@@ -390,7 +390,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 
 <header class="top"><div class="top-in">
   <div class="brand">
-    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0606.0022</span></div>
+    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0606.0030</span></div>
     <h1><em id="appTitle">Minha Jornada</em></h1>
   </div>
   <div class="tools">
@@ -1801,6 +1801,13 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progre
     var email=getEmail().trim();
     if(!email||!email.includes('@')){ setMsg('loginMsg','Digite um e-mail válido.'); return; }
     if(!sb){ setMsg('loginMsg','Sem conexão. Verifique a internet.'); return; }
+    setMsg('loginMsg','Verificando...');
+    // Verificar se email já existe via RPC (sem enviar email)
+    var chk=await sb.rpc('check_email_exists',{p_email:email});
+    if(!chk.error && chk.data===true){
+      setMsg('loginMsg','Este e-mail já tem conta. Clique em "Já tenho conta" para entrar.');
+      return;
+    }
     setMsg('loginMsg','Enviando código...');
     var r=await sb.auth.signInWithOtp({email:email, options:{shouldCreateUser:true}});
     if(r.error){ setMsg('loginMsg',r.error.message||'Erro ao enviar código.'); return; }
@@ -3089,24 +3096,26 @@ function srsInitUI(){
       +'[data-theme=squilui] .jstep.active::after{background:linear-gradient(90deg,#8B3A0A,#c4620a,#e07820)!important}'
       +'[data-theme=squilui] .jstep.done::after{background:#c4620a!important}'
       /* ===== Tech theme ===== */
-      +'[data-theme=tech],[data-theme=escuro] .mat-card-front{background:linear-gradient(135deg,#1c2a3a,#0d1e2d)!important;border-color:#58a6ff!important}'
-      +'[data-theme=tech],[data-theme=escuro] .mat-word{color:#79c0ff!important}'
-      +'[data-theme=tech],[data-theme=escuro] .mat-card-back{background:linear-gradient(135deg,#0d2c14,#071a09)!important;border-color:#3fb950!important;color:#c8e6c0!important}'
-      +'[data-theme=tech],[data-theme=escuro] .cat-card{background:#21262d!important;color:#e6edf3}'
-      +'[data-theme=tech],[data-theme=escuro] .cat-card.cat-done{background:#0d2c14!important;border-color:#3fb950!important}'
-      +'[data-theme=tech],[data-theme=escuro] .sub-card{background:#21262d!important}'
-      +'[data-theme=tech],[data-theme=escuro] .sub-card.sub-done{background:#0d2c14!important}'
-      +'[data-theme=tech],[data-theme=escuro] #matWhy{background:#161b22!important;color:#8b949e!important}'
-      +'[data-theme=tech],[data-theme=escuro] #matView{color:#e6edf3}'
-      +'[data-theme=tech],[data-theme=escuro] .brand h1 em{background:linear-gradient(95deg,#58a6ff,#79c0ff)!important;-webkit-background-clip:text!important;background-clip:text!important;-webkit-text-fill-color:transparent!important}'
-      +'[data-theme=tech],[data-theme=escuro] .hero{border-color:#30363d!important}'
-      +'[data-theme=tech],[data-theme=escuro] .jstep.active{background:rgba(88,166,255,.08)!important}'
-      +'[data-theme=tech],[data-theme=escuro] .jstep.active::after{background:#58a6ff!important}'
-      +'[data-theme=tech],[data-theme=escuro] .jstep.done::after{background:#3fb950!important}'
-      +'[data-theme=tech],[data-theme=escuro] .login-box{background:#21262d!important;color:#e6edf3!important}'
-      +'[data-theme=tech],[data-theme=escuro] .login-box input{background:#0d1117!important;color:#e6edf3!important;border-color:#30363d!important}'
-      +'[data-theme=tech],[data-theme=escuro] .login-box button{background:#58a6ff!important;color:#0d1117!important}'
-      +'[data-theme=tech],[data-theme=escuro] .login-box .btn-secondary{background:transparent!important;color:#8b949e!important;border-color:#30363d!important}'
+      +'[data-theme=escuro] header.top,[data-theme=tech] header.top{background:rgba(13,17,23,.85)!important;border-color:rgba(48,54,61,.9)!important;box-shadow:0 1px 0 rgba(48,54,61,.5)!important}'+'[data-theme=escuro] .kicker,[data-theme=tech] .kicker{color:#58a6ff!important;opacity:1!important}'+'[data-theme=branco] header.top{background:rgba(255,255,255,.85)!important;border-color:rgba(0,0,0,.1)!important}'
+      +'[data-theme=escuro] .back,[data-theme=tech] .back,[data-theme=escuro] .login-toggle a,[data-theme=tech] .login-toggle a{color:#58a6ff!important;font-weight:500}'+'[data-theme=escuro] .back:hover,[data-theme=tech] .back:hover{color:#79c0ff!important;font-weight:700!important;background:rgba(88,166,255,.12)!important;padding:8px 14px!important;border-radius:20px!important;box-shadow:inset 0 0 0 1px rgba(88,166,255,.25)!important}'+'[data-theme=escuro] a,[data-theme=tech] a{color:#58a6ff}'+'[data-theme=escuro] a:hover,[data-theme=tech] a:hover{color:#79c0ff}'+'[data-theme=branco] .back{color:#0071e3!important}'+'[data-theme=branco] .back:hover{color:#0071e3!important;font-weight:700!important;background:rgba(0,113,227,.08)!important;padding:8px 14px!important;border-radius:20px!important}'
+      +'[data-theme=tech] .mat-card-front,[data-theme=escuro] .mat-card-front{background:linear-gradient(135deg,#1c2a3a,#0d1e2d)!important;border-color:#58a6ff!important}'
+      +'[data-theme=tech] .mat-word,[data-theme=escuro] .mat-word{color:#79c0ff!important}'
+      +'[data-theme=tech] .mat-card-back,[data-theme=escuro] .mat-card-back{background:linear-gradient(135deg,#0d2c14,#071a09)!important;border-color:#3fb950!important;color:#c8e6c0!important}'
+      +'[data-theme=tech] .cat-card,[data-theme=escuro] .cat-card{background:#21262d!important;color:#e6edf3}'
+      +'[data-theme=tech] .cat-card.cat-done,[data-theme=escuro] .cat-card.cat-done{background:#0d2c14!important;border-color:#3fb950!important}'
+      +'[data-theme=tech] .sub-card,[data-theme=escuro] .sub-card{background:#21262d!important}'
+      +'[data-theme=tech] .sub-card.sub-done,[data-theme=escuro] .sub-card.sub-done{background:#0d2c14!important}'
+      +'[data-theme=tech] #matWhy,[data-theme=escuro] #matWhy{background:#161b22!important;color:#8b949e!important}'
+      +'[data-theme=tech] #matView,[data-theme=escuro] #matView{color:#e6edf3}'
+      +'[data-theme=tech] .brand h1 em,[data-theme=escuro] .brand h1 em{background:linear-gradient(95deg,#58a6ff,#79c0ff)!important;-webkit-background-clip:text!important;background-clip:text!important;-webkit-text-fill-color:transparent!important}'
+      +'[data-theme=tech] .hero,[data-theme=escuro] .hero{border-color:#30363d!important}'
+      +'[data-theme=tech] .jstep.active,[data-theme=escuro] .jstep.active{background:rgba(88,166,255,.08)!important}'
+      +'[data-theme=tech] .jstep.active::after,[data-theme=escuro] .jstep.active::after{background:#58a6ff!important}'
+      +'[data-theme=tech] .jstep.done::after,[data-theme=escuro] .jstep.done::after{background:#3fb950!important}'
+      +'[data-theme=tech] .login-box,[data-theme=escuro] .login-box{background:#21262d!important;color:#e6edf3!important}'
+      +'[data-theme=tech] .login-box input,[data-theme=escuro] .login-box input{background:#0d1117!important;color:#e6edf3!important;border-color:#30363d!important}'
+      +'[data-theme=tech] .login-box button,[data-theme=escuro] .login-box button{background:#58a6ff!important;color:#0d1117!important}'
+      +'[data-theme=tech] .login-box .btn-secondary,[data-theme=escuro] .login-box .btn-secondary{background:transparent!important;color:#8b949e!important;border-color:#30363d!important}'
       /* ===== Branco theme ===== */
       +'[data-theme=branco] .brand h1 em{background:linear-gradient(95deg,#0071e3,#0077ed)!important;-webkit-background-clip:text!important;background-clip:text!important;-webkit-text-fill-color:transparent!important}'
       +'[data-theme=branco] .hero{border:1px solid rgba(0,0,0,.1)!important;background:#fff!important}'
