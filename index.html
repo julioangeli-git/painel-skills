@@ -390,12 +390,12 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 
 <header class="top"><div class="top-in">
   <div class="brand">
-    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0606.0007</span></div>
+    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0606.0016</span></div>
     <h1><em id="appTitle">Minha Jornada</em></h1>
   </div>
   <div class="tools">
     <div class="date-field">Inicio<input type="date" id="startDate"></div>
-    <button class="btn" id="saveBtn">Salvar agora</button><span id="cloudStatus" class="cloud-status"></span><span class="whoami-wrap">&#128100; <b id="whoami"></b></span><button class="btn" id="ajustesBtn" style="display:none">Ajustes</button><button class="btn" id="logoutBtn">Sair</button><button class="btn" id="expBtn">Exportar</button>
+    <button class="btn" id="saveBtn">Salvar agora</button><span id="cloudStatus" class="cloud-status"></span><span class="whoami-wrap">&#128100; <b id="whoami"></b></span><button class="btn" id="logoutBtn">Sair</button><button class="btn" id="expBtn">Exportar</button>
     <button class="btn" id="impBtn">Importar</button>
     <button class="btn" id="resetBtn">Zerar</button>
     <input type="file" id="impFile" accept="application/json" style="display:none">
@@ -1766,7 +1766,6 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progre
     var w=document.getElementById('whoami'); if(w)w.textContent=window.currentUser.nome;
     applyProjectName(projectFromUser(user));
     setStatus('salvo na nuvem');
-    var ab=document.getElementById('ajustesBtn');if(ab)ab.style.display='';
   }
 
   async function afterAuth(user){
@@ -1980,7 +1979,6 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progre
       state.srs={};state.pos={};state.started={};state.stats=null;
       _origSave();
       applyProjectName('Minha Jornada');
-      var ab=document.getElementById('ajustesBtn');if(ab)ab.style.display='none';
       window._rawUser=null;
       var pin=document.getElementById('loginPin');if(pin)pin.value='';
       setMsg('loginMsg','');
@@ -3093,6 +3091,25 @@ function srsInitUI(){
       +'[data-theme=squilui] .jstep.active{background:linear-gradient(150deg,rgba(196,98,10,.08),rgba(196,98,10,.02))!important}'
       +'[data-theme=squilui] .jstep.active::after{background:linear-gradient(90deg,#8B3A0A,#c4620a,#e07820)!important}'
       +'[data-theme=squilui] .jstep.done::after{background:#c4620a!important}'
+      /* ===== Tech theme ===== */
+      +'[data-theme=tech] .mat-card-front{background:linear-gradient(135deg,#1c2a3a,#0d1e2d)!important;border-color:#58a6ff!important}'
+      +'[data-theme=tech] .mat-word{color:#79c0ff!important}'
+      +'[data-theme=tech] .mat-card-back{background:linear-gradient(135deg,#0d2c14,#071a09)!important;border-color:#3fb950!important;color:#c8e6c0!important}'
+      +'[data-theme=tech] .cat-card{background:#21262d!important;color:#e6edf3}'
+      +'[data-theme=tech] .cat-card.cat-done{background:#0d2c14!important;border-color:#3fb950!important}'
+      +'[data-theme=tech] .sub-card{background:#21262d!important}'
+      +'[data-theme=tech] .sub-card.sub-done{background:#0d2c14!important}'
+      +'[data-theme=tech] #matWhy{background:#161b22!important;color:#8b949e!important}'
+      +'[data-theme=tech] #matView{color:#e6edf3}'
+      +'[data-theme=tech] .brand h1 em{background:linear-gradient(95deg,#58a6ff,#79c0ff)!important;-webkit-background-clip:text!important;background-clip:text!important;-webkit-text-fill-color:transparent!important}'
+      +'[data-theme=tech] .hero{border-color:#30363d!important}'
+      +'[data-theme=tech] .jstep.active{background:rgba(88,166,255,.08)!important}'
+      +'[data-theme=tech] .jstep.active::after{background:#58a6ff!important}'
+      +'[data-theme=tech] .jstep.done::after{background:#3fb950!important}'
+      +'[data-theme=tech] .login-box{background:#21262d!important;color:#e6edf3!important}'
+      +'[data-theme=tech] .login-box input{background:#0d1117!important;color:#e6edf3!important;border-color:#30363d!important}'
+      +'[data-theme=tech] .login-box button{background:#58a6ff!important;color:#0d1117!important}'
+      +'[data-theme=tech] .login-box .btn-secondary{background:transparent!important;color:#8b949e!important;border-color:#30363d!important}'
       /* ===== Transition animations (all themes) ===== */
       +'.macro-card,.sub-card,.cat-card,.focus-card{transition:transform .2s ease,box-shadow .2s ease,opacity .2s ease}'
       +'.macro-card:hover,.focus-card:hover{transform:translateY(-2px)}'
@@ -3909,6 +3926,7 @@ try{ if(typeof RICH!=='undefined'){
     try{(APP.skills||[]).forEach(function(s){
       if(skillName&&s.name!==skillName)return;
       (s.topics||[]).forEach(function(t){
+        if(!(state&&state.done&&state.done[t.id+'::v']))return; // só módulos desbloqueados
         var cs=typeof srsCardsForTopic==='function'?srsCardsForTopic(t.id):[];
         cs.forEach(function(c){if(typeof srsDue==='function'&&srsDue(c.key))n++;});
       });
