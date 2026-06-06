@@ -349,8 +349,8 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
       <label>E-mail</label>
       <input id="loginNome" type="email" autocomplete="email" placeholder="seu@email.com">
       <div id="loginMsg" class="login-msg"></div>
-      <button id="authBtnCadastrar" style="margin-bottom:8px">Cadastrar-se</button>
-      <button id="authBtnEntrar" class="btn-secondary">Ja tenho conta - Entrar</button>
+      <button id="authBtnEntrar">Entrar</button>
+      <button id="authBtnCadastrar" class="btn-secondary" style="margin-top:8px">Criar conta nova</button>
     </div>
 
     <!-- Passo 2a: senha (login de conta existente) -->
@@ -362,7 +362,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
       <input id="loginPin" type="password" autocomplete="current-password" placeholder="sua senha">
       <button id="loginBtn">Entrar</button>
       <div id="loginMsg2" class="login-msg"></div>
-      <p class="login-toggle"><a href="#" id="authBackLogin">Trocar e-mail</a></p>
+      <p class="login-toggle"><a href="#" id="authBackLogin">Trocar e-mail</a> &nbsp;&middot;&nbsp; <a href="#" id="authForgotBtn">Esqueci minha senha</a></p>
     </div>
 
     <!-- Passo 2b: codigo OTP (cadastro) -->
@@ -377,7 +377,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 
     <!-- Passo 3: perfil (pos-verificacao OTP - novo usuario) -->
     <div id="authStepProfile" style="display:none">
-      <p class="auth-sub">E-mail verificado! Configure seu perfil:</p>
+      <p class="auth-sub" id="profileSubtitle">Crie sua conta:</p>
       <label>Crie uma senha <span style="opacity:.5;font-weight:400">(min. 6 caracteres)</span></label>
       <input id="profilePassword" type="password" autocomplete="new-password" placeholder="••••••••">
       <label>Como quer ser chamado</label>
@@ -406,7 +406,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 
 <header class="top"><div class="top-in">
   <div class="brand">
-    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0606.0338</span></div>
+    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0606.0351</span></div>
     <h1><em id="appTitle">Minha Jornada</em></h1>
   </div>
   <div class="tools">
@@ -1921,22 +1921,67 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progre
     try{ renderOverview(); }catch(e){}
   }
 
-  // ── Fluxo Cadastro (OTP) ──────────────────────────────────────────────────────
-  async function doStartCadastro(){
+  // ── Fluxo Cadastro: vai direto para criação de conta (sem OTP) ───────────────
+  var _profileMode='signup'; // 'signup' | 'reset'
+
+  function doStartCadastro(){
     var email=getEmail().trim();
     if(!email||!email.includes('@')){ setMsg('loginMsg','Digite um e-mail válido.'); return; }
-    if(!sb){ setMsg('loginMsg','Sem conexão. Verifique a internet.'); return; }
-    setMsg('loginMsg','Verificando...');
-    // Verificar se email já existe via RPC (sem enviar email)
-    var chk=await sb.rpc('check_email_exists',{p_email:email});
-    if(!chk.error && chk.data===true){
-      setMsg('loginMsg','Este e-mail já tem conta. Clique em "Já tenho conta" para entrar.');
-      return;
-    }
-    setMsg('loginMsg','Enviando código...');
-    var r=await sb.auth.signInWithOtp({email:email, options:{shouldCreateUser:true}});
-    if(r.error){ setMsg('loginMsg',r.error.message||'Erro ao enviar código.'); return; }
     setMsg('loginMsg','');
+    _profileMode='signup';
+    var sub=document.getElementById('profileSubtitle');
+    if(sub)sub.textContent='Crie sua conta:';
+    var pf=document.getElementById('profilePassword');
+    if(pf){pf.value='';pf.focus();}
+    var pn=document.getElementById('profileNome');if(pn)pn.value='';
+    var pp=document.getElementById('profileProjeto');if(pp)pp.value='';
+    setMsg('profileMsg','');
+    showStep('authStepProfile');
+  }
+
+  async function doSaveProfile(){
+    var password=(document.getElementById('profilePassword')||{}).value||'';
+    var nome=(document.getElementById('profileNome')||{}).value.trim()||'';
+    var projeto=(document.getElementById('profileProjeto')||{}).value.trim()||'';
+    if(password.length<6){ setMsg('profileMsg','Senha deve ter ao menos 6 caracteres.'); return; }
+    if(!nome&&_profileMode==='signup'){ setMsg('profileMsg','Digite como quer ser chamado.'); return; }
+    setMsg('profileMsg','Salvando...');
+    if(!sb){ setMsg('profileMsg','Sem conexão.'); return; }
+    var meta={};
+    if(nome)meta.display_name=nome;
+    if(projeto)meta.project_name=projeto;
+    var r;
+    if(_profileMode==='signup'){
+      // Novo cadastro — usa signUp
+      var email=getEmail().trim();
+      r=await sb.auth.signUp({email:email, password:password, options:{data:meta}});
+      if(r.error){
+        var msg=r.error.message||'Erro ao criar conta.';
+        if(msg.toLowerCase().includes('already')||msg.toLowerCase().includes('registered')){
+          msg='Este e-mail já tem conta. Use "Entrar".';
+        }
+        setMsg('profileMsg',msg);return;
+      }
+    } else {
+      // Redefinir senha (pós-OTP "Esqueci a senha")
+      r=await sb.auth.updateUser({password:password, data:Object.keys(meta).length?meta:undefined});
+      if(r.error){ setMsg('profileMsg',r.error.message||'Erro ao salvar.'); return; }
+    }
+    setMsg('profileMsg','');
+    var user=(r.data&&r.data.user)||null;
+    if(!user){ setMsg('profileMsg','Conta criada! Verifique seu e-mail se solicitado.'); return; }
+    await afterAuth(user);
+  }
+
+  // ── Esqueci a senha: envia OTP apenas quando pedido ──────────────────────────
+  async function doForgotPassword(){
+    var email=getEmail().trim();
+    if(!email||!email.includes('@')){ setMsg('loginMsg2','Digite um e-mail válido.'); return; }
+    if(!sb){ setMsg('loginMsg2','Sem conexão.'); return; }
+    setMsg('loginMsg2','Enviando código...');
+    var r=await sb.auth.signInWithOtp({email:email, options:{shouldCreateUser:false}});
+    if(r.error){ setMsg('loginMsg2','E-mail não encontrado ou erro ao enviar.'); return; }
+    setMsg('loginMsg2','');
     var lbl=document.getElementById('otpEmailLabel');if(lbl)lbl.textContent=email;
     var inp=document.getElementById('otpInput');if(inp){inp.value='';inp.focus();}
     showStep('authStepOtp');
@@ -1951,47 +1996,35 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progre
     setMsg('otpMsg','Verificando...');
     var r=await sb.auth.verifyOtp({email:email, token:token, type:'email'});
     if(r.error){
-      // Tentar com type:'signup' como fallback
-      var r2=await sb.auth.verifyOtp({email:email, token:token, type:'signup'});
+      var r2=await sb.auth.verifyOtp({email:email, token:token, type:'magiclink'});
       if(r2.error){ setMsg('otpMsg','Código inválido ou expirado. Tente reenviar.'); return; }
       r=r2;
     }
     setMsg('otpMsg','');
     var user=r.data&&r.data.user;
     if(!user){ setMsg('otpMsg','Erro de verificação. Tente novamente.'); return; }
-    // Verificado — se é novo usuário (sem nome), mostra tela de perfil
+    // Pós-OTP: mostrar tela para redefinir senha
+    _profileMode='reset';
+    var sub=document.getElementById('profileSubtitle');
+    if(sub)sub.textContent='Redefina sua senha:';
+    var pf=document.getElementById('profilePassword');if(pf){pf.value='';pf.focus();}
+    // Pré-preenche nome/projeto se existir
     var temNome=user.user_metadata&&user.user_metadata.display_name;
-    if(!temNome){
-      var pi=document.getElementById('profileNome');if(pi)pi.focus();
-      showStep('authStepProfile');
-    } else {
-      await afterAuth(user);
-    }
+    var pn=document.getElementById('profileNome');
+    if(pn)pn.value=temNome||'';
+    var pp=document.getElementById('profileProjeto');
+    if(pp)pp.value=(user.user_metadata&&user.user_metadata.project_name)||'';
+    setMsg('profileMsg','');
+    showStep('authStepProfile');
   }
 
   async function doResendOtp(){
     var email=getEmail().trim();
     if(!email||!sb){ return; }
     setMsg('otpMsg','Reenviando...');
-    var r=await sb.auth.signInWithOtp({email:email,options:{shouldCreateUser:true}});
+    var r=await sb.auth.signInWithOtp({email:email,options:{shouldCreateUser:false}});
     if(r.error){ setMsg('otpMsg','Erro ao reenviar. Tente novamente.'); return; }
     setMsg('otpMsg','Código reenviado! Verifique o e-mail.');
-  }
-
-  async function doSaveProfile(){
-    var password=(document.getElementById('profilePassword')||{}).value||'';
-    var nome=(document.getElementById('profileNome')||{}).value.trim()||'';
-    var projeto=(document.getElementById('profileProjeto')||{}).value.trim()||'';
-    if(password.length<6){ setMsg('profileMsg','Senha deve ter ao menos 6 caracteres.'); return; }
-    if(!nome){ setMsg('profileMsg','Digite como quer ser chamado.'); return; }
-    setMsg('profileMsg','Salvando...');
-    if(!sb){ setMsg('profileMsg','Sem conexão.'); return; }
-    var meta={display_name:nome};
-    if(projeto)meta.project_name=projeto;
-    var r=await sb.auth.updateUser({password:password, data:meta});
-    if(r.error){ setMsg('profileMsg',r.error.message||'Erro ao salvar perfil.'); return; }
-    setMsg('profileMsg','');
-    await afterAuth(r.data.user);
   }
 
   // ── Fluxo Login (senha) ───────────────────────────────────────────────────────
@@ -2039,7 +2072,7 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progre
     var emailIn=document.getElementById('loginNome');
     if(btnCad)btnCad.onclick=doStartCadastro;
     if(btnEnt)btnEnt.onclick=doStartLogin;
-    if(emailIn)emailIn.addEventListener('keydown',function(e){if(e.key==='Enter')doStartCadastro();});
+    if(emailIn)emailIn.addEventListener('keydown',function(e){if(e.key==='Enter')doStartLogin();});
 
     // Step 2a: login
     var loginBtn=document.getElementById('loginBtn');
@@ -2048,6 +2081,8 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progre
     if(loginBtn)loginBtn.onclick=doLogin;
     if(loginPin)loginPin.addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
     if(backLogin)backLogin.onclick=function(e){e.preventDefault();showStep('authStepEmail');};
+    var forgotBtn=document.getElementById('authForgotBtn');
+    if(forgotBtn)forgotBtn.onclick=function(e){e.preventDefault();doForgotPassword();};
 
     // Step 2b: OTP
     var otpVerify=document.getElementById('otpVerifyBtn');
