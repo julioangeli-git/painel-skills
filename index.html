@@ -275,7 +275,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 /* ── Landing page ─────────────────────────────────────────────────────────── */
 #landing{display:none;min-height:100vh;background:var(--bg)}
 .lp-hero{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:64px 24px 48px;gap:14px}
-.lp-mascot{width:88px;height:auto;margin-bottom:4px}
+.lp-mascot{width:88px;height:auto;margin-bottom:4px;mix-blend-mode:multiply}
 .lp-hero h1{font-family:'Fraunces',serif;font-size:clamp(26px,5vw,46px);font-weight:600;color:var(--ink);margin:0;line-height:1.2}
 .lp-hero h1 em{color:var(--terra);font-style:normal}
 .lp-hero .lp-sub{font-size:16px;color:var(--ink2);max-width:500px;line-height:1.65;margin:0}
@@ -364,7 +364,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 
 <header class="top"><div class="top-in">
   <div class="brand">
-    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0605.2125</span></div>
+    <div class="kicker">Central de Aprendizagem <span id="appVersion" style="font-size:10px;opacity:.45;letter-spacing:.05em;font-family:monospace">v1.0605.2133</span></div>
     <h1><em id="appTitle">Minha Jornada</em></h1>
   </div>
   <div class="tools">
@@ -404,14 +404,6 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
       <div class="lp-card-icon">&#128202;</div>
       <h3>Progresso visivel</h3>
       <p>Acompanhe sua evolucao com estatisticas claras. Cada sessao conta &mdash; e voce vai sentir cada passo dado na jornada.</p>
-    </div>
-  </div>
-
-  <div class="lp-bottom">
-    <h2>Pronto para comecar sua jornada?</h2>
-    <p>Crie sua conta gratuita e comece hoje.</p>
-    <div class="lp-btns">
-      <button class="lp-btn-primary" id="lpCadastrarBtn2">Criar conta gratis</button>
     </div>
   </div>
 </section>
@@ -1701,13 +1693,13 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progre
   function showLanding(){
     var l=document.getElementById('landing');if(l)l.style.display='block';
     var w=document.querySelector('.wrap');if(w)w.style.display='none';
-    var t=document.querySelector('.tools');if(t)t.style.display='none';
+    var h=document.querySelector('.top');if(h)h.style.display='none';
     var lo=document.getElementById('loginOverlay');if(lo)lo.style.display='none';
   }
   function hideLanding(){
     var l=document.getElementById('landing');if(l)l.style.display='none';
     var w=document.querySelector('.wrap');if(w)w.style.display='';
-    var t=document.querySelector('.tools');if(t)t.style.display='';
+    var h=document.querySelector('.top');if(h)h.style.display='';
   }
 
   function closeOverlay(){
@@ -1721,6 +1713,12 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progre
     var email=getEmail().trim();
     if(!email||!email.includes('@')){ setMsg('loginMsg','Digite um e-mail válido.'); return; }
     if(!sb){ setMsg('loginMsg','Sem conexão. Verifique a internet.'); return; }
+    setMsg('loginMsg','Verificando...');
+    var chk=await sb.auth.signInWithOtp({email:email, options:{shouldCreateUser:false}});
+    if(!chk.error){
+      setMsg('loginMsg','Este e-mail já tem conta. Clique em "Já tenho conta" para entrar.');
+      return;
+    }
     setMsg('loginMsg','Enviando código...');
     var r=await sb.auth.signInWithOtp({email:email, options:{shouldCreateUser:true}});
     if(r.error){ setMsg('loginMsg',r.error.message||'Erro ao enviar código.'); return; }
@@ -4003,7 +4001,7 @@ try{ if(typeof RICH!=='undefined'){
    continua ocupando o padding -> sobra um vao no topo e uma barra de rolagem. Aqui a
    gente observa essas telas e esconde a .wrap enquanto alguma estiver visivel. */
 (function(){
-  var OVERLAYS=['srsView','pronuncView','fillView','statsView','catView']; // matView fica dentro do .wrap
+  var OVERLAYS=['srsView','pronuncView','fillView','statsView','catView','landing']; // matView fica dentro do .wrap
   function sync(){
     var wrap=document.querySelector('.wrap'); if(!wrap)return;
     var open=OVERLAYS.some(function(id){var e=document.getElementById(id);return e&&e.style.display==='block';});
