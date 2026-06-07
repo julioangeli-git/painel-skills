@@ -282,12 +282,12 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 .lp-nav-links{display:flex;gap:28px}
 .lp-nav-links a{color:rgba(245,245,247,.75);font-size:13px;text-decoration:none;transition:color .2s,background .2s,padding .2s;padding:5px 12px;border-radius:20px}
 .lp-nav-links a:hover{color:#f5f5f7;background:rgba(255,255,255,.1)}
-.lp-nav-links a.lp-nav-active{color:#f5f5f7;background:rgba(255,255,255,.14);font-weight:600}
+.lp-nav-links a.lp-nav-active{color:#fff;background:#e08a2a;font-weight:600}
 .lp-nav-auth{display:flex;gap:10px}
-.lp-btn-nav-ghost{background:transparent;border:1px solid rgba(255,255,255,.25);color:#f5f5f7;padding:7px 18px;border-radius:20px;font-size:13px;cursor:pointer;font-family:inherit;transition:border-color .2s}
-.lp-btn-nav-ghost:hover{border-color:rgba(255,255,255,.6)}
-.lp-btn-nav-primary{background:#0071e3;border:none;color:#fff;padding:7px 18px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .2s}
-.lp-btn-nav-primary:hover{background:#0077ed}
+.lp-btn-nav-ghost{background:#e08a2a;border:none;color:#fff;padding:7px 18px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .2s}
+.lp-btn-nav-ghost:hover{background:#c9781f}
+.lp-btn-nav-primary{background:#4d88ff;border:none;color:#fff;padding:7px 18px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .2s}
+.lp-btn-nav-primary:hover{background:#3f78e6}
 /* Hero */
 .lp-hero{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:44px 24px 10px;min-height:100vh;height:100vh;gap:0;position:relative;overflow:hidden;box-sizing:border-box;z-index:2}
 .lp-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 70% 60% at 50% 30%,rgba(0,113,227,.18) 0%,transparent 70%);pointer-events:none}
@@ -296,7 +296,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 .lp-mascot-glow::after{content:'';position:absolute;inset:-40%;border-radius:50%;background:radial-gradient(circle,rgba(0,113,227,.45) 0%,rgba(88,166,255,.2) 40%,transparent 70%);filter:blur(50px);z-index:0;animation:lp-glow-pulse 3s ease-in-out infinite}
 .lp-hero-mascot{width:350px;height:350px;object-fit:contain;position:relative;z-index:1;filter:drop-shadow(0 0 60px rgba(0,113,227,.6)) drop-shadow(0 0 120px rgba(88,166,255,.3));animation:lp-mascot-wave 3.5s ease-in-out infinite}
 .lp-hero h1{font-family:'Fraunces',serif;font-size:clamp(26px,4vw,52px);font-weight:600;color:#f5f5f7;margin:0 0 4px;line-height:1.08;letter-spacing:-.02em}
-.lp-hero h1 em{background:linear-gradient(135deg,#58a6ff,#0071e3);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-style:normal}
+.lp-hero h1 em{background:linear-gradient(135deg,#6ea8ff,#4d88ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-style:normal}
 .lp-hero-sub{font-size:clamp(11px,1.1vw,13px);color:rgba(245,245,247,.65);max-width:480px;line-height:1.45;margin:0 0 8px}
 .lp-btns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
 .lp-btn-primary{background:#0071e3;color:#fff;border:none;padding:14px 30px;border-radius:980px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .2s}
@@ -431,7 +431,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
       SquuiLui
     </a>
     <div class="lp-nav-links">
-      <a href="#lp-hero" class="lp-nav-active">Home</a>
+      <a href="#lp-hero" class="lp-nav-active">Início</a>
       <a href="#lp-metodo">Metodologia</a>
       <a href="#lp-cursos">Cursos</a>
     </div>
@@ -446,11 +446,11 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
     <div class="lp-mascot-glow">
       <img src="img/mascote-hd.png" onerror="this.src='img/mascote.png'" class="lp-hero-mascot" alt="SquuiLui">
     </div>
-    <h1>Aprenda com proposito,<br><em>avance com metodo</em></h1>
-    <p class="lp-hero-sub">Uma jornada de aprendizagem personalizada com revisao inteligente e progresso visivel.<br>Do zero ao especialista, no seu ritmo.</p>
+    <h1>Aprenda com propósito,<br><em>avance com método.</em></h1>
+    <p class="lp-hero-sub">O SquuiLui te guia numa jornada de aprendizagem personalizada, com revisão inteligente e progresso visível.<br>Do zero ao especialista, no seu ritmo.</p>
     <div class="lp-btns">
-      <button class="lp-btn-primary" id="lpCadastrarBtn2">Comecar agora &mdash; e gratis</button>
-      <button class="lp-btn-ghost" id="lpEntrarBtn2">Ja tenho conta</button>
+      <button class="lp-btn-primary" id="lpCadastrarBtn2">Começar agora</button>
+      <button class="lp-btn-ghost" id="lpEntrarBtn2">Já tenho conta</button>
     </div>
     <div class="lp-scroll">
       <div class="lp-scroll-dot"></div>
@@ -523,28 +523,42 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
   </div>
 
   <script>
-  /* Nav: clique ativa; scroll lento para ver bolotas */
+  /* Nav: clique + scroll suave (dá pra ver as bolotas caindo) + scrollspy */
   (function(){
-    function setActive(href){
+    var SECTIONS=['lp-hero','lp-metodo','lp-cursos'];
+    function setActive(id){
       document.querySelectorAll('.lp-nav-links a').forEach(function(a){
-        a.classList.toggle('lp-nav-active',(a.getAttribute('href')||'')==='#'+href);
+        a.classList.toggle('lp-nav-active',(a.getAttribute('href')||'')==='#'+id);
       });
     }
-    function slowScroll(id){
+    function smoothScroll(id){
       var t=document.getElementById(id);if(!t)return;
+      // desliga o scroll-behavior do CSS pra não brigar com o nosso (evita o "pulo")
+      var prev=document.documentElement.style.scrollBehavior;
+      document.documentElement.style.scrollBehavior='auto';
       var s=window.pageYOffset,e=t.getBoundingClientRect().top+window.pageYOffset-52;
-      var dur=1000,t0=performance.now();
+      var dur=1100,t0=performance.now();
       (function step(now){
-        var p=Math.min((now-t0)/dur,1),ep=1-Math.pow(1-p,2);
-        window.scrollTo(0,s+(e-s)*ep);if(p<1)requestAnimationFrame(step);
+        var p=Math.min((now-t0)/dur,1);
+        // easeInOutCubic: suave no começo E no fim, ritmo bom pra ver a animação
+        var ep=p<0.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
+        window.scrollTo(0,s+(e-s)*ep);
+        if(p<1){requestAnimationFrame(step);}else{document.documentElement.style.scrollBehavior=prev;}
       })(t0);
     }
     document.querySelectorAll('.lp-nav-links a[href^="#"]').forEach(function(a){
       a.addEventListener('click',function(ev){
         ev.preventDefault();var id=(a.getAttribute('href')||'').slice(1);
-        setActive(id);slowScroll(id);
+        setActive(id);smoothScroll(id);
       });
     });
+    // scrollspy: a aba ativa acompanha a seção visível ao rolar
+    if('IntersectionObserver' in window){
+      var obs=new IntersectionObserver(function(entries){
+        entries.forEach(function(en){ if(en.isIntersecting) setActive(en.target.id); });
+      },{rootMargin:'-45% 0px -50% 0px',threshold:0});
+      SECTIONS.forEach(function(id){var el=document.getElementById(id);if(el)obs.observe(el);});
+    }
     setActive('lp-hero');
   })();
   </script>
