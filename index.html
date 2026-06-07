@@ -299,10 +299,18 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 .lp-hero h1 em{background:linear-gradient(135deg,#6ea8ff,#4d88ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-style:normal}
 .lp-hero-sub{font-size:clamp(11px,1.1vw,13px);color:rgba(245,245,247,.65);max-width:480px;line-height:1.45;margin:0 0 8px}
 .lp-btns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
-.lp-btn-primary{background:#0071e3;color:#fff;border:none;padding:14px 30px;border-radius:980px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .2s}
-.lp-btn-primary:hover{background:#0077ed}
-.lp-btn-ghost{background:transparent;border:1px solid rgba(255,255,255,.3);color:#f5f5f7;padding:13px 28px;border-radius:980px;font-size:15px;cursor:pointer;font-family:inherit;transition:border-color .2s}
-.lp-btn-ghost:hover{border-color:rgba(255,255,255,.7)}
+.lp-btn-primary{background:#4d88ff;color:#fff;border:none;padding:14px 30px;border-radius:980px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .2s}
+.lp-btn-primary:hover{background:#3f78e6}
+.lp-btn-ghost{background:#e08a2a;border:none;color:#fff;padding:14px 28px;border-radius:980px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .2s}
+.lp-btn-ghost:hover{background:#c9781f}
+/* Mobile: barra superior enxuta — sem botões de auth (o hero já tem) */
+@media(max-width:640px){
+  .lp-nav{padding:0 16px}
+  .lp-nav-auth{display:none}
+  .lp-nav-links{gap:6px}
+  .lp-nav-links a{font-size:12px;padding:5px 9px}
+  .lp-nav-logo span{font-size:14px}
+}
 /* Scroll indicator */
 .lp-scroll{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;opacity:.4;font-size:11px;color:#f5f5f7;letter-spacing:.08em;text-transform:uppercase}
 .lp-scroll-dot{width:4px;height:4px;border-radius:50%;background:#f5f5f7;animation:lp-bounce .8s infinite alternate}
@@ -449,8 +457,8 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
     <h1>Aprenda com propósito,<br><em>avance com método.</em></h1>
     <p class="lp-hero-sub">O SquuiLui te guia numa jornada de aprendizagem personalizada, com revisão inteligente e progresso visível.<br>Do zero ao especialista, no seu ritmo.</p>
     <div class="lp-btns">
-      <button class="lp-btn-primary" id="lpCadastrarBtn2">Começar agora</button>
       <button class="lp-btn-ghost" id="lpEntrarBtn2">Já tenho conta</button>
+      <button class="lp-btn-primary" id="lpCadastrarBtn2">Começar agora</button>
     </div>
     <div class="lp-scroll">
       <div class="lp-scroll-dot"></div>
