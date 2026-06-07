@@ -352,6 +352,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
       <div id="loginMsg" class="login-msg"></div>
       <button id="authBtnEntrar">Entrar</button>
       <button id="authBtnCadastrar" class="btn-secondary" style="margin-top:8px">Criar conta nova</button>
+      <button id="authBtnGoogle" class="btn-secondary" style="margin-top:8px">Entrar com Google</button>
     </div>
 
     <!-- Passo 2a: senha (login de conta existente) -->
@@ -1820,6 +1821,17 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progre
   let cloudTimer=null;
   window.currentUser=null;
 
+  // ── Login com Google (OAuth) — mesmo usuário/identidade por e-mail ─────────────
+  async function doGoogleLogin(){
+    if(!sb){ setMsg('loginMsg','Sem conexão.'); return; }
+    setMsg('loginMsg','Abrindo o Google...');
+    var r=await sb.auth.signInWithOAuth({
+      provider:'google',
+      options:{ redirectTo: window.location.href.split('#')[0].split('?')[0] }
+    });
+    if(r.error){ setMsg('loginMsg','Não foi possível entrar com o Google. Tente novamente.'); }
+  }
+
   // ── Helpers ───────────────────────────────────────────────────────────────────
   function setStatus(t){ var el=document.getElementById('cloudStatus'); if(el)el.textContent=t; }
   function setMsg(id,t){ var el=document.getElementById(id); if(el)el.textContent=t; }
@@ -2073,6 +2085,8 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progre
     var emailIn=document.getElementById('loginNome');
     if(btnCad)btnCad.onclick=doStartCadastro;
     if(btnEnt)btnEnt.onclick=doStartLogin;
+    var btnG=document.getElementById('authBtnGoogle');
+    if(btnG)btnG.onclick=doGoogleLogin;
     if(emailIn)emailIn.addEventListener('keydown',function(e){if(e.key==='Enter')doStartLogin();});
 
     // Step 2a: login
