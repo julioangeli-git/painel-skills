@@ -1853,6 +1853,7 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progre
   const SUPABASE_KEY = "sb_publishable_sKx3adUH-u4r1cAqA1t-Zw_R-hY-Ws6";
   let sb=null;
   try{ sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); }catch(e){ console.warn('Supabase indisponivel',e); }
+  window.sb = sb;  // expõe o cliente p/ outros módulos (ex.: 27-audio-cache: tocar mp3 do Storage)
   let cloudTimer=null;
   window.currentUser=null;
 
