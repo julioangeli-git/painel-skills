@@ -4833,12 +4833,14 @@ try{ if(typeof RICH!=='undefined'){
     function vis() {
       var lp = document.getElementById("landing");
       var logged = !(lp && lp.style.display === "block") && !!window.currentUser;
-      nav.style.display = (window.innerWidth <= 820 && logged) ? "flex" : "";
-      if (window.innerWidth > 820) nav.style.display = "none";
+      var want = (window.innerWidth <= 820 && logged) ? "flex" : "none";
+      // só escreve quando MUDA (evita disparar mutações/loops e repaints)
+      if (nav.style.display !== want) nav.style.display = want;
     }
-    try { new MutationObserver(vis).observe(document.body, { attributes: true, attributeFilter: ["style"], subtree: true }); } catch (e) {}
+    // sem MutationObserver de propósito: ele observaria o próprio body e a
+    // mudança de estilo da barra dispararia o observer de novo -> loop infinito.
     window.addEventListener("resize", vis);
-    setInterval(vis, 1200);
+    setInterval(vis, 800);
     vis();
   }
   if (document.body) mount(); else document.addEventListener("DOMContentLoaded", mount);
