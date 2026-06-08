@@ -303,7 +303,6 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 .lp-btn-primary:hover{background:#3f78e6}
 .lp-btn-ghost{background:#e08a2a;border:none;color:#fff;padding:14px 28px;border-radius:980px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .2s}
 .lp-btn-ghost:hover{background:#c9781f}
-/* Mobile: barra superior enxuta — sem botões de auth (o hero já tem) */
 @media(max-width:640px){
   .lp-nav{padding:0 16px}
   .lp-nav-auth{display:none}
@@ -460,11 +459,28 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
       <button class="lp-btn-ghost" id="lpEntrarBtn2">Já tenho conta</button>
       <button class="lp-btn-primary" id="lpCadastrarBtn2">Começar agora</button>
     </div>
+    <button id="pwaInstallBtn" style="display:none;margin-top:14px;background:transparent;border:1px solid rgba(255,255,255,.3);color:#cfe0f5;padding:8px 18px;border-radius:980px;font-size:13px;cursor:pointer;font-family:inherit">📲 Usar em modo app</button>
     <div class="lp-scroll">
       <div class="lp-scroll-dot"></div>
       Descubra mais
     </div>
   </div>
+
+  <script>
+  /* Modo app (PWA): instala no Android; instrui no iOS; some se já instalado */
+  (function(){
+    var btn=document.getElementById('pwaInstallBtn');if(!btn)return;
+    var deferred=null;
+    var isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+    var standalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone;
+    window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();deferred=e;if(!standalone)btn.style.display='inline-flex';});
+    if(isIOS&&!standalone)btn.style.display='inline-flex';
+    btn.addEventListener('click',async function(){
+      if(deferred){deferred.prompt();await deferred.userChoice;deferred=null;btn.style.display='none';}
+      else if(isIOS){alert('Para usar em modo app: toque em Compartilhar (ícone de seta) e depois em "Adicionar à Tela de Início". Ele abre sem a barra do navegador.');}
+    });
+  })();
+  </script>
 
   <!-- Metodologia -->
   <div class="lp-divider"></div>
@@ -541,14 +557,12 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
     }
     function smoothScroll(id){
       var t=document.getElementById(id);if(!t)return;
-      // desliga o scroll-behavior do CSS pra não brigar com o nosso (evita o "pulo")
       var prev=document.documentElement.style.scrollBehavior;
       document.documentElement.style.scrollBehavior='auto';
       var s=window.pageYOffset,e=t.getBoundingClientRect().top+window.pageYOffset-52;
       var dur=1100,t0=performance.now();
       (function step(now){
         var p=Math.min((now-t0)/dur,1);
-        // easeInOutCubic: suave no começo E no fim, ritmo bom pra ver a animação
         var ep=p<0.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
         window.scrollTo(0,s+(e-s)*ep);
         if(p<1){requestAnimationFrame(step);}else{document.documentElement.style.scrollBehavior=prev;}
@@ -560,7 +574,6 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
         setActive(id);smoothScroll(id);
       });
     });
-    // scrollspy: a aba ativa acompanha a seção visível ao rolar
     if('IntersectionObserver' in window){
       var obs=new IntersectionObserver(function(entries){
         entries.forEach(function(en){ if(en.isIntersecting) setActive(en.target.id); });
