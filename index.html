@@ -2919,10 +2919,12 @@ function srsOpenConfig(){
     +'<div id="avatarGrid" style="display:flex;flex-wrap:wrap;margin-bottom:16px">'+srsAvatarHtml()+'</div>'
     +'<div style="font-size:13px;font-weight:600;margin-bottom:8px">Tema de cores</div>'
     +'<div style="display:flex;flex-wrap:wrap;margin-bottom:4px">'+sw+'</div>'
-    +'<div style="text-align:right;margin-top:18px">'
-    +'<div style="font-size:10px;color:var(--ink3);opacity:.6;margin-top:12px;font-family:monospace">' + (typeof BUILD_VERSION !== 'undefined' ? BUILD_VERSION : '—') + '</div>'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:18px">'
+    +'<button class="btn" style="background:transparent;border:1px solid var(--border,#3a4a63);color:var(--ink2,#8baec8);font-weight:600" onclick="srsCloseAjustes();var b=document.getElementById(\'logoutBtn\');if(b)b.click();">↩ Sair da conta</button>'
     +'<button class="btn" style="background:var(--terra,#b85a28);color:#fff;border:none;font-weight:700" onclick="srsCloseAjustes()">Pronto ✓</button>'
-    +'</div></div>';
+    +'</div>'
+    +'<div style="font-size:10px;color:var(--ink3);opacity:.6;margin-top:12px;font-family:monospace;text-align:right">' + (typeof BUILD_VERSION !== 'undefined' ? BUILD_VERSION : '—') + '</div>'
+    +'</div>';
   ov.style.display='flex';
 }
 /* ===== SRS flip cards: autoplay, karaoke, bandeiras ===== */
@@ -3229,7 +3231,7 @@ function srsInitUI(){
       window._srsFirstTimeHooked=true;
       window.renderOverview=function(){
         _roOrig();
-        if(!localStorage.getItem('painelAjustesShown')){setTimeout(srsOpenConfig,400);}
+        if(window.currentUser && !localStorage.getItem('painelAjustesShown')){setTimeout(srsOpenConfig,400);}
       };
     }
   }
@@ -4769,22 +4771,19 @@ try{ if(typeof RICH!=='undefined'){
 </script>
 <script>
 /* ============================================================
-   28-mobile-shell.js — shell visual do app no web mobile (estratégia iOS).
-   Injeta: top bar estilo app + Hub arc radial + home simplificada + barra de 5 abas.
-   Só ativa em <=820px. Desktop: invisível.
+   28-mobile-shell.js — shell visual do app no web mobile.
+   Top bar + Home + Hub de Estudo (Vocabulário/Frases) + barra de 5 abas.
+   Só ativa em <=820px E logado. Desktop/landing: totalmente invisível.
+   Reaproveita as funções do site (openAll*, openDetail, srsOpenConfig).
+   v2 — contido em desktop/landing, hub vocab/frases, ajustes completo.
    ============================================================ */
 (function () {
   if (window.__mobileShell) return; window.__mobileShell = true;
 
   var NAVY = "#0d1520", SURF = "#182438", INK = "#d8e6f5", INK2 = "#8baec8",
-      BLUE = "#4d88ff", ORANGE = "#e08a2a";
+      BLUE = "#4d88ff", ORANGE = "#e08a2a", BRD = "#26344f";
 
-  // ── Arc geometry (mirror do app) ─────────────────────────────────────────
-  var ARC_R = 108, C = 122;
-  function arcPos(i, n) {
-    var ang = ((200 + (i * 140) / (n - 1)) * Math.PI) / 180;
-    return { x: Math.round(ARC_R * Math.cos(ang)), y: Math.round(ARC_R * Math.sin(ang)) };
-  }
+  var BP = 820; // breakpoint mobile
 
   // ── SVG icons inline ──────────────────────────────────────────────────────
   var IC = {
@@ -4802,7 +4801,6 @@ try{ if(typeof RICH!=='undefined'){
     lock:   '<rect x="3" y="11" width="18" height="11" rx="2" ry="2" fill="none"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
     trophy: '<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 20v-1a6 6 0 0 1 12 0v1"/><line x1="4" y1="22" x2="20" y2="22"/><path d="M6 9a6 6 0 0 0 12 0"/>',
     arrow:  '<line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>',
-    nut:    '<circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>',
   };
   function si(name, col, fill) {
     return '<svg viewBox="0 0 24 24" width="22" height="22" stroke="' + (col||'currentColor') +
@@ -4813,32 +4811,30 @@ try{ if(typeof RICH!=='undefined'){
   // ── CSS ───────────────────────────────────────────────────────────────────
   var css = document.createElement("style");
   css.textContent =
-    /* -- mobile breakpoint -- */
-    '@media(max-width:820px){' +
-    '  body{padding-top:56px!important;padding-bottom:72px!important}' +
-    '  header.top,.tricolore{display:none!important}' +
-    '  #squTab,#mobileTopBar{display:flex!important}' +
-    '  #mobileHome,#mobileEstudar{display:none}' +
+    '@media(max-width:' + BP + 'px){' +
+    '  body.msh-app{padding-top:56px!important;padding-bottom:74px!important}' +
+    '  body.msh-app header.top,body.msh-app .tricolore{display:none!important}' +
     '}' +
 
-    /* -- top bar -- */
+    /* top bar */
     '#mobileTopBar{display:none;position:fixed;top:0;left:0;right:0;height:56px;z-index:50;' +
     '  background:' + NAVY + ';border-bottom:1px solid rgba(74,124,180,.18);' +
-    '  padding:0 16px;align-items:center;justify-content:space-between}' +
+    '  padding:0 14px;align-items:center;justify-content:space-between}' +
     '.mob-av{width:36px;height:36px;border-radius:18px;background:' + BLUE + ';' +
     '  display:flex;align-items:center;justify-content:center;' +
     '  font-family:Poppins;font-weight:700;font-size:15px;color:#fff;flex-shrink:0}' +
     '.mob-hello{font-family:Poppins;font-weight:600;font-size:15px;color:' + INK + ';margin-left:10px}' +
-    '.mob-right{display:flex;align-items:center;gap:10px}' +
+    '.mob-right{display:flex;align-items:center;gap:14px}' +
     '.mob-streak-row{display:flex;align-items:center;gap:4px;' +
     '  font-family:Poppins;font-weight:600;font-size:14px;color:' + ORANGE + '}' +
+    '.mob-icbtn{background:none;border:0;padding:0;cursor:pointer;display:flex;align-items:center}' +
 
-    /* -- mobile overlay views -- */
-    '#mobileHome,#mobileEstudar{' +
-    '  position:fixed;top:56px;left:0;right:0;bottom:72px;' +
+    /* overlay views — escondidos por padrão */
+    '#mobileHome,#mobileEstudar{display:none;' +
+    '  position:fixed;top:56px;left:0;right:0;bottom:74px;' +
     '  background:' + NAVY + ';overflow-y:auto;-webkit-overflow-scrolling:touch;z-index:30}' +
 
-    /* -- home view -- */
+    /* home */
     '.mv-pad{padding:14px 16px}' +
     '.mv-h2{font-family:Poppins;font-weight:600;font-size:15px;color:' + INK + ';margin:0 0 10px}' +
     '.mv-daily{background:' + SURF + ';border-radius:16px;padding:14px 16px;margin-bottom:12px}' +
@@ -4857,55 +4853,68 @@ try{ if(typeof RICH!=='undefined'){
     '.mv-badge{font-family:Poppins;font-size:11px;color:' + BLUE + ';' +
     '  background:rgba(77,136,255,.15);border-radius:10px;padding:2px 9px}' +
 
-    /* -- estudar / hub -- */
-    '.mob-tabs{display:flex;gap:6px;padding:10px 14px 0;overflow-x:auto;scrollbar-width:none}' +
-    '.mob-tabs::-webkit-scrollbar{display:none}' +
-    '.mob-tab{font-family:Poppins;font-weight:600;font-size:12px;padding:5px 13px;' +
-    '  border-radius:20px;border:none;cursor:pointer;white-space:nowrap;' +
-    '  background:' + SURF + ';color:' + INK2 + '}' +
-    '.mob-tab.on{background:' + BLUE + ';color:#fff}' +
-    '.hub-wrap{display:flex;flex-direction:column;align-items:center;padding:6px 16px 18px}' +
-    '.hub-name{font-family:Poppins;font-weight:700;font-size:17px;color:' + INK + ';margin-bottom:2px}' +
-    '.hub-arc{position:relative;width:256px;height:210px;overflow:visible;flex-shrink:0}' +
-    '.hub-mode{position:absolute;width:52px;height:52px;border-radius:26px;' +
-    '  background:' + SURF + ';border:1.5px solid #26344f;' +
-    '  display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}' +
-    '.hub-mode.lk{opacity:.45;cursor:not-allowed;pointer-events:none}' +
-    '.hub-mode-lbl{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);' +
-    '  font-family:Poppins;font-size:9px;color:' + INK2 + ';white-space:nowrap}' +
-    '.hub-book{position:absolute;width:64px;height:64px;border-radius:20px;' +
-    '  background:' + BLUE + ';border:none;cursor:pointer;display:flex;align-items:center;justify-content:center}' +
-    '.hub-lk-badge{position:absolute;right:-2px;bottom:-2px;width:16px;height:16px;border-radius:8px;' +
-    '  background:' + NAVY + ';display:flex;align-items:center;justify-content:center}' +
-    '.hub-prog{display:flex;align-items:center;gap:8px;width:100%;margin:8px 0 4px}' +
-    '.hub-prog-track{flex:1;height:8px;background:' + SURF + ';border-radius:6px;overflow:hidden}' +
-    '.hub-prog-fill{height:8px;background:' + ORANGE + ';border-radius:6px}' +
-    '.hub-noz{width:26px;height:26px;border-radius:13px;background:' + ORANGE + ';' +
-    '  display:flex;align-items:center;justify-content:center;flex-shrink:0}' +
-    '.hub-pct{font-family:Poppins;font-size:11px;color:' + INK2 + ';margin-top:2px}' +
+    /* hub — seletores */
+    '.hub-top{padding:12px 16px 4px;display:flex;flex-direction:column;gap:8px}' +
+    '.hub-sel{width:100%;background:' + SURF + ';color:' + INK + ';border:1px solid ' + BRD + ';' +
+    '  border-radius:12px;padding:11px 14px;font-family:Poppins;font-weight:600;font-size:14px;' +
+    '  -webkit-appearance:none;appearance:none;cursor:pointer;' +
+    '  background-image:url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%238baec8\' stroke-width=\'2\'><polyline points=\'6 9 12 15 18 9\'/></svg>");' +
+    '  background-repeat:no-repeat;background-position:right 14px center}' +
 
-    /* -- bottom nav -- */
+    /* hub — bloco de seção (vocab / frases) */
+    '.hub-sec{margin:6px 16px 14px;background:' + SURF + ';border-radius:20px;padding:14px 12px 16px}' +
+    '.hub-sec-h{display:flex;align-items:center;gap:8px;font-family:Poppins;font-weight:700;' +
+    '  font-size:14px;color:' + INK + ';margin:0 4px 6px}' +
+    '.hub-arc{position:relative;width:100%;height:150px;margin:2px 0 4px}' +
+    '.hub-mode{position:absolute;width:54px;height:54px;border-radius:27px;' +
+    '  background:' + NAVY + ';border:1.5px solid ' + BRD + ';transform:translate(-50%,-50%);' +
+    '  display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}' +
+    '.hub-mode.lk{opacity:.4;cursor:not-allowed;pointer-events:none}' +
+    '.hub-mode-lbl{position:absolute;top:56px;left:50%;transform:translateX(-50%);' +
+    '  font-family:Poppins;font-size:10px;color:' + INK2 + ';white-space:nowrap}' +
+    '.hub-book{position:absolute;width:60px;height:60px;border-radius:18px;transform:translate(-50%,-50%);' +
+    '  background:' + BLUE + ';border:none;cursor:pointer;display:flex;align-items:center;justify-content:center}' +
+    '.hub-book-lbl{position:absolute;top:34px;left:50%;transform:translateX(-50%);' +
+    '  font-family:Poppins;font-size:10px;color:#fff;white-space:nowrap;opacity:.9}' +
+
+    /* hub — barra esquilo -> nozes */
+    '.sqbar{position:relative;height:30px;margin:14px 8px 2px}' +
+    '.sqbar-track{position:absolute;top:12px;left:18px;right:30px;height:8px;' +
+    '  background:' + NAVY + ';border-radius:6px;overflow:hidden}' +
+    '.sqbar-fill{height:8px;border-radius:6px;background:' + ORANGE + '}' +
+    '.sqbar-sq{position:absolute;top:0;font-size:20px;transform:translateX(-50%);transition:left .4s}' +
+    '.sqbar-nut{position:absolute;top:2px;right:2px;font-size:20px}' +
+    '.sqbar-pct{font-family:Poppins;font-size:11px;color:' + INK2 + ';text-align:center;margin-top:2px}' +
+
+    /* bottom nav */
     '#squTab{display:none;position:fixed;left:0;right:0;bottom:0;z-index:60;' +
     '  background:' + NAVY + ';border-top:1px solid #1e2d46;' +
     '  padding:6px 4px calc(6px + env(safe-area-inset-bottom));justify-content:space-around;align-items:stretch}' +
     '#squTab button{flex:1;background:none;border:0;cursor:pointer;display:flex;flex-direction:column;' +
-    '  align-items:center;gap:3px;color:' + INK2 + ';font:600 10px/1.1 Poppins,sans-serif;padding:4px 0}' +
+    '  align-items:center;gap:3px;color:' + INK2 + ';font:600 10px/1.1 Poppins,sans-serif;padding:4px 0;position:relative}' +
     '#squTab button.on{color:' + BLUE + '}' +
     '#squTab svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}' +
     '#squTab .ind{position:absolute;top:0;height:3px;width:18%;background:' + BLUE + ';border-radius:0 0 3px 3px;transition:left .22s}';
-
   document.head.appendChild(css);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   function call(fn, args) { try { if (typeof window[fn] === 'function') return window[fn].apply(null, args||[]); } catch(e){} }
   function esc(s) { return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   function todayKey() { var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
-  function userName() { return (window.currentUser&&window.currentUser.nome)||'Você'; }
-  function streakVal() { try{return (state&&state.stats&&state.stats.streak)||0;}catch(e){return 0;} }
-  function skillPct(skill) {
-    var done=0, total=(skill.topics||[]).length;
+  function skills() { return (typeof APP !== 'undefined' && APP.skills) ? APP.skills : []; }
+  function userName() { return (window.currentUser && window.currentUser.nome) || 'Você'; }
+  function streakVal() { try { return (state && state.stats && state.stats.streak) || 0; } catch(e){ return 0; } }
+  function skillPct(sk) {
+    var done=0, total=(sk.topics||[]).length;
     if(!total) return 0;
-    try{skill.topics.forEach(function(t){if(state&&state.done&&state.done[t.id])done++;});}catch(e){}
+    try{ sk.topics.forEach(function(t){ if(state&&state.done&&state.done[t.id]) done++; }); }catch(e){}
+    return total ? done/total : 0;
+  }
+  // progresso por seção (v = vocabulário, f = frases) usando state.done[id::k]
+  function sectionPct(sk, k) {
+    var done=0, total=(sk.topics||[]).length;
+    if(!total) return 0;
+    try{ sk.topics.forEach(function(t){ if(state&&state.done&&state.done[t.id+'::'+k]) done++; }); }catch(e){}
     return total ? done/total : 0;
   }
 
@@ -4924,7 +4933,9 @@ try{ if(typeof RICH!=='undefined'){
         '</svg>' +
         '<span id="mobStreak">0</span>' +
       '</div>' +
-      '<svg viewBox="0 0 24 24" width="20" height="20" stroke="' + INK2 + '" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + IC.trophy + '</svg>' +
+      '<button class="mob-icbtn" id="mobCfg" title="Ajustes">' +
+        '<svg viewBox="0 0 24 24" width="21" height="21" stroke="' + INK2 + '" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + IC.gear + '</svg>' +
+      '</button>' +
     '</div>';
 
   function updateTopBar() {
@@ -4932,7 +4943,7 @@ try{ if(typeof RICH!=='undefined'){
     var av = document.getElementById('mobAv');
     var hl = document.getElementById('mobHello');
     var st = document.getElementById('mobStreak');
-    if(av) av.textContent = n.charAt(0).toUpperCase();
+    if(av) av.textContent = (n.charAt(0)||'?').toUpperCase();
     if(hl) hl.textContent = 'Olá, ' + n.split(' ')[0] + '!';
     if(st) st.textContent = streakVal();
   }
@@ -4942,26 +4953,23 @@ try{ if(typeof RICH!=='undefined'){
   homeEl.id = 'mobileHome';
 
   function renderHome() {
-    var skills = (typeof APP !== 'undefined' && APP.skills) ? APP.skills : [];
+    var sks = skills();
     var s = (typeof state !== 'undefined' && state && state.stats) ? state.stats : {};
     var xp = s.hist ? (s.hist[todayKey()]||0) : 0;
     var goal = s.goal || 20;
     var xpPct = Math.min(Math.round((xp/goal)*100), 100);
-    var langs = skills.filter(function(sk){ return sk.lang; });
+    var langs = sks.filter(function(sk){ return sk.lang; });
 
     var h = '<div class="mv-pad">';
-
-    // Daily goal
     h += '<div class="mv-daily">' +
       '<div class="mv-daily-lbl">Meta diária</div>' +
       '<div class="mv-daily-num">' + xp + '<span class="mv-daily-of"> / ' + goal + ' XP</span></div>' +
       '<div class="mv-track"><div class="mv-fill" style="width:' + xpPct + '%;background:' + ORANGE + '"></div></div>' +
     '</div>';
 
-    // Priority course (first lang skill)
     if (langs.length) {
       var pri = langs[0];
-      var idx = skills.indexOf(pri);
+      var idx = sks.indexOf(pri);
       var pct = Math.round(skillPct(pri) * 100);
       h += '<div class="mv-h2">Continuar agora</div>';
       h += '<div class="mv-card">' +
@@ -4975,11 +4983,10 @@ try{ if(typeof RICH!=='undefined'){
       '</div>';
     }
 
-    // Course list
     h += '<div class="mv-h2">Todos os cursos</div>';
-    skills.slice(0, 8).forEach(function(sk, i) {
+    sks.slice(0, 12).forEach(function(sk) {
       var pct = Math.round(skillPct(sk) * 100);
-      var idx = skills.indexOf(sk);
+      var idx = sks.indexOf(sk);
       h += '<div class="mv-card" style="padding:12px 14px;cursor:pointer" onclick="__msh.goEstudar(' + idx + ')">' +
         '<div class="mv-row">' +
           '<span class="mv-cname" style="font-size:15px">' + esc(sk.name) + '</span>' +
@@ -4988,7 +4995,6 @@ try{ if(typeof RICH!=='undefined'){
         '<div class="mv-track" style="margin-top:8px"><div class="mv-fill" style="width:' + pct + '%"></div></div>' +
       '</div>';
     });
-
     h += '</div>';
     homeEl.innerHTML = h;
   }
@@ -4996,127 +5002,170 @@ try{ if(typeof RICH!=='undefined'){
   // ── Estudar Hub view ──────────────────────────────────────────────────────
   var estudarEl = document.createElement('div');
   estudarEl.id = 'mobileEstudar';
-
   var curIdx = 0;
 
-  var MODES = [
-    { lbl: 'Revisão',   icon: 'refresh', fn: function(sk){ call('openAllVocabReview', ['vocab', sk.name]); } },
-    { lbl: 'Pronúncia', icon: 'mic',     fn: function(sk){ call('openAllPronunc',    [sk.name]); } },
-    { lbl: 'Leitura',   icon: 'swap',    fn: function(sk){ call('openAllLeitura',    [sk.name]); } },
-    { lbl: 'Preencher', icon: 'pencil',  fn: function(sk){ call('openAllFill',       [sk.name]); } },
-    { lbl: 'IA',        icon: 'stars',   fn: null, locked: true },
-  ];
-
-  function renderHub(idx) {
-    curIdx = idx;
-    var skills = (typeof APP !== 'undefined' && APP.skills) ? APP.skills : [];
-    var sk = skills[idx];
-    if (!sk) return;
-
-    var pct = Math.round(skillPct(sk) * 100);
-    var n = MODES.length;
-
-    // Skill tabs
-    var tabs = '<div class="mob-tabs">';
-    skills.slice(0, 8).forEach(function(s, i) {
-      tabs += '<button class="mob-tab' + (i===idx?' on':'') + '" onclick="__msh.hub(' + i + ')">' + esc(s.name) + '</button>';
-    });
-    tabs += '</div>';
-
-    // Arc modes
-    var modes = '';
-    MODES.forEach(function(m, i) {
-      var p = arcPos(i, n);
-      var left = C + p.x - 26;
-      var top  = C + p.y - 26;
-      var lk = !!m.locked;
-      var onclick = lk ? '' : ' onclick="__msh.mode(' + i + ')"';
-      modes +=
-        '<div class="hub-mode' + (lk?' lk':'') + '" style="left:' + left + 'px;top:' + top + 'px"' + onclick + '>' +
-          si(m.icon, lk ? INK2 : ORANGE) +
-          (lk ? '<div class="hub-lk-badge">' + si('lock','#fff') + '</div>' : '') +
-          '<span class="hub-mode-lbl">' + esc(m.lbl) + '</span>' +
-        '</div>';
-    });
-
-    // Center book
-    var bLeft = C - 32, bTop = C - 32;
-    var bookBtn =
-      '<button class="hub-book" style="left:' + bLeft + 'px;top:' + bTop + 'px" onclick="__msh.theory()">' +
-        si('book', '#fff') +
-      '</button>';
-
-    var hub =
-      '<div class="hub-wrap">' +
-        '<div class="hub-name">' + esc(sk.name) + '</div>' +
-        '<div class="hub-arc">' + modes + bookBtn + '</div>' +
-        '<div class="hub-prog">' +
-          '<svg viewBox="0 0 24 24" width="24" height="24" stroke="' + INK2 + '" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + IC.book2 + '</svg>' +
-          '<div class="hub-prog-track"><div class="hub-prog-fill" style="width:' + pct + '%"></div></div>' +
-          '<div class="hub-noz">' + si('nut', '#fff') + '</div>' +
-        '</div>' +
-        '<div class="hub-pct">' + pct + '% concluído · ' + (sk.topics||[]).length + ' tópicos</div>' +
-      '</div>';
-
-    estudarEl.innerHTML = tabs + hub;
+  // arco superior (modos acima do centro): ângulos 198°..342°
+  // arco inferior (modos abaixo do centro): ângulos 18°..162°
+  function arcXY(i, n, top) {
+    if (n <= 1) n = 2;
+    var a0 = top ? 198 : 18, a1 = top ? 342 : 162;
+    var ang = (a0 + (i * (a1 - a0)) / (n - 1)) * Math.PI / 180;
+    return { x: 50 + 40 * Math.cos(ang), y: 50 + 60 * Math.sin(ang) }; // % do container
   }
 
-  // ── Public interface (callbacks from inline onclick) ──────────────────────
+  function sqbar(pct) {
+    var p = Math.max(0, Math.min(100, Math.round(pct * 100)));
+    var left = 'calc(18px + (100% - 48px) * ' + (p/100) + ')';
+    return '<div class="sqbar">' +
+      '<div class="sqbar-track"><div class="sqbar-fill" style="width:' + p + '%"></div></div>' +
+      '<span class="sqbar-sq" style="left:' + left + '">🐿️</span>' +
+      '<span class="sqbar-nut">🌰</span>' +
+    '</div><div class="sqbar-pct">' + p + '% concluído</div>';
+  }
+
+  // modos por seção. 'section' = 'vocab' | 'phrases'
+  function modesFor(section) {
+    return [
+      { lbl:'Revisão',   icon:'refresh', fn:function(sn){ call('openAllVocabReview',[section, sn]); } },
+      { lbl:'Pronúncia', icon:'mic',     fn:function(sn){ call('openAllPronunc',[sn]); } },
+      { lbl:'Leitura',   icon:'swap',    fn:function(sn){ call('openAllLeitura',[sn]); } },
+      { lbl:'Preencher', icon:'pencil',  fn:function(sn){ call('openAllFill',[sn]); } },
+    ];
+  }
+
+  function arcSection(title, section, sk, top) {
+    var modes = modesFor(section);
+    var n = modes.length;
+    var inner = '';
+    modes.forEach(function(m, i) {
+      var p = arcXY(i, n, top);
+      inner += '<div class="hub-mode" style="left:' + p.x + '%;top:' + p.y + '%" ' +
+        'onclick="__msh.mode(\'' + section + '\',' + i + ')">' +
+        si(m.icon, ORANGE) +
+        '<span class="hub-mode-lbl">' + esc(m.lbl) + '</span>' +
+      '</div>';
+    });
+    // livro central (teoria/conteúdo)
+    inner += '<button class="hub-book" style="left:50%;top:50%" onclick="__msh.theory()">' + si('book', '#fff') +
+      '<span class="hub-book-lbl">Conteúdo</span></button>';
+    var pct = sectionPct(sk, section === 'vocab' ? 'v' : 'f');
+    return '<div class="hub-sec">' +
+      '<div class="hub-sec-h">' +
+        '<svg viewBox="0 0 24 24" width="18" height="18" stroke="' + BLUE + '" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + IC.book2 + '</svg>' +
+        esc(title) +
+      '</div>' +
+      '<div class="hub-arc">' + inner + '</div>' +
+      sqbar(pct) +
+    '</div>';
+  }
+
+  function renderHub(idx) {
+    if (idx !== undefined) curIdx = idx;
+    var sks = skills();
+    var sk = sks[curIdx];
+    if (!sk) { estudarEl.innerHTML = '<div class="mv-pad"><div class="mv-csub">Nenhum curso disponível.</div></div>'; return; }
+
+    var courseOpts = sks.map(function(s, i) {
+      return '<option value="' + i + '"' + (i===curIdx?' selected':'') + '>' + esc(s.name) + ' · ' + esc(s.priority) + '</option>';
+    }).join('');
+
+    var topics = sk.topics || [];
+    var modOpts = '<option value="-1">— ir para um módulo —</option>' + topics.map(function(t, i) {
+      var done = !!(state && state.done && state.done[t.id]);
+      return '<option value="' + i + '">' + (done?'✓ ':'') + esc(t.t || t.id) + '</option>';
+    }).join('');
+
+    estudarEl.innerHTML =
+      '<div class="hub-top">' +
+        '<select class="hub-sel" onchange="__msh.pickCourse(this.value)">' + courseOpts + '</select>' +
+        '<select class="hub-sel" onchange="__msh.pickModule(this.value)">' + modOpts + '</select>' +
+      '</div>' +
+      arcSection('Vocabulário', 'vocab', sk, true) +
+      arcSection('Frases', 'phrases', sk, false);
+  }
+
+  // ── Public interface ──────────────────────────────────────────────────────
   window.__msh = {
-    hub:      function(i) { renderHub(i); },
-    mode:     function(i) {
-      var sk = ((typeof APP!=='undefined'&&APP.skills)||[])[curIdx];
-      if(sk && MODES[i] && MODES[i].fn) {
-        showNative();
-        MODES[i].fn(sk);
-      }
+    pickCourse: function(v) { renderHub(parseInt(v, 10) || 0); },
+    pickModule: function(v) {
+      var i = parseInt(v, 10);
+      if (i >= 0) { showNative(); call('openDetail', [curIdx]); }
     },
-    theory:   function() {
-      showNative();
-      call('openDetail', [curIdx]);
+    mode: function(section, i) {
+      var sk = skills()[curIdx];
+      var m = modesFor(section)[i];
+      if (sk && m && m.fn) { showNative(); m.fn(sk.name); }
     },
+    theory: function() { showNative(); call('openDetail', [curIdx]); },
     goEstudar: function(i) { setActive(1); showEstudar(i); },
   };
 
+  // abre o painel de ajustes COMPLETO do site (nome, projeto, personagem, tema, sair)
+  function openSettings() {
+    if (typeof window.srsOpenConfig === 'function') window.srsOpenConfig();
+    else call('openAjustes', []);
+  }
+
   // ── View management ───────────────────────────────────────────────────────
-  function showNative() {
-    homeEl.style.display   = 'none';
-    estudarEl.style.display = 'none';
-  }
-  function showHome() {
-    renderHome();
-    homeEl.style.display    = 'block';
-    estudarEl.style.display = 'none';
-  }
-  function showEstudar(idx) {
-    renderHub(idx !== undefined ? idx : curIdx);
-    estudarEl.style.display  = 'block';
-    homeEl.style.display     = 'none';
-  }
+  function showNative()  { homeEl.style.display='none'; estudarEl.style.display='none'; }
+  function showHome()    { renderHome();  homeEl.style.display='block'; estudarEl.style.display='none'; }
+  function showEstudar(idx) { renderHub(idx); estudarEl.style.display='block'; homeEl.style.display='none'; }
 
   // ── Bottom nav ────────────────────────────────────────────────────────────
   var TABS = [
-    { lbl: 'Início',  ic: '<path d="M3 12l9-9 9 9"/><path d="M5 10v10h5v-6h4v6h5V10"/>',  run: showHome },
-    { lbl: 'Estudar', ic: '<path d="M5 5a2 2 0 0 1 2-2h11v16H7a2 2 0 0 0-2 2z"/><path d="M18 19H7"/>', run: function(){ showEstudar(); } },
-    { lbl: 'Treino',  ic: '<polyline points="3 12 8 12 10 5 14 19 16 12 21 12"/>',           run: function(){ showNative(); call('openAllVocabReview', ['vocab']); } },
-    { lbl: 'Amigos',  ic: '<circle cx="9" cy="8" r="3"/><path d="M3.5 20c0-3 2.7-5 5.5-5s5.5 2 5.5 5"/><circle cx="17.5" cy="9" r="2"/><path d="M16.5 15c2.5.2 4 2 4 5"/>', run: function(){ showNative(); alert('Amigos e ranking — em breve!'); } },
-    { lbl: 'Ajustes', ic: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>', run: function(){ showNative(); call('openAjustes', []); } },
+    { lbl:'Início',  ic:IC.home,   run:showHome },
+    { lbl:'Estudar', ic:IC.book2,  run:function(){ showEstudar(); } },
+    { lbl:'Treino',  ic:IC.pulse,  run:function(){ showNative(); call('openAllVocabReview', ['vocab']); } },
+    { lbl:'Amigos',  ic:IC.people, run:function(){ showNative(); alert('Amigos e ranking — em breve!'); } },
+    { lbl:'Ajustes', ic:IC.gear,   run:function(){ showNative(); openSettings(); } },
   ];
 
   var nav = document.createElement('nav');
   nav.id = 'squTab';
   var ind = document.createElement('div'); ind.className = 'ind'; nav.appendChild(ind);
-
   TABS.forEach(function(t, i) {
     var b = document.createElement('button');
     b.innerHTML = '<svg viewBox="0 0 24 24">' + t.ic + '</svg><span>' + t.lbl + '</span>';
     b.onclick = function(){ setActive(i); t.run(); };
     nav.appendChild(b);
   });
-
   function setActive(i) {
     nav.querySelectorAll('button').forEach(function(b,j){ b.classList.toggle('on', j===i); });
     ind.style.left = (i * 20 + 1) + '%';
+  }
+
+  // ── Estado de visibilidade (fonte única da verdade) ───────────────────────
+  function isMobile() { return window.innerWidth <= BP; }
+  function isLogged() {
+    var lp = document.getElementById('landing');
+    var landingVisible = lp && lp.style.display === 'block';
+    return !landingVisible && !!window.currentUser;
+  }
+
+  var lastActive = false;
+  function vis() {
+    var active = isMobile() && isLogged();
+    document.body.classList.toggle('msh-app', active);
+    if (!active) {
+      // Desktop OU deslogado OU landing: NADA do shell pode aparecer.
+      topBar.style.display = 'none';
+      nav.style.display = 'none';
+      homeEl.style.display = 'none';
+      estudarEl.style.display = 'none';
+      lastActive = false;
+      return;
+    }
+    topBar.style.display = 'flex';
+    nav.style.display = 'flex';
+    if (!lastActive) {
+      // acabou de entrar no modo app: mostra a Home uma vez
+      updateTopBar();
+      setActive(0);
+      showHome();
+      lastActive = true;
+    } else {
+      updateTopBar();
+    }
   }
 
   // ── Mount ─────────────────────────────────────────────────────────────────
@@ -5128,33 +5177,16 @@ try{ if(typeof RICH!=='undefined'){
     document.body.appendChild(nav);
     setActive(0);
 
-    function vis() {
-      var lp = document.getElementById('landing');
-      var logged = !(lp && lp.style.display === 'block') && !!window.currentUser;
-      var mobile = window.innerWidth <= 820;
-      var want = (mobile && logged) ? 'flex' : 'none';
-      if (nav.style.display !== want) nav.style.display = want;
-      topBar.style.display = (mobile && logged) ? 'flex' : 'none';
-    }
+    var cfg = document.getElementById('mobCfg');
+    if (cfg) cfg.onclick = function(){ showNative(); openSettings(); };
+
     window.addEventListener('resize', vis);
     setInterval(vis, 800);
     vis();
-
-    // Aguarda login e mostra home no mobile
-    var tries = 0;
-    var init = setInterval(function() {
-      tries++;
-      if (window.currentUser || tries > 30) {
-        clearInterval(init);
-        if (window.currentUser && window.innerWidth <= 820) {
-          updateTopBar();
-          showHome();
-        }
-      }
-    }, 300);
   }
 
-  if (document.body) mount(); else document.addEventListener('DOMContentLoaded', mount);
+  if (document.body) mount();
+  else document.addEventListener('DOMContentLoaded', mount);
 })();
 
 </script>
