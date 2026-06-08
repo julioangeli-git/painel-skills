@@ -1496,11 +1496,11 @@ function srsCardsForTopic(id, section){
   if(section==='vocab'||!section){
     (d.words||[]).forEach(function(c){(c.items||[]).forEach(function(w){add(w[0],w[1],w[3]);});});
     (d.phraseWords||[]).forEach(function(w){add(w[0],w[1]);});
-    (d.songWords||[]).forEach(function(w){add(w[0],w[1]);});
+    // MUSICA REMOVIDA: songWords fora do vocabulario (direitos + fora de contexto).
   }
   if(section==='phrases'||!section){
     (d.phrases||[]).forEach(function(p){add(p[0],p[1]);});
-    (d.songLines||[]).forEach(function(v,i){add(v,(d.songLinesTr&&d.songLinesTr[i])?d.songLinesTr[i]:'');});
+    // MUSICA REMOVIDA: songLines (versos) fora das frases.
   }
   return out;
 }
@@ -2329,8 +2329,8 @@ function catsFor(d,k){
     })});
   }
   else if(k==='m'){
-    out.push({name:'Versos da música',items:(d.songLines||[]).map(function(v,i){return {f:v,b:(d.songLinesTr&&d.songLinesTr[i])||'',pron:'',img:null};})});
-    if(d.songWords&&d.songWords.length)out.push({name:'Palavras da música',items:d.songWords.map(function(w){return {f:w[0],b:w[1],pron:'',img:null};})});
+    // MÚSICA REMOVIDA da exibição (direitos): nada de versos/letras aqui.
+    // A trilha Música é tratada como "ouvir fora + marcar" em openMaterial('m').
   } else if(d.phrases){out.push({name:'Conteúdo',items:d.phrases.map(function(p){return {f:srsApplyPlaceholders(p[0]),b:srsApplyPlaceholders(p[1]),pron:'',img:null};})});}
   return out;
 }
@@ -2364,7 +2364,21 @@ function openMaterial(id,k){
   var names={v:'Vocabulário',f:'Frases-chave',m:'Música',i:'Imersão'};
   var t=(APP.skills[curIdx]?APP.skills[curIdx].topics.find(function(x){return x.id===id;}):null);
   document.getElementById('matTitle').textContent=(names[k]||'Material')+' · '+(t?t.t:id);
-  renderCatCarousel(id,k);
+  if(k==='m'){
+    // Trilha Música: ouvir fora da plataforma + marcar (sem letra/áudio nosso = sem direitos).
+    var tema=(t&&t.trk&&t.trk.m)?t.trk.m:'Escute uma música em italiano relacionada a esta unidade.';
+    var why=document.getElementById('matWhy');if(why)why.style.display='none';
+    document.getElementById('matBody').innerHTML=
+      '<div style="max-width:680px;margin:0 auto;text-align:center;padding:24px">'
+      +'<div style="font-size:64px;line-height:1">🎵</div>'
+      +'<h3 style="font-size:22px;margin:12px 0 6px;color:var(--ink,#1c1408)">Música da semana</h3>'
+      +'<p style="font-size:17px;font-weight:700;color:var(--ink,#1c1408)">'+srsEsc(tema)+'</p>'
+      +'<p style="font-size:14px;color:var(--ink3,#666);margin:14px 0 24px">Ouça esta música fora da plataforma, no app de música que você preferir. Ao terminar, marque abaixo — conta no seu progresso da semana.</p>'
+      +'<button class="btn" style="font-size:16px;padding:12px 26px" onclick="closeMaterial()">✓ Marcar como ouvida</button>'
+      +'</div>';
+  } else {
+    renderCatCarousel(id,k);
+  }
   var detail=document.getElementById('detail');detail.style.display='none';
   var ov=document.getElementById('overview');if(ov)ov.style.display='none';
   var mv=document.getElementById('matView');
@@ -2583,8 +2597,9 @@ function matSubcardsHtml(t,lang){
     +practiceCard('Tradução','🗣️',fPrnPct,fPrnOC,!fDone,'Conclua as Frases para liberar')
     +fillCard('✏️ Preencha',fFillPct,"openFill('"+id+"','phrases')",!fDone,'Conclua as Frases para liberar')
     +'</div>'
+    /* ── Música (ouvir fora + marcar) ── */
+    +practiceCard('Música','🎵',(state.done[id+'::m']?100:0),"openMaterial('"+id+"','m')",false,'')
     /* ── Em breve ── */
-    +lockedComing('Música','🎵')
     +lockedComing('Imersão real','🌍')
     +'</div>';
 }
