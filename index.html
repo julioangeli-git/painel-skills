@@ -4763,7 +4763,8 @@ try{ if(typeof RICH!=='undefined'){
   function unlock() {
     if (_unlocked) return;
     _unlocked = true;
-    try { var a = audioEl(); a.src = SILENCE; var p = a.play(); if (p && p.catch) p.catch(function () {}); } catch (e) {}
+    // toca o silêncio num elemento SEPARADO — nunca no player real (não corrompe o mp3)
+    try { var u = new Audio(SILENCE); var p = u.play(); if (p && p.catch) p.catch(function () {}); } catch (e) {}
   }
   ["touchend", "mousedown", "keydown"].forEach(function (ev) {
     document.addEventListener(ev, unlock, { passive: true });
@@ -4861,7 +4862,7 @@ try{ if(typeof RICH!=='undefined'){
   var css = document.createElement("style");
   css.textContent =
     '@media(max-width:' + BP + 'px){' +
-    '  body.msh-app{padding-top:56px!important;padding-bottom:74px!important}' +
+    '  body.msh-app{padding-top:56px!important;padding-bottom:74px!important;overflow-x:hidden!important;max-width:100vw!important}' +
     '  body.msh-app header.top,body.msh-app .tricolore{display:none!important}' +
     '}' +
 
@@ -4925,15 +4926,15 @@ try{ if(typeof RICH!=='undefined'){
     '.hub-sec-lock{font-family:Poppins;font-weight:600;font-size:10px;color:' + INK2 + ';margin-left:auto}' +
     '.hub-mode-lbl{position:absolute;top:56px;left:50%;transform:translateX(-50%);' +
     '  font-family:Poppins;font-size:10px;color:' + INK2 + ';white-space:nowrap}' +
-    '.hub-book{position:absolute;width:60px;height:60px;border-radius:18px;transform:translate(-50%,-50%);' +
-    '  background:' + BLUE + ';border:none;cursor:pointer;display:flex;align-items:center;justify-content:center}' +
+    '.hub-book{position:absolute;width:56px;height:56px;border-radius:50%;transform:translate(-50%,-50%);' +
+    '  background:' + BLUE + ';border:2px solid rgba(255,255,255,.12);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(77,136,255,.35)}' +
     '.hub-book-lbl{position:absolute;top:34px;left:50%;transform:translateX(-50%);' +
     '  font-family:Poppins;font-size:10px;color:#fff;white-space:nowrap;opacity:.9}' +
 
     /* hub — barra esquilo -> nozes */
     '.sqbar{position:relative;height:28px;margin:4px 14px 0}' +
     '.sqbar-track{position:absolute;top:12px;left:18px;right:30px;height:8px;' +
-    '  background:' + NAVY + ';border-radius:6px;overflow:hidden}' +
+    '  background:#243149;border-radius:6px;overflow:hidden}' +
     '.sqbar-fill{height:8px;border-radius:6px;background:' + ORANGE + '}' +
     '.sqbar-sq{position:absolute;top:0;font-size:20px;transform:translateX(-50%) scaleX(-1);transition:left .4s}' +
     '.sqbar-nut{position:absolute;top:2px;right:2px;font-size:20px}' +
@@ -5068,9 +5069,10 @@ try{ if(typeof RICH!=='undefined'){
 
   function sqbar(pct) {
     var p = Math.max(0, Math.min(100, Math.round(pct * 100)));
+    var col = p >= 60 ? '#4f9a3a' : p >= 30 ? '#e8a020' : '#c0392e'; // a linha muda de cor conforme avança
     var left = 'calc(18px + (100% - 48px) * ' + (p/100) + ')';
     return '<div class="sqbar">' +
-      '<div class="sqbar-track"><div class="sqbar-fill" style="width:' + p + '%"></div></div>' +
+      '<div class="sqbar-track"><div class="sqbar-fill" style="width:' + p + '%;background:' + col + '"></div></div>' +
       '<span class="sqbar-sq" style="left:' + left + '">🐿️</span>' +
       '<span class="sqbar-nut">🌰</span>' +
     '</div><div class="sqbar-pct">Progresso ' + p + '% concluído</div>';
