@@ -4729,9 +4729,10 @@ try{ if(typeof RICH!=='undefined'){
   function key(t) { return md5(String(t == null ? "" : t).trim().toLowerCase()) + ".mp3"; }
 
   var _urlCache = {};
-  var _audioEl = null;   // elemento reutilizado (desbloqueado no 1o gesto do usuário)
+  var _audioEl = null;   // player reutilizado (desbloqueado no 1o gesto do usuário)
   var _unlocked = false;
-  var _busy = false;     // há um play "real" em andamento? (evita o unlock cortar o áudio)
+  var _lastText = "", _lastAt = 0;   // dedupe: evita o "double start" (autoplay + clique)
+  var SILENCE = "data:audio/wav;base64,UklGRmQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 
   function client() {
     try { if (typeof sb !== "undefined" && sb && sb.storage) return sb; } catch (e) {}
@@ -4756,59 +4757,63 @@ try{ if(typeof RICH!=='undefined'){
 
   function audioEl() { if (!_audioEl) { _audioEl = new Audio(); _audioEl.preload = "auto"; } return _audioEl; }
 
-  // iOS/Safari só tocam som se o elemento for "desbloqueado" DENTRO de um gesto do
-  // usuário. Como o play real vem depois do fetch da signed URL (e perderia o gesto),
-  // tocamos o elemento (mudo) no 1o toque para liberar plays futuros.
+  // iOS/Safari só tocam som se o player for "desbloqueado" DENTRO de um gesto do
+  // usuário. Tocamos um clipe de SILÊNCIO no 1o toque para liberar o autoplay depois
+  // (sem mexer no áudio real -> não causa "double start").
   function unlock() {
     if (_unlocked) return;
     _unlocked = true;
-    try {
-      var a = audioEl(); a.muted = true;
-      var p = a.play();
-      if (p && p.then) p.then(function () { if (!_busy) { try { a.pause(); a.currentTime = 0; } catch (e) {} } a.muted = false; }).catch(function () { a.muted = false; });
-      else a.muted = false;
-    } catch (e) {}
+    try { var a = audioEl(); a.src = SILENCE; var p = a.play(); if (p && p.catch) p.catch(function () {}); } catch (e) {}
   }
   ["touchend", "mousedown", "keydown"].forEach(function (ev) {
     document.addEventListener(ev, unlock, { passive: true });
   });
 
-  function playUrl(url) {
-    return new Promise(function (resolve, reject) {
-      try {
-        var a = audioEl(); _busy = true; a.muted = false; a.src = url;
-        var p = a.play();
-        if (p && p.then) p.then(resolve).catch(reject); else resolve();
-      } catch (e) { reject(e); }
-    });
-  }
-
-  // API pública: Supabase -> pasta local -> voz do navegador.
-  window.squSpeak = function (text, lang) {
+  // Toca o mp3 (Supabase -> pasta local -> voz do navegador).
+  // onStart(durSeg) é chamado quando o áudio REALMENTE começa (p/ sincronizar o karaokê).
+  window.squSpeak = function (text, lang, onStart) {
     if (!text) return;
     unlock();
+    var now = Date.now();
+    if (text === _lastText && (now - _lastAt) < 280) return; // dedupe (autoplay + clique)
+    _lastText = text; _lastAt = now;
     var k = key(text);
     signed(k).then(function (url) {
-      var srcs = [];
-      if (url) srcs.push(url);
-      srcs.push("audio/" + k); // fallback: pasta local (dev/file:// ou se vier a ser publicada)
-      (function tryNext(i) {
-        if (i >= srcs.length) { console.warn('[audio] sem mp3 para "' + text + '" — usando voz do navegador'); browserSpeak(text, lang); return; }
-        playUrl(srcs[i]).then(function () {}).catch(function () { tryNext(i + 1); });
-      })(0);
+      var srcs = []; if (url) srcs.push(url);
+      srcs.push("audio/" + k); // fallback local (dev/file:// ou se vier a ser publicada)
+      var a = audioEl();
+      function attempt(i) {
+        if (i >= srcs.length) { console.warn('[audio] sem mp3 para "' + text + '" — voz do navegador'); if (onStart) onStart(0); browserSpeak(text, lang); return; }
+        var started = false;
+        try { a.pause(); } catch (e) {}
+        a.onplaying = function () { if (started) return; started = true; a.onplaying = null; if (onStart) onStart(a.duration || 0); };
+        a.src = srcs[i];
+        try { var p = a.play(); if (p && p.catch) p.catch(function () { if (!started) { a.onplaying = null; attempt(i + 1); } }); }
+        catch (e) { a.onplaying = null; attempt(i + 1); }
+      }
+      attempt(0);
     });
   };
 
   // Sobrepõe os helpers existentes para preferir o áudio de qualidade.
   var _lang = function () { try { return (typeof srsTTSLang === "function") ? srsTTSLang() : "it-IT"; } catch (e) { return "it-IT"; } };
   window.srsSpeak = function (t) { window.squSpeak(t, _lang()); };
+  var _karaTimers = [];
   window.srsSpeakKaraoke = function (text, pron) {
-    // colore as sílabas numa cadência aproximada e toca o áudio cacheado
     var sylls = pron ? String(pron).split("-") : [];
+    _karaTimers.forEach(clearTimeout); _karaTimers = [];
+    // reseta as sílabas e só as acende quando o áudio começa (sincronizado com o som)
     sylls.forEach(function (s, i) { var e = document.getElementById("ks" + i); if (e) { e.style.color = "#7a8aa0"; e.style.fontWeight = "400"; } });
-    var per = 360, timers = [];
-    sylls.forEach(function (s, i) { timers.push(setTimeout(function () { var e = document.getElementById("ks" + i); if (e) { e.style.color = "#5496d4"; e.style.fontWeight = "700"; } }, Math.round(i * per))); });
-    window.squSpeak(text, _lang());
+    window.squSpeak(text, _lang(), function (durSec) {
+      if (!sylls.length) return;
+      var total = (durSec && durSec > 0.2) ? durSec * 1000 : sylls.length * 360;
+      var per = total / sylls.length;
+      sylls.forEach(function (s, i) {
+        _karaTimers.push(setTimeout(function () {
+          var e = document.getElementById("ks" + i); if (e) { e.style.color = "#5496d4"; e.style.fontWeight = "700"; }
+        }, Math.round(i * per)));
+      });
+    });
   };
 })();
 
@@ -4898,8 +4903,8 @@ try{ if(typeof RICH!=='undefined'){
     '  background:rgba(77,136,255,.15);border-radius:10px;padding:2px 9px}' +
 
     /* hub — seletores */
-    '.hub-top{padding:12px 16px 4px;display:flex;flex-direction:column;gap:8px}' +
-    '.hub-sel{width:100%;background:' + SURF + ';color:' + INK + ';border:1px solid ' + BRD + ';' +
+    '.hub-top{padding:12px 16px 4px;display:flex;flex-direction:row;gap:8px}' +
+    '.hub-sel{flex:1;min-width:0;background:' + SURF + ';color:' + INK + ';border:1px solid ' + BRD + ';' +
     '  border-radius:12px;padding:11px 14px;font-family:Poppins;font-weight:600;font-size:14px;' +
     '  -webkit-appearance:none;appearance:none;cursor:pointer;' +
     '  background-image:url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%238baec8\' stroke-width=\'2\'><polyline points=\'6 9 12 15 18 9\'/></svg>");' +
@@ -4909,11 +4914,15 @@ try{ if(typeof RICH!=='undefined'){
     '.hub-sec{margin:6px 16px 8px;background:' + SURF + ';border-radius:20px;padding:14px 12px 14px}' +
     '.hub-sec-h{display:flex;align-items:center;gap:8px;font-family:Poppins;font-weight:700;' +
     '  font-size:14px;color:' + INK + ';margin:0 4px 6px}' +
-    '.hub-arc{position:relative;width:100%;height:150px;margin:2px 0 4px}' +
+    '.hub-arc{position:relative;width:100%;height:182px;margin:2px 0 2px}' +
     '.hub-mode{position:absolute;width:54px;height:54px;border-radius:27px;' +
     '  background:' + NAVY + ';border:1.5px solid ' + BRD + ';transform:translate(-50%,-50%);' +
     '  display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}' +
-    '.hub-mode.lk{opacity:.4;cursor:not-allowed;pointer-events:none}' +
+    '.hub-mode.lk{cursor:default;border-color:#2a3550}' +
+    '.hub-lk{position:absolute;right:-3px;bottom:-3px;width:18px;height:18px;border-radius:9px;' +
+    '  background:' + NAVY + ';border:1px solid ' + BRD + ';display:flex;align-items:center;justify-content:center}' +
+    '.hub-lk svg{width:11px;height:11px}' +
+    '.hub-sec-lock{font-family:Poppins;font-weight:600;font-size:10px;color:' + INK2 + ';margin-left:auto}' +
     '.hub-mode-lbl{position:absolute;top:56px;left:50%;transform:translateX(-50%);' +
     '  font-family:Poppins;font-size:10px;color:' + INK2 + ';white-space:nowrap}' +
     '.hub-book{position:absolute;width:60px;height:60px;border-radius:18px;transform:translate(-50%,-50%);' +
@@ -4922,15 +4931,14 @@ try{ if(typeof RICH!=='undefined'){
     '  font-family:Poppins;font-size:10px;color:#fff;white-space:nowrap;opacity:.9}' +
 
     /* hub — barra esquilo -> nozes */
-    '.sqbar{position:relative;height:30px;margin:14px 8px 2px}' +
+    '.sqbar{position:relative;height:28px;margin:4px 14px 0}' +
     '.sqbar-track{position:absolute;top:12px;left:18px;right:30px;height:8px;' +
     '  background:' + NAVY + ';border-radius:6px;overflow:hidden}' +
     '.sqbar-fill{height:8px;border-radius:6px;background:' + ORANGE + '}' +
-    '.sqbar-sq{position:absolute;top:0;font-size:20px;transform:translateX(-50%);transition:left .4s}' +
+    '.sqbar-sq{position:absolute;top:0;font-size:20px;transform:translateX(-50%) scaleX(-1);transition:left .4s}' +
     '.sqbar-nut{position:absolute;top:2px;right:2px;font-size:20px}' +
     '.sqbar-pct{font-family:Poppins;font-size:11px;color:' + INK2 + ';text-align:center;margin-top:2px}' +
-    '.hub-merge{margin:0 16px 8px;background:' + SURF + ';border-radius:16px;padding:9px 12px 11px}' +
-    '.hub-merge-lbl{font-family:Poppins;font-weight:600;font-size:11px;color:' + INK2 + ';text-align:center;margin-bottom:2px}' +
+    '.hub-merge{margin:-2px 8px 0}' +
 
     /* bottom nav */
     '#squTab{display:none;position:fixed;left:0;right:0;bottom:0;z-index:60;' +
@@ -5050,13 +5058,12 @@ try{ if(typeof RICH!=='undefined'){
   estudarEl.id = 'mobileEstudar';
   var curIdx = 0;
 
-  // arco superior (modos acima do centro): ângulos 198°..342°
-  // arco inferior (modos abaixo do centro): ângulos 18°..162°
-  function arcXY(i, n, top) {
+  // meia-lua: 4 ícones num arco POR CIMA do livro (mesma forma p/ vocab e frases).
+  function domeXY(i, n) {
     if (n <= 1) n = 2;
-    var a0 = top ? 198 : 18, a1 = top ? 342 : 162;
+    var a0 = 204, a1 = 336;
     var ang = (a0 + (i * (a1 - a0)) / (n - 1)) * Math.PI / 180;
-    return { x: 50 + 40 * Math.cos(ang), y: 50 + 60 * Math.sin(ang) }; // % do container
+    return { x: 50 + 40 * Math.cos(ang), y: 86 + 66 * Math.sin(ang) }; // % do container
   }
 
   function sqbar(pct) {
@@ -5066,10 +5073,10 @@ try{ if(typeof RICH!=='undefined'){
       '<div class="sqbar-track"><div class="sqbar-fill" style="width:' + p + '%"></div></div>' +
       '<span class="sqbar-sq" style="left:' + left + '">🐿️</span>' +
       '<span class="sqbar-nut">🌰</span>' +
-    '</div><div class="sqbar-pct">' + p + '% concluído</div>';
+    '</div><div class="sqbar-pct">Progresso ' + p + '% concluído</div>';
   }
 
-  // modos por seção. 'section' = 'vocab' | 'phrases'
+  // modos por seção (mesma ordem nos dois cartões). 'section' = 'vocab' | 'phrases'
   function modesFor(section) {
     return [
       { lbl:'Revisão',   icon:'refresh', fn:function(sn){ call('openAllVocabReview',[section, sn]); } },
@@ -5079,25 +5086,35 @@ try{ if(typeof RICH!=='undefined'){
     ];
   }
 
-  function arcSection(title, section, sk, top) {
+  // a seção está liberada se ALGUM módulo tem a teoria daquela frente concluída
+  function sectionUnlocked(sk, section) {
+    var kk = section === 'phrases' ? '::f' : '::v';
+    try { return (sk.topics || []).some(function (t) { return state && state.done && state.done[t.id + kk]; }); }
+    catch (e) { return false; }
+  }
+
+  function arcSection(title, section, sk) {
     var modes = modesFor(section);
+    var unlocked = sectionUnlocked(sk, section);
     var n = modes.length;
     var inner = '';
     modes.forEach(function(m, i) {
-      var p = arcXY(i, n, top);
-      inner += '<div class="hub-mode" style="left:' + p.x + '%;top:' + p.y + '%" ' +
-        'onclick="__msh.mode(\'' + section + '\',' + i + ')">' +
-        si(m.icon, ORANGE) +
+      var p = domeXY(i, n);
+      inner += '<div class="hub-mode' + (unlocked ? '' : ' lk') + '" style="left:' + p.x + '%;top:' + p.y + '%"' +
+        (unlocked ? ' onclick="__msh.mode(\'' + section + '\',' + i + ')"' : '') + '>' +
+        si(m.icon, unlocked ? ORANGE : INK2) +
+        (unlocked ? '' : '<span class="hub-lk">' + si('lock', '#fff') + '</span>') +
         '<span class="hub-mode-lbl">' + esc(m.lbl) + '</span>' +
       '</div>';
     });
-    // livro central (teoria/conteúdo)
-    inner += '<button class="hub-book" style="left:50%;top:50%" onclick="__msh.theory()">' + si('book', '#fff') +
+    // livro central (Conteúdo) ABAIXO da meia-lua
+    inner += '<button class="hub-book" style="left:50%;top:83%" onclick="__msh.theory()">' + si('book', '#fff') +
       '<span class="hub-book-lbl">Conteúdo</span></button>';
     return '<div class="hub-sec">' +
       '<div class="hub-sec-h">' +
         '<svg viewBox="0 0 24 24" width="18" height="18" stroke="' + BLUE + '" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + IC.book2 + '</svg>' +
         esc(title) +
+        (unlocked ? '' : '<span class="hub-sec-lock">🔒 conclua o conteúdo</span>') +
       '</div>' +
       '<div class="hub-arc">' + inner + '</div>' +
     '</div>';
@@ -5108,7 +5125,7 @@ try{ if(typeof RICH!=='undefined'){
   function mergedBar(sk) {
     var pct;
     try { pct = (typeof compute === 'function') ? compute(sk).pct : skillPct(sk); } catch (e) { pct = skillPct(sk); }
-    return '<div class="hub-merge"><div class="hub-merge-lbl">Progresso do curso (vocabulário + frases)</div>' + sqbar(pct) + '</div>';
+    return '<div class="hub-merge">' + sqbar(pct) + '</div>';
   }
 
   function renderHub(idx) {
@@ -5132,9 +5149,9 @@ try{ if(typeof RICH!=='undefined'){
         '<select class="hub-sel" onchange="__msh.pickCourse(this.value)">' + courseOpts + '</select>' +
         '<select class="hub-sel" onchange="__msh.pickModule(this.value)">' + modOpts + '</select>' +
       '</div>' +
-      arcSection('Vocabulário', 'vocab', sk, true) +
+      arcSection('Vocabulário', 'vocab', sk) +
       mergedBar(sk) +
-      arcSection('Frases', 'phrases', sk, false);
+      arcSection('Frases', 'phrases', sk);
   }
 
   // ── Public interface ──────────────────────────────────────────────────────
