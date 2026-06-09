@@ -4792,7 +4792,21 @@ try{ if(typeof RICH!=='undefined'){
     if (!text) return;
     unlock();
     var now = Date.now();
-    if (text === _lastText && (now - _lastAt) < 1000) return; // dedupe (autoplay + clique)
+    if (text === _lastText) {
+    // 1. Se o player de áudio já existe e NÃO está pausado (ou seja, o autoplay 
+    // funcionou e está tocando ou carregando), ignoramos o novo clique.
+    // Isso mata o bug do "mai" virando "mmai".
+    if (typeof _audioEl !== 'undefined' && _audioEl && !_audioEl.paused) {
+        return;
+    }
+    
+    // 2. Trava tradicional de duplo-clique rápido (mantemos os 250ms originais).
+    // Evita dedo nervoso no botão, mas permite que o usuário clique 
+    // se o autoplay falhar após meio segundo.
+    if ((now - _lastAt) < 250) {
+        return;
+    }
+}
     _lastText = text; _lastAt = now;
     try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) {} // mata qualquer voz pendente
     var k = key(text);
