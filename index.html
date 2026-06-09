@@ -734,6 +734,113 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+/* ============================================================
+   29-debug.js — painel de DEBUG em tela.
+   Mostra logs de áudio, console (log/warn/error) e erros de JS.
+   Use o botão "Copiar" e mande o texto para diagnóstico.
+   (Provisório — remover de index.html quando o áudio estiver ok.)
+   ============================================================ */
+(function () {
+  var LOG = [];
+  var MAX = 400;
+  var panel, body, badge;
+
+  function ts() {
+    var d = new Date();
+    return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ':' +
+           ('0' + d.getSeconds()).slice(-2) + '.' + ('00' + d.getMilliseconds()).slice(-3);
+  }
+
+  function push(kind, msg) {
+    LOG.push(ts() + ' ' + (kind || '') + ' ' + msg);
+    if (LOG.length > MAX) LOG.shift();
+    render();
+  }
+
+  // API pública usada pelos outros módulos: window.dbg("mensagem")
+  window.dbg = function (msg) { try { push('•', String(msg)); } catch (e) {} };
+
+  // captura console.log / warn / error
+  ['log', 'warn', 'error'].forEach(function (m) {
+    var orig = console[m] ? console[m].bind(console) : function () {};
+    console[m] = function () {
+      try {
+        var parts = Array.prototype.map.call(arguments, function (a) {
+          if (typeof a === 'string') return a;
+          try { return JSON.stringify(a); } catch (e) { return String(a); }
+        });
+        push(m === 'error' ? '❌' : m === 'warn' ? '⚠' : '·', parts.join(' '));
+      } catch (e) {}
+      try { orig.apply(null, arguments); } catch (e) {}
+    };
+  });
+
+  window.addEventListener('error', function (e) {
+    push('❌', 'JS error: ' + (e.message || e) + ' @ ' + (e.filename || '').split('/').pop() + ':' + (e.lineno || ''));
+  });
+  window.addEventListener('unhandledrejection', function (e) {
+    var r = e.reason || {};
+    push('❌', 'promise: ' + (r.message || r.name || JSON.stringify(r) || ''));
+  });
+
+  function render() {
+    if (!body) return;
+    body.textContent = LOG.slice(-150).join('\n');
+    body.scrollTop = body.scrollHeight;
+    if (badge) badge.textContent = LOG.length;
+  }
+
+  function copy() {
+    var txt = LOG.join('\n');
+    var ok = false;
+    try { if (navigator.clipboard) { navigator.clipboard.writeText(txt); ok = true; } } catch (e) {}
+    if (!ok) {
+      try {
+        var ta = document.createElement('textarea');
+        ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.focus(); ta.select();
+        document.execCommand('copy'); document.body.removeChild(ta);
+      } catch (e) {}
+    }
+    var b = document.getElementById('__dbgCopy');
+    if (b) { var t = b.textContent; b.textContent = '✓ copiado'; setTimeout(function () { b.textContent = t; }, 1200); }
+  }
+
+  function build() {
+    if (panel || !document.body) return;
+    panel = document.createElement('div');
+    panel.id = '__dbgPanel';
+    panel.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:2147483647;font-family:ui-monospace,Menlo,Consolas,monospace';
+    panel.innerHTML =
+      '<div style="display:flex;align-items:center;gap:8px;background:#0e1622;color:#8fd0ff;padding:6px 10px;border-top:1px solid #28384f;font-size:11px">' +
+        '<b>🐞 DEBUG</b><span id="__dbgCount" style="opacity:.6">0</span>' +
+        '<button id="__dbgCopy" style="margin-left:auto;background:#1f8a4c;color:#fff;border:0;border-radius:6px;padding:5px 12px;font:inherit;cursor:pointer">Copiar</button>' +
+        '<button id="__dbgClear" style="background:#444f63;color:#fff;border:0;border-radius:6px;padding:5px 12px;font:inherit;cursor:pointer">Limpar</button>' +
+        '<button id="__dbgTog" style="background:#2b3a52;color:#fff;border:0;border-radius:6px;padding:5px 10px;font:inherit;cursor:pointer">▾</button>' +
+      '</div>' +
+      '<pre id="__dbgBody" style="margin:0;max-height:34vh;overflow:auto;background:rgba(6,10,16,.97);color:#d6ecff;padding:8px 10px;font-size:10.5px;line-height:1.45;white-space:pre-wrap;word-break:break-word"></pre>';
+    document.body.appendChild(panel);
+    body = document.getElementById('__dbgBody');
+    badge = document.getElementById('__dbgCount');
+    document.getElementById('__dbgCopy').onclick = copy;
+    document.getElementById('__dbgClear').onclick = function () { LOG.length = 0; render(); };
+    document.getElementById('__dbgTog').onclick = function () {
+      var hidden = body.style.display === 'none';
+      body.style.display = hidden ? 'block' : 'none';
+      this.textContent = hidden ? '▾' : '▴';
+    };
+    render();
+    push('•', 'debug pronto');
+    push('•', 'UA=' + navigator.userAgent);
+    try { push('•', 'supabase sb=' + ((typeof sb !== 'undefined' && sb) || window.sb ? 'OK' : 'AUSENTE')); } catch (e) { push('•', 'supabase sb=AUSENTE'); }
+    try { push('•', 'speechSynthesis=' + (window.speechSynthesis ? 'OK' : 'AUSENTE')); } catch (e) {}
+  }
+
+  if (document.body) build(); else document.addEventListener('DOMContentLoaded', build);
+})();
+
+</script>
+<script>
 // ============================================================
 // DADOS DAS SKILLS
 // Para adicionar uma nova skill: inclua um objeto no array abaixo
@@ -3027,6 +3134,7 @@ function srsRender(){
 }
 function srsNextSentence(){ _srsIdx++; srsRender(); }
 function srsOuvir(){
+  clearTimeout(_srsAudioTimer); // cancela o autoplay pendente -> não toca 2x
   var c=_srsQueue[_srsIdx];if(!c)return;
   var cf=typeof srsApplyPlaceholders==='function'?srsApplyPlaceholders(c.f):c.f;
   var pron=srsPronFor(cf,_srsTopic)||cf.replace(/[.,?!]/g,'').split(/\s+/).filter(Boolean).join('-');
@@ -4728,6 +4836,9 @@ try{ if(typeof RICH!=='undefined'){
 
   function key(t) { return md5(String(t == null ? "" : t).trim().toLowerCase()) + ".mp3"; }
 
+  // log para o painel de debug (29-debug.js); no-op se ele não estiver carregado
+  function D(m) { try { if (window.dbg) window.dbg("[audio] " + m); } catch (e) {} }
+
   var _urlCache = {};
   var _audioEl = null;   // player reutilizado (desbloqueado no 1o gesto do usuário)
   var _unlocked = false;
@@ -4762,6 +4873,7 @@ try{ if(typeof RICH!=='undefined'){
   function unlock() {
     if (_unlocked) return;
     _unlocked = true;
+    D("unlock (1o gesto)");
     try {
       var a = audioEl(); a.muted = true;
       var p = a.play();
@@ -4774,46 +4886,13 @@ try{ if(typeof RICH!=='undefined'){
   });
 
   // Toca uma URL no player. onStart(durSeg) dispara quando o som REALMENTE começa.
-var _currentUrl = null;
-
-  // Toca uma URL no player. onStart(durSeg) dispara quando o som REALMENTE começa.
   function playUrl(url, onStart) {
     return new Promise(function (resolve, reject) {
       try {
         var a = audioEl();
-        
-        // Verifica se é exatamente o mesmo ficheiro que já está no player
-        var isSame = (_currentUrl === url);
-        
-        // SÓ altera o src (o que forçaria a gaguez/"mmai") se for um ficheiro diferente
-        if (!isSame) {
-            a.src = url;
-            _currentUrl = url;
-        }
-
-        // Verifica se o áudio já está de facto a tocar e avançou
-        var wasPlaying = (!a.paused && a.currentTime > 0 && !a.ended);
-        
-        a.onplaying = function () { a.onplaying = null; if (onStart) onStart(a.duration || 0); };
-        a.muted = false;
-
-        // Gestão inteligente do clique e autoplay
-        if (isSame && wasPlaying) {
-             if (a.currentTime > 0.3) {
-                 // Clique intencional (ex: 1 segundo depois) para repetir a palavra. Reinicia suavemente.
-                 a.currentTime = 0; 
-             } else {
-                 // Race condition (o áudio mal começou e o clique manual chegou).
-                 // NÃO reinicia para evitar o engasgo. Só aciona a animação de karaoké.
-                 a.onplaying = null;
-                 if (onStart) onStart(a.duration || 0);
-             }
-        } else if (isSame && a.ended) {
-             // Se o áudio já tinha acabado, toca novamente desde o início
-             a.currentTime = 0;
-        }
-
-        // Esta chamada play() no Safari "salva" o autoplay bloqueado se for originada por um clique!
+        a.onplaying = function () { a.onplaying = null; D("onplaying dur=" + (a.duration || 0)); if (onStart) onStart(a.duration || 0); };
+        a.onerror = function () { D("audio onerror (" + (a.error && a.error.code) + ")"); };
+        a.muted = false; a.src = url;
         var p = a.play();
         if (p && p.then) p.then(resolve).catch(reject); else resolve();
       } catch (e) { reject(e); }
@@ -4826,16 +4905,19 @@ var _currentUrl = null;
     if (!text) return;
     unlock();
     var now = Date.now();
-    if (text === _lastText && (now - _lastAt) < 200) return; // dedupe (autoplay + clique)
+    if (text === _lastText && (now - _lastAt) < 200) { D('dedupe ignorou "' + text + '"'); return; } // dedupe (autoplay + clique)
     _lastText = text; _lastAt = now;
+    D('speak "' + text + '"');
     try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) {} // mata qualquer voz pendente
     var k = key(text);
     signed(k).then(function (url) {
+      D('signed -> ' + (url ? 'URL ok' : 'NULL') + ' [' + k + ']');
       var srcs = []; if (url) srcs.push(url);
       srcs.push("audio/" + k); // fallback: pasta local (dev/file://)
       (function tryNext(i) {
-        if (i >= srcs.length) { console.warn('[audio] sem mp3 para "' + text + '"'); if (onStart) onStart(0); return; }
-        playUrl(srcs[i], onStart).then(function () {}).catch(function () { tryNext(i + 1); });
+        if (i >= srcs.length) { D('sem fonte tocavel -> silencio'); if (onStart) onStart(0); return; }
+        D('tentando fonte #' + i);
+        playUrl(srcs[i], onStart).then(function () { D('play resolveu #' + i); }).catch(function (e) { D('play FALHOU #' + i + ' (' + ((e && e.name) || e) + ')'); tryNext(i + 1); });
       })(0);
     });
   };
