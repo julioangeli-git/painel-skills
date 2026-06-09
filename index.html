@@ -4844,6 +4844,7 @@ try{ if(typeof RICH!=='undefined'){
   var _unlocked = false;
   var _lastText = "", _lastAt = 0;   // dedupe: evita o "double start" (autoplay + clique)
   var _seq = 0;                       // sequência: só o fluxo mais recente pode tocar
+  var _blobCache = {};                // URL remota -> object URL (blob) já baixado
   var SILENCE = "data:audio/wav;base64,UklGRmQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 
   function client() {
@@ -4887,16 +4888,41 @@ try{ if(typeof RICH!=='undefined'){
   });
 
   // Toca uma URL no player. onStart(durSeg) dispara quando o som REALMENTE começa.
+  // Para URLs remotas (Supabase), baixamos como BLOB e tocamos de um object URL —
+  // o iOS recusa o mp3 remoto direto (NotSupportedError/erro 4), mas aceita blob.
   function playUrl(url, onStart) {
-    return new Promise(function (resolve, reject) {
-      try {
-        var a = audioEl();
-        a.onplaying = function () { a.onplaying = null; D("onplaying dur=" + (a.duration || 0)); if (onStart) onStart(a.duration || 0); };
-        a.onerror = function () { D("audio onerror (" + (a.error && a.error.code) + ")"); };
-        a.muted = false; a.src = url;
-        var p = a.play();
-        if (p && p.then) p.then(resolve).catch(reject); else resolve();
-      } catch (e) { reject(e); }
+    var a = audioEl();
+    a.onplaying = function () { a.onplaying = null; D("onplaying dur=" + (a.duration || 0)); if (onStart) onStart(a.duration || 0); };
+    a.onerror = function () { D("audio onerror (" + (a.error && a.error.code) + ")"); };
+
+    function playSrc(src) {
+      return new Promise(function (resolve, reject) {
+        try {
+          a.muted = false; a.src = src;
+          var p = a.play();
+          if (p && p.then) p.then(resolve).catch(reject); else resolve();
+        } catch (e) { reject(e); }
+      });
+    }
+
+    // local / blob -> toca direto
+    if (!/^https?:/i.test(url)) return playSrc(url);
+    if (_blobCache[url]) { D("blob (cache)"); return playSrc(_blobCache[url]); }
+
+    // remoto -> baixa como blob primeiro
+    return fetch(url).then(function (r) {
+      D("fetch " + r.status + " ct=" + (r.headers.get("content-type") || "?") + " ar=" + (r.headers.get("accept-ranges") || "?"));
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.blob();
+    }).then(function (blob) {
+      D("blob " + blob.size + "b type=" + (blob.type || "?"));
+      var b = blob.type ? blob : new Blob([blob], { type: "audio/mpeg" });
+      var burl = URL.createObjectURL(b);
+      _blobCache[url] = burl;
+      return playSrc(burl);
+    }).catch(function (e) {
+      D("fetch/blob FALHOU (" + ((e && e.message) || e) + ")");
+      throw e;
     });
   }
 
