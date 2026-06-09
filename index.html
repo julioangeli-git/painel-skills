@@ -4757,42 +4757,50 @@ try{ if(typeof RICH!=='undefined'){
 
   function audioEl() { if (!_audioEl) { _audioEl = new Audio(); _audioEl.preload = "auto"; } return _audioEl; }
 
-  // iOS/Safari só tocam som se o player for "desbloqueado" DENTRO de um gesto do
-  // usuário. Tocamos um clipe de SILÊNCIO no 1o toque para liberar o autoplay depois
-  // (sem mexer no áudio real -> não causa "double start").
+  // Desbloqueio do áudio no iOS: na 1a interação tentamos um play no próprio player
+  // (sem src -> não toca nada), só para a página ganhar "user activation".
   function unlock() {
     if (_unlocked) return;
     _unlocked = true;
-    // toca o silêncio num elemento SEPARADO — nunca no player real (não corrompe o mp3)
-    try { var u = new Audio(SILENCE); var p = u.play(); if (p && p.catch) p.catch(function () {}); } catch (e) {}
+    try {
+      var a = audioEl(); a.muted = true;
+      var p = a.play();
+      if (p && p.then) p.then(function () { try { a.pause(); a.currentTime = 0; } catch (e) {} a.muted = false; }).catch(function () { a.muted = false; });
+      else a.muted = false;
+    } catch (e) {}
   }
   ["touchend", "mousedown", "keydown"].forEach(function (ev) {
     document.addEventListener(ev, unlock, { passive: true });
   });
 
-  // Toca o mp3 (Supabase -> pasta local -> voz do navegador).
-  // onStart(durSeg) é chamado quando o áudio REALMENTE começa (p/ sincronizar o karaokê).
+  // Toca uma URL no player. onStart(durSeg) dispara quando o som REALMENTE começa.
+  function playUrl(url, onStart) {
+    return new Promise(function (resolve, reject) {
+      try {
+        var a = audioEl();
+        a.onplaying = function () { a.onplaying = null; if (onStart) onStart(a.duration || 0); };
+        a.muted = false; a.src = url;
+        var p = a.play();
+        if (p && p.then) p.then(resolve).catch(reject); else resolve();
+      } catch (e) { reject(e); }
+    });
+  }
+
+  // API pública: Supabase -> pasta local -> voz do navegador.
   window.squSpeak = function (text, lang, onStart) {
     if (!text) return;
     unlock();
     var now = Date.now();
-    if (text === _lastText && (now - _lastAt) < 280) return; // dedupe (autoplay + clique)
+    if (text === _lastText && (now - _lastAt) < 250) return; // dedupe (autoplay + clique)
     _lastText = text; _lastAt = now;
     var k = key(text);
     signed(k).then(function (url) {
       var srcs = []; if (url) srcs.push(url);
       srcs.push("audio/" + k); // fallback local (dev/file:// ou se vier a ser publicada)
-      var a = audioEl();
-      function attempt(i) {
+      (function tryNext(i) {
         if (i >= srcs.length) { console.warn('[audio] sem mp3 para "' + text + '" — voz do navegador'); if (onStart) onStart(0); browserSpeak(text, lang); return; }
-        var started = false;
-        try { a.pause(); } catch (e) {}
-        a.onplaying = function () { if (started) return; started = true; a.onplaying = null; if (onStart) onStart(a.duration || 0); };
-        a.src = srcs[i];
-        try { var p = a.play(); if (p && p.catch) p.catch(function () { if (!started) { a.onplaying = null; attempt(i + 1); } }); }
-        catch (e) { a.onplaying = null; attempt(i + 1); }
-      }
-      attempt(0);
+        playUrl(srcs[i], onStart).then(function () {}).catch(function () { tryNext(i + 1); });
+      })(0);
     });
   };
 
