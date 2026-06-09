@@ -4843,6 +4843,7 @@ try{ if(typeof RICH!=='undefined'){
   var _audioEl = null;   // player reutilizado (desbloqueado no 1o gesto do usuário)
   var _unlocked = false;
   var _lastText = "", _lastAt = 0;   // dedupe: evita o "double start" (autoplay + clique)
+  var _seq = 0;                       // sequência: só o fluxo mais recente pode tocar
   var SILENCE = "data:audio/wav;base64,UklGRmQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 
   function client() {
@@ -4907,17 +4908,24 @@ try{ if(typeof RICH!=='undefined'){
     var now = Date.now();
     if (text === _lastText && (now - _lastAt) < 200) { D('dedupe ignorou "' + text + '"'); return; } // dedupe (autoplay + clique)
     _lastText = text; _lastAt = now;
-    D('speak "' + text + '"');
+    var mySeq = ++_seq;                 // este vira o fluxo "vigente"; os anteriores morrem
+    D('speak "' + text + '" #' + mySeq);
     try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) {} // mata qualquer voz pendente
+    try { var a0 = audioEl(); a0.pause(); } catch (e) {}                       // para o player antes de recomeçar
     var k = key(text);
     signed(k).then(function (url) {
+      if (mySeq !== _seq) { D('abortado (novo speak) #' + mySeq); return; }
       D('signed -> ' + (url ? 'URL ok' : 'NULL') + ' [' + k + ']');
       var srcs = []; if (url) srcs.push(url);
       srcs.push("audio/" + k); // fallback: pasta local (dev/file://)
       (function tryNext(i) {
+        if (mySeq !== _seq) return; // outro speak assumiu -> este fluxo para
         if (i >= srcs.length) { D('sem fonte tocavel -> silencio'); if (onStart) onStart(0); return; }
         D('tentando fonte #' + i);
-        playUrl(srcs[i], onStart).then(function () { D('play resolveu #' + i); }).catch(function (e) { D('play FALHOU #' + i + ' (' + ((e && e.name) || e) + ')'); tryNext(i + 1); });
+        playUrl(srcs[i], onStart).then(function () { D('play resolveu #' + i); }).catch(function (e) {
+          if (mySeq !== _seq) { D('play interrompido p/ novo speak #' + mySeq); return; }
+          D('play FALHOU #' + i + ' (' + ((e && e.name) || e) + ')'); tryNext(i + 1);
+        });
       })(0);
     });
   };
