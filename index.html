@@ -4786,19 +4786,21 @@ try{ if(typeof RICH!=='undefined'){
     });
   }
 
-  // API pública: Supabase -> pasta local -> voz do navegador.
+  // API pública: toca o mp3 (Supabase -> pasta local). SEM voz robótica de fallback,
+  // que se sobrepunha ao mp3 e causava o áudio "duplicado".
   window.squSpeak = function (text, lang, onStart) {
     if (!text) return;
     unlock();
     var now = Date.now();
-    if (text === _lastText && (now - _lastAt) < 250) return; // dedupe (autoplay + clique)
+    if (text === _lastText && (now - _lastAt) < 1000) return; // dedupe (autoplay + clique)
     _lastText = text; _lastAt = now;
+    try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) {} // mata qualquer voz pendente
     var k = key(text);
     signed(k).then(function (url) {
       var srcs = []; if (url) srcs.push(url);
-      srcs.push("audio/" + k); // fallback local (dev/file:// ou se vier a ser publicada)
+      srcs.push("audio/" + k); // fallback: pasta local (dev/file://)
       (function tryNext(i) {
-        if (i >= srcs.length) { console.warn('[audio] sem mp3 para "' + text + '" — voz do navegador'); if (onStart) onStart(0); browserSpeak(text, lang); return; }
+        if (i >= srcs.length) { console.warn('[audio] sem mp3 para "' + text + '"'); if (onStart) onStart(0); return; }
         playUrl(srcs[i], onStart).then(function () {}).catch(function () { tryNext(i + 1); });
       })(0);
     });
