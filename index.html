@@ -5015,7 +5015,7 @@ try{ if(typeof RICH!=='undefined'){
 
   // Sobrepõe os helpers existentes para preferir o áudio de qualidade.
   var _lang = function () { try { return (typeof srsTTSLang === "function") ? srsTTSLang() : "it-IT"; } catch (e) { return "it-IT"; } };
-  window.srsSpeak = function (t) { window.squSpeak(t, _lang()); };
+  window.srsSpeak = function (t) { D('srsSpeak <- toque "' + t + '"'); window.squSpeak(t, _lang()); };
   var _karaTimers = [];
   window.srsSpeakKaraoke = function (text, pron) {
     var sylls = pron ? String(pron).split("-") : [];
