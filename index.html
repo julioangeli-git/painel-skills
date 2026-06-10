@@ -402,7 +402,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 .ov-jor-steps{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .ov-jor-step{font-size:13px;color:var(--ink)}
 .ov-jor-step b{color:#4d88ff;margin-right:6px}
-@media(max-width:820px){#overview .ov-banner,#overview .ov-meta,#overview .ov-courses,#overview .ov-jornada{display:none!important}}
+@media(max-width:820px){#overview{display:none!important}}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 </head><body>
@@ -2514,6 +2514,27 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progre
       showLanding();
     }
   })();
+
+  // Login via Google (OAuth): o getSession acima pode rodar ANTES do token do
+  // redirect estar pronto, e aí o progresso vinha vazio. onAuthStateChange recarrega
+  // o progresso quando a sessão é confirmada (sem duplicar se já estiver aplicada).
+  if(sb){
+    sb.auth.onAuthStateChange(function(event, session){
+      if(event!=='SIGNED_IN' || !session || !session.user) return;
+      var u=session.user;
+      if(window.currentUser && window.currentUser.id===u.id) return; // já aplicado
+      (async function(){
+        applyUser(u);
+        try{ await applyCloud(); _origSave(); }catch(e){ console.error('cloud (oauth)',e); }
+        hideLanding();
+        var temNome=u.user_metadata&&u.user_metadata.display_name;
+        var lo=document.getElementById('loginOverlay');
+        if(!temNome){ var nlb=document.getElementById('nomeInput'); if(nlb)nlb.value=''; if(lo)lo.style.display='flex'; showStep('nomeStep'); }
+        else if(lo){ lo.style.display='none'; }
+        try{ renderOverview(); }catch(e){}
+      })();
+    });
+  }
 
 })();
 
@@ -5264,7 +5285,7 @@ try{ if(typeof RICH!=='undefined'){
     '.hub-sec{margin:6px 16px 8px;background:' + SURF + ';border-radius:20px;padding:14px 12px 14px}' +
     '.hub-sec-h{display:flex;align-items:center;gap:8px;font-family:Poppins;font-weight:700;' +
     '  font-size:14px;color:' + INK + ';margin:0 4px 6px}' +
-    '.hub-arc{position:relative;width:100%;height:182px;margin:2px 0 2px}' +
+    '.hub-arc{position:relative;width:100%;height:204px;margin:2px 0 2px}' +
     '.hub-mode{position:absolute;width:54px;height:54px;border-radius:27px;' +
     '  background:' + NAVY + ';border:1.5px solid ' + BRD + ';transform:translate(-50%,-50%);' +
     '  display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}' +
@@ -5277,8 +5298,8 @@ try{ if(typeof RICH!=='undefined'){
     '  font-family:Poppins;font-size:10px;color:' + INK2 + ';white-space:nowrap}' +
     '.hub-book{position:absolute;width:56px;height:56px;border-radius:50%;transform:translate(-50%,-50%);' +
     '  background:' + BLUE + ';border:2px solid rgba(255,255,255,.12);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(77,136,255,.35)}' +
-    '.hub-book-lbl{position:absolute;top:34px;left:50%;transform:translateX(-50%);' +
-    '  font-family:Poppins;font-size:10px;color:#fff;white-space:nowrap;opacity:.9}' +
+    '.hub-book-lbl{position:absolute;top:60px;left:50%;transform:translateX(-50%);' +
+    '  font-family:Poppins;font-size:11px;color:' + INK + ';white-space:nowrap;opacity:.9}' +
 
     /* hub — barra esquilo -> nozes */
     '.sqbar{position:relative;height:28px;margin:4px 14px 0}' +
@@ -5363,7 +5384,19 @@ try{ if(typeof RICH!=='undefined'){
     '.msh-out b{color:#9fcbef}' +
     '.msh-btns{display:flex;gap:9px;margin-top:16px}' +
     '.msh-cancel{flex:1;background:transparent;border:1px solid '+BRD+';color:'+INK+';border-radius:11px;padding:11px;font-family:Poppins;font-size:14px;cursor:pointer}' +
-    '.msh-ok{flex:1;background:'+ORANGE+';border:0;color:#3a2305;border-radius:11px;padding:11px;font-family:Poppins;font-weight:600;font-size:14px;cursor:pointer}';
+    '.msh-ok{flex:1;background:'+ORANGE+';border:0;color:#3a2305;border-radius:11px;padding:11px;font-family:Poppins;font-weight:600;font-size:14px;cursor:pointer}' +
+    /* lista de módulos */
+    '#mshModList{display:none;position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.55);align-items:center;justify-content:center;padding:20px}' +
+    '.mml-card{width:100%;max-width:360px;max-height:72vh;display:flex;flex-direction:column;background:'+SURF+';border:1px solid '+BRD+';border-radius:18px;overflow:hidden;font-family:Poppins}' +
+    '.mml-head{display:flex;align-items:center;padding:14px 16px;color:'+INK+';font-size:15px;border-bottom:1px solid '+BRD+'}' +
+    '.mml-head b{font-weight:600}.mml-head .msh-x{margin-left:auto}' +
+    '.mml-list{overflow-y:auto;padding:8px}' +
+    '.mml-row{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:0;cursor:pointer;padding:11px 10px;border-radius:10px;color:'+INK+';font-family:Poppins;font-size:14px}' +
+    '.mml-cur{background:#241a10;border:1px solid #6b4a1e}' +
+    '.mml-next .mml-name{color:'+INK2+'}' +
+    '.mml-dot{width:9px;height:9px;border-radius:50%;flex:none}' +
+    '.mml-name{flex:1}' +
+    '.mml-tag{font-size:11px;color:#1d9e75}';
   document.head.appendChild(css2);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -5442,7 +5475,7 @@ try{ if(typeof RICH!=='undefined'){
     '<div class="mob-right">' +
       '<div class="mob-streak-row">' +
         '<svg viewBox="0 0 24 24" width="20" height="20" fill="' + ORANGE + '" stroke="none">' +
-          '<path d="M13 2L4.09 12.26c-.38.44-.07 1.1.49 1.1H11l-1.48 8.14c-.09.5.5.8.84.43L20 12.26c.38-.44.07-1.1-.49-1.1H13l1.48-8.14c.09-.5-.5-.8-.84-.43z"/>' +
+          '<path d="M13.5 0.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67zM11.71 19c-1.78 0-3.22-1.4-3.22-3.14 0-1.62 1.05-2.76 2.81-3.12 1.77-.36 3.6-1.21 4.62-2.58.39 1.29.59 2.65.59 4.04 0 2.65-2.15 4.8-4.8 4.8z"/>' +
         '</svg>' +
         '<span id="mobStreak">0</span>' +
       '</div>' +
@@ -5549,12 +5582,14 @@ try{ if(typeof RICH!=='undefined'){
         '</div>' +
       '</div>';
     });
-    h += '<div class="mv-row" style="margin-bottom:4px">' +
-           '<span class="mv-h2" style="margin:0">Meus cursos</span>' +
-           '<button class="mv-link" onclick="__msh.toggleCursos(this)">ver meus cursos ▾</button>' +
+    h += '<div class="mv-card" style="padding:0;margin-bottom:0">' +
+           '<div class="mv-row" style="padding:14px 16px;cursor:pointer" onclick="__msh.toggleCursos()">' +
+             '<div><div class="mv-cname2">Meus cursos</div>' +
+               '<div class="mv-csub" style="margin-top:3px">' + sks.length + ' cursos · média de andamento ' + avg + '%</div></div>' +
+             '<span class="mv-link" id="mvCursosToggle">ver meus cursos ▾</span>' +
+           '</div>' +
          '</div>' +
-         '<div class="mv-csub" style="margin-bottom:10px">' + sks.length + ' cursos · média de andamento ' + avg + '%</div>' +
-         '<div id="mvCursos" style="display:none">' + cards + '</div>';
+         '<div id="mvCursos" style="display:none;margin-top:10px">' + cards + '</div>';
     h += '</div>';
     homeEl.innerHTML = h;
   }
@@ -5615,7 +5650,7 @@ try{ if(typeof RICH!=='undefined'){
       '</div>';
     });
     // livro central (Conteúdo) ABAIXO da meia-lua
-    inner += '<button class="hub-book" style="left:50%;top:83%" onclick="__msh.theory()">' + si('book', '#fff') +
+    inner += '<button class="hub-book" style="left:50%;top:72%" onclick="__msh.theory()">' + si('book', '#fff') +
       '<span class="hub-book-lbl">Conteúdo</span></button>';
     return '<div class="hub-sec">' +
       '<div class="hub-sec-h">' +
@@ -5642,19 +5677,13 @@ try{ if(typeof RICH!=='undefined'){
     if (!sk) { estudarEl.innerHTML = '<div class="mv-pad"><div class="mv-csub">Nenhum curso disponível.</div></div>'; return; }
 
     var courseOpts = sks.map(function(s, i) {
-      return '<option value="' + i + '"' + (i===curIdx?' selected':'') + '>' + esc(s.name) + ' · ' + esc(s.priority) + '</option>';
-    }).join('');
-
-    var topics = sk.topics || [];
-    var modOpts = '<option value="-1">— ir para um módulo —</option>' + topics.map(function(t, i) {
-      var done = !!(state && state.done && state.done[t.id]);
-      return '<option value="' + i + '">' + (done?'✓ ':'') + esc(t.t || t.id) + '</option>';
+      return '<option value="' + i + '"' + (i===curIdx?' selected':'') + '>' + esc(s.name) + '</option>';
     }).join('');
 
     estudarEl.innerHTML =
       '<div class="hub-top">' +
         '<select class="hub-sel" onchange="__msh.pickCourse(this.value)">' + courseOpts + '</select>' +
-        '<select class="hub-sel" onchange="__msh.pickModule(this.value)">' + modOpts + '</select>' +
+        '<button class="hub-sel" style="text-align:left" onclick="__msh.openModuleList()"><i style="opacity:.6">☰</i> Ir para um módulo</button>' +
       '</div>' +
       arcSection('Vocabulário', 'vocab', sk) +
       mergedBar(sk) +
@@ -5741,8 +5770,34 @@ try{ if(typeof RICH!=='undefined'){
     }
   }
 
+  // ── Lista de módulos (3 cores: feito / atual / próximos; abre no atual) ─────
+  var modListEl = document.createElement('div');
+  modListEl.id = 'mshModList';
+  modListEl.addEventListener('click', function(e){ if(e.target===modListEl) modListEl.style.display='none'; });
+  function openModList(){
+    var sk = skills()[curIdx]; if(!sk) return;
+    var topics = sk.topics || [], curFound=false;
+    var rows = topics.map(function(t, i){
+      var done = !!(state && state.done && state.done[t.id]);
+      var cls='done', dot='#1d9e75', tag='<span class="mml-tag">✓ feito</span>';
+      if(!done && !curFound){ curFound=true; cls='cur'; dot='#e08a2a'; tag='<span class="mml-tag" style="color:#e08a2a">atual</span>'; }
+      else if(!done){ cls='next'; dot='#3a4660'; tag=''; }
+      return '<button class="mml-row mml-'+cls+'" onclick="__msh.goModule('+i+')">' +
+        '<span class="mml-dot" style="background:'+dot+'"></span>' +
+        '<span class="mml-name">'+esc(t.t||t.id)+'</span>'+tag+'</button>';
+    }).join('');
+    modListEl.innerHTML = '<div class="mml-card">' +
+      '<div class="mml-head"><b>Ir para um módulo</b><button class="msh-x" onclick="__msh.closeModList()" aria-label="Fechar">✕</button></div>' +
+      '<div class="mml-list">'+rows+'</div></div>';
+    modListEl.style.display='flex';
+    setTimeout(function(){ var cur=modListEl.querySelector('.mml-cur'); if(cur&&cur.scrollIntoView) cur.scrollIntoView({block:'center'}); }, 30);
+  }
+
   // ── Public interface ──────────────────────────────────────────────────────
   window.__msh = {
+    openModuleList: function(){ openModList(); },
+    closeModList: function(){ modListEl.style.display='none'; },
+    goModule: function(i){ modListEl.style.display='none'; showNative(); call('openDetail', [curIdx]); },
     pickCourse: function(v) { renderHub(parseInt(v, 10) || 0); },
     pickModule: function(v) {
       var i = parseInt(v, 10);
@@ -5773,12 +5828,12 @@ try{ if(typeof RICH!=='undefined'){
       }
       closeMeta(); showHome();
     },
-    toggleCursos: function(btn) {
-      var box = document.getElementById('mvCursos');
+    toggleCursos: function() {
+      var box = document.getElementById('mvCursos'), tg = document.getElementById('mvCursosToggle');
       if (!box) return;
       var open = box.style.display !== 'none';
       box.style.display = open ? 'none' : 'block';
-      btn.innerHTML = open ? 'ver meus cursos ▾' : 'ocultar ▴';
+      if (tg) tg.innerHTML = open ? 'ver meus cursos ▾' : 'ocultar ▴';
     },
     toggleObj: function(btn) {
       var box = btn.closest('.mv-daily').querySelector('.mv-obj');
@@ -5869,6 +5924,7 @@ try{ if(typeof RICH!=='undefined'){
     document.body.appendChild(estudarEl);
     document.body.appendChild(jornadaEl);
     document.body.appendChild(metaModal);
+    document.body.appendChild(modListEl);
     document.body.appendChild(nav);
     setActive(0);
 
