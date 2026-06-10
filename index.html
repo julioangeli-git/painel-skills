@@ -5336,7 +5336,22 @@ try{ if(typeof RICH!=='undefined'){
     '.mv-soon{margin-left:auto;font-family:Poppins;font-size:10px;color:'+ORANGE+';background:#3a2305;padding:3px 9px;border-radius:8px}' +
     '.mv-jsub{font-family:Poppins;font-size:12px;color:'+INK2+';line-height:1.6;margin:0 0 14px}' +
     '.mv-jstep{display:flex;gap:10px;align-items:flex-start;margin-bottom:11px;font-family:Poppins;font-size:13px;color:'+INK+'}' +
-    '.mv-jstep b{color:'+BLUE+';font-weight:600;flex-shrink:0;width:14px}';
+    '.mv-jstep b{color:'+BLUE+';font-weight:600;flex-shrink:0;width:14px}' +
+    /* modal Definir meta */
+    '#mshMeta{display:none;position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.55);align-items:center;justify-content:center;padding:20px}' +
+    '.msh-card{width:100%;max-width:340px;background:'+SURF+';border:1px solid '+BRD+';border-radius:18px;padding:18px;font-family:Poppins}' +
+    '.msh-head{display:flex;align-items:center;gap:9px;font-size:15px;color:'+INK+';margin-bottom:8px}' +
+    '.msh-head b{font-weight:600}.msh-x{margin-left:auto;background:none;border:0;color:'+INK2+';font-size:15px;cursor:pointer}' +
+    '.msh-lbl{display:block;font-size:12px;color:'+INK2+';margin:10px 0 5px}' +
+    '.msh-input{width:100%;box-sizing:border-box;background:'+NAVY+';border:1px solid '+BRD+';color:'+INK+';border-radius:10px;padding:10px 12px;font-family:Poppins;font-size:14px}' +
+    '.msh-seg{display:flex;gap:8px;margin-top:12px}' +
+    '.msh-seg-b{flex:1;background:'+NAVY+';border:1px solid '+BRD+';color:'+INK2+';border-radius:10px;padding:9px;font-family:Poppins;font-size:12px;cursor:pointer}' +
+    '.msh-seg-b.on{border-color:'+BLUE+';color:#9fcbef;background:#1e2c44}' +
+    '.msh-out{margin-top:14px;font-size:13px;color:'+INK+';background:'+NAVY+';border-radius:10px;padding:11px 12px}' +
+    '.msh-out b{color:#9fcbef}' +
+    '.msh-btns{display:flex;gap:9px;margin-top:16px}' +
+    '.msh-cancel{flex:1;background:transparent;border:1px solid '+BRD+';color:'+INK+';border-radius:11px;padding:11px;font-family:Poppins;font-size:14px;cursor:pointer}' +
+    '.msh-ok{flex:1;background:'+ORANGE+';border:0;color:#3a2305;border-radius:11px;padding:11px;font-family:Poppins;font-weight:600;font-size:14px;cursor:pointer}';
   document.head.appendChild(css2);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -5395,6 +5410,14 @@ try{ if(typeof RICH!=='undefined'){
         '<u style="position:absolute;top:0;left:0;width:10px;height:8px;background:#3c3b6e"></u></span>';
     return '<span class="mv-flag" style="background:'+BLUE+'"></span>';
   }
+  function hasMeta(sk){ try{ return !!(state&&state.pace&&state.pace[sk.name]!=null); }catch(e){ return false; } }
+  // horas restantes para chegar ao nível L (soma das horas dos tópicos até L menos as feitas)
+  function hoursForLevel(sk,L){
+    var tot=0,don=0;
+    (sk.topics||[]).forEach(function(t){ if((t.level||1)<=L){ tot+=(t.h||0); if(state&&state.done&&state.done[t.id]) don+=(t.h||0); } });
+    return Math.max(0, tot-don);
+  }
+  function fmtDate(d){ return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'}); }
 
   // ── Top bar ───────────────────────────────────────────────────────────────
   var topBar = document.createElement('div');
@@ -5492,12 +5515,14 @@ try{ if(typeof RICH!=='undefined'){
       '</div>';
     }
 
-    // Todos os cursos
-    h += '<div class="mv-h2">Todos os cursos</div>';
-    sks.slice(0, 12).forEach(function(sk) {
+    // Meus cursos (recolhido — abre a lista completa, igual ao "ver objetivos")
+    var sum=0; sks.forEach(function(sk){ var cc=computeOf(sk); sum+=cc?cc.pct:0; });
+    var avg = sks.length ? Math.round(sum/sks.length*100) : 0;
+    var cards='';
+    sks.forEach(function(sk) {
       var idx = sks.indexOf(sk), c = computeOf(sk), p = Math.round((c?c.pct:0)*100);
-      var started = p > 0, t = theme(sk.name);
-      h += '<div class="mv-ccard">' + stripeHTML(t) +
+      var t = theme(sk.name), showCont = p>0 || hasMeta(sk);
+      cards += '<div class="mv-ccard">' + stripeHTML(t) +
         '<div class="mv-card-in">' +
           '<div class="mv-row">' +
             '<span class="mv-cname2">' + flagChip(sk.name) + ' ' + esc(sk.name) + ' <span class="mv-badge">' + esc(cefr(c?c.cl:1)) + '</span></span>' +
@@ -5505,13 +5530,19 @@ try{ if(typeof RICH!=='undefined'){
           '</div>' +
           '<div class="mv-track" style="margin-top:8px"><div class="mv-fill" style="width:' + p + '%;background:' + t.bar + '"></div></div>' +
           '<div class="mv-btns" style="margin-top:11px">' +
-            (started
+            (showCont
               ? '<button class="mv-cta" style="flex:1" onclick="__msh.goEstudar(' + idx + ')">Continuar →</button><button class="mv-iconbtn" title="Ajustar meta" onclick="__msh.definirMeta(' + idx + ')">⚙</button>'
               : '<button class="mv-cta3" onclick="__msh.definirMeta(' + idx + ')">Definir meta</button>') +
           '</div>' +
         '</div>' +
       '</div>';
     });
+    h += '<div class="mv-row" style="margin-bottom:4px">' +
+           '<span class="mv-h2" style="margin:0">Meus cursos</span>' +
+           '<button class="mv-link" onclick="__msh.toggleCursos(this)">ver meus cursos ▾</button>' +
+         '</div>' +
+         '<div class="mv-csub" style="margin-bottom:10px">' + sks.length + ' cursos · média de andamento ' + avg + '%</div>' +
+         '<div id="mvCursos" style="display:none">' + cards + '</div>';
     h += '</div>';
     homeEl.innerHTML = h;
   }
@@ -5636,6 +5667,68 @@ try{ if(typeof RICH!=='undefined'){
     '</div>';
   }
 
+  // ── Modal "Definir meta" (popup; NÃO abre a tela de detalhe antiga) ─────────
+  var metaModal = document.createElement('div');
+  metaModal.id = 'mshMeta';
+  metaModal.addEventListener('click', function(e){ if(e.target===metaModal) closeMeta(); });
+  function closeMeta(){ metaModal.style.display='none'; }
+  function openMetaModal(idx){
+    var sk = skills()[idx]; if(!sk) return;
+    var defL = sk.target || 3;
+    var lvOpts='';
+    for(var L=1;L<=6;L++){ lvOpts += '<option value="'+L+'"'+(L===defL?' selected':'')+'>'+cefr(L)+'</option>'; }
+    var defPace = (state&&state.pace&&state.pace[sk.name]!=null) ? state.pace[sk.name] : (sk.pace||0.5);
+    metaModal.innerHTML =
+      '<div class="msh-card">' +
+        '<div class="msh-head">'+flagChip(sk.name)+'<b>Definir meta · '+esc(sk.name)+'</b>'+
+          '<button class="msh-x" onclick="__msh.closeMeta()" aria-label="Fechar">✕</button></div>' +
+        '<label class="msh-lbl">Nível que quer chegar</label>' +
+        '<select id="mshLevel" class="msh-input">'+lvOpts+'</select>' +
+        '<div class="msh-seg">' +
+          '<button id="mshModeH" class="msh-seg-b on" onclick="__msh.metaMode(\'h\')">Tenho horas/dia</button>' +
+          '<button id="mshModeD" class="msh-seg-b" onclick="__msh.metaMode(\'d\')">Tenho uma data</button>' +
+        '</div>' +
+        '<div id="mshInH"><label class="msh-lbl">Horas disponíveis por dia</label>' +
+          '<input id="mshHours" class="msh-input" type="number" min="0.25" step="0.25" value="'+defPace+'"></div>' +
+        '<div id="mshInD" style="display:none"><label class="msh-lbl">Data para atingir o nível</label>' +
+          '<input id="mshDate" class="msh-input" type="date"></div>' +
+        '<div class="msh-out" id="mshOut">—</div>' +
+        '<div class="msh-btns">' +
+          '<button class="msh-cancel" onclick="__msh.closeMeta()">Cancelar</button>' +
+          '<button class="msh-ok" onclick="__msh.confirmMeta('+idx+')">Confirmar meta</button>' +
+        '</div>' +
+      '</div>';
+    metaModal._mode='h'; metaModal._idx=idx; metaModal._pace=defPace;
+    metaModal.style.display='flex';
+    document.getElementById('mshLevel').onchange=recalcMeta;
+    document.getElementById('mshHours').oninput=recalcMeta;
+    var dd=document.getElementById('mshDate');
+    var d0=new Date(); d0.setDate(d0.getDate()+90); dd.value=d0.toISOString().slice(0,10);
+    dd.onchange=recalcMeta;
+    recalcMeta();
+  }
+  function recalcMeta(){
+    var sk=skills()[metaModal._idx]; if(!sk) return;
+    var L=parseInt(document.getElementById('mshLevel').value,10)||sk.target||3;
+    var rem=hoursForLevel(sk,L);
+    var out=document.getElementById('mshOut');
+    if(rem<=0){ out.innerHTML='Você já alcançou <b>'+cefr(L)+'</b> 🎉'; metaModal._pace=null; return; }
+    if(metaModal._mode==='h'){
+      var h=parseFloat(document.getElementById('mshHours').value)||0;
+      if(h<=0){ out.innerHTML='—'; return; }
+      var days=Math.ceil(rem/h); var d=new Date(); d.setDate(d.getDate()+days);
+      metaModal._pace=h;
+      out.innerHTML='<b>'+rem+'h</b> até '+cefr(L)+' · pronto em ~ <b>'+fmtDate(d)+'</b>';
+    } else {
+      var dv=document.getElementById('mshDate').value; if(!dv){ out.innerHTML='—'; return; }
+      var t=new Date(dv+'T00:00:00'), today=new Date(); today.setHours(0,0,0,0);
+      var days2=Math.max(1,Math.round((t-today)/86400000));
+      var perDay=Math.round(rem/days2*100)/100;
+      metaModal._pace=perDay;
+      out.innerHTML='<b>'+rem+'h</b> até '+cefr(L)+' · precisa de ~ <b>'+perDay+' h/dia</b>';
+    }
+  }
+
   // ── Public interface ──────────────────────────────────────────────────────
   window.__msh = {
     pickCourse: function(v) { renderHub(parseInt(v, 10) || 0); },
@@ -5650,8 +5743,31 @@ try{ if(typeof RICH!=='undefined'){
     },
     theory: function() { showNative(); call('openDetail', [curIdx]); },
     goEstudar: function(i) { setActive(1); showEstudar(i); },
-    // "Definir meta"/"Ajustar": abre o detalhe (ritmo h/dia → previsão de data)
-    definirMeta: function(i) { setActive(1); showNative(); call('openDetail', [i]); },
+    // "Definir meta"/"Ajustar": abre o popup (nível + data↔horas); NÃO abre a tela antiga
+    definirMeta: function(i) { openMetaModal(i); },
+    closeMeta: function() { closeMeta(); },
+    metaMode: function(m) {
+      metaModal._mode = m;
+      document.getElementById('mshModeH').classList.toggle('on', m==='h');
+      document.getElementById('mshModeD').classList.toggle('on', m==='d');
+      document.getElementById('mshInH').style.display = m==='h' ? 'block' : 'none';
+      document.getElementById('mshInD').style.display = m==='d' ? 'block' : 'none';
+      recalcMeta();
+    },
+    confirmMeta: function(i) {
+      var sk = skills()[i];
+      if (sk && metaModal._pace != null) {
+        try { if(!state.pace) state.pace={}; state.pace[sk.name]=metaModal._pace; if(typeof save==='function') save(); } catch(e){}
+      }
+      closeMeta(); showHome();
+    },
+    toggleCursos: function(btn) {
+      var box = document.getElementById('mvCursos');
+      if (!box) return;
+      var open = box.style.display !== 'none';
+      box.style.display = open ? 'none' : 'block';
+      btn.innerHTML = open ? 'ver meus cursos ▾' : 'ocultar ▴';
+    },
     toggleObj: function(btn) {
       var box = btn.closest('.mv-daily').querySelector('.mv-obj');
       if (!box) return;
@@ -5740,6 +5856,7 @@ try{ if(typeof RICH!=='undefined'){
     document.body.appendChild(homeEl);
     document.body.appendChild(estudarEl);
     document.body.appendChild(jornadaEl);
+    document.body.appendChild(metaModal);
     document.body.appendChild(nav);
     setActive(0);
 
