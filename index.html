@@ -3182,6 +3182,7 @@ function srsOpenConfig(){
     +'<div id="avatarGrid" style="display:flex;flex-wrap:wrap;margin-bottom:16px">'+srsAvatarHtml()+'</div>'
     +'<div style="font-size:13px;font-weight:600;margin-bottom:8px">Tema de cores</div>'
     +'<div style="display:flex;flex-wrap:wrap;margin-bottom:4px">'+sw+'</div>'
+    +'<button class="btn" style="width:100%;margin-top:16px" onclick="srsCloseAjustes();if(window.__msh&&window.innerWidth<=820){window.__msh.openStats();}else if(window.openStats){openStats();}">📊 Ver estatísticas</button>'
     +'<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:18px">'
     +'<button class="btn" style="background:transparent;border:1px solid var(--border,#3a4a63);color:var(--ink2,#8baec8);font-weight:600" onclick="srsCloseAjustes();var b=document.getElementById(\'logoutBtn\');if(b)b.click();">↩ Sair da conta</button>'
     +'<button class="btn" style="background:var(--terra,#b85a28);color:#fff;border:none;font-weight:700" onclick="srsCloseAjustes()">Pronto ✓</button>'
@@ -3488,14 +3489,17 @@ function srsInitUI(){
       });
     }
   })();
-  // First-time: mostrar Ajustes após login (uma vez só)
-  if(!localStorage.getItem('painelAjustesShown')){
+  // First-time: abrir Ajustes após login SÓ se o usuário nunca configurou o nome.
+  // (ter display_name salvo = já configurou uma vez; não abrir mais.)
+  if(!window._srsFirstTimeHooked){
     var _roOrig=typeof renderOverview==='function'?renderOverview:null;
-    if(_roOrig&&!window._srsFirstTimeHooked){
+    if(_roOrig){
       window._srsFirstTimeHooked=true;
       window.renderOverview=function(){
         _roOrig();
-        if(window.currentUser && !localStorage.getItem('painelAjustesShown')){setTimeout(srsOpenConfig,400);}
+        var hasName=false;
+        try{ var u=window._rawUser; hasName=!!(u&&u.user_metadata&&u.user_metadata.display_name); }catch(e){}
+        if(window.currentUser && !hasName && !localStorage.getItem('painelAjustesShown')){ setTimeout(srsOpenConfig,400); }
       };
     }
   }
@@ -4740,6 +4744,8 @@ try{ if(typeof RICH!=='undefined'){
     var b=document.getElementById('statsBack');
     if(b)b.onclick=function(){
       sv.style.display='none';
+      // No app mobile o #overview fica oculto — volta pra home da casca.
+      if(window.innerWidth<=820 && window.__msh && window.__msh.backHome){ window.__msh.backHome(); return; }
       var ov=document.getElementById('overview');if(ov)ov.style.display='block';
     };
   }
@@ -4747,9 +4753,11 @@ try{ if(typeof RICH!=='undefined'){
   // ── Overview HTML ─────────────────────────────────────────────────────────────
   function buildOverviewHTML(){
     var st=ensureStats();
+    var totalXP=0; try{ for(var _k in (st.hist||{})) totalXP+=(st.hist[_k]||0); }catch(e){}
     var topHtml=
       _sCard('🔥 '+(st.streak||0),'dias seguidos')+
-      _sCard((st.hist[today()]||0)+'/'+(st.goal||20),'revisões hoje')+
+      _sCard((st.hist[today()]||0)+'/'+(st.goal||20),'XP hoje')+
+      _sCard(totalXP,'XP total')+
       _sCard(dueCount(),'vencidas agora');
 
     var barsHtml='';
@@ -4779,7 +4787,7 @@ try{ if(typeof RICH!=='undefined'){
       +'<button id="statsBack" class="btn">← Voltar</button>'
       +'<h2 style="font-family:Fraunces,serif;margin:14px 0 18px">Estatísticas</h2>'
       +'<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:24px">'+topHtml+'</div>'
-      +'<div style="font-weight:700;margin-bottom:8px">Revisões (14 dias)</div>'
+      +'<div style="font-weight:700;margin-bottom:8px">XP por dia (14 dias)</div>'
       +'<div style="display:flex;gap:4px;align-items:flex-end;height:100px;margin-bottom:28px">'+barsHtml+'</div>'
       +'<div style="font-weight:700;font-size:12px;letter-spacing:.07em;text-transform:uppercase;opacity:.6;margin-bottom:12px">Meus cursos</div>'
       +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px">'+skillCards+'</div>'
@@ -5330,7 +5338,7 @@ try{ if(typeof RICH!=='undefined'){
     '#mobileJornada{display:none;position:fixed;top:56px;left:0;right:0;bottom:74px;background:'+NAVY+';overflow-y:auto;-webkit-overflow-scrolling:touch;z-index:30}' +
     /* mascote/troféu no topo */
     '.mob-mascote{width:26px;height:26px;border-radius:50%;object-fit:cover}' +
-    '.mob-trophy svg{width:19px;height:19px}' +
+    '.mob-trophy{cursor:pointer}.mob-trophy svg{width:19px;height:19px}' +
     '#mobAv,.mob-hello{cursor:pointer}' +
     /* banner laranja */
     '.mv-banner{display:flex;align-items:center;gap:11px;width:100%;border:0;cursor:pointer;text-align:left;' +
@@ -5350,6 +5358,8 @@ try{ if(typeof RICH!=='undefined'){
     '.mv-obj-row div{font-family:Poppins;font-size:13px;color:'+INK+';display:flex;flex-direction:column}' +
     '.mv-obj-row small{font-size:11px;color:'+ORANGE+'}' +
     '.mv-obj-prog{font-size:12px;color:'+INK+';background:#1e2c44;border-radius:8px;padding:8px 10px;margin-bottom:10px}' +
+    '.mv-plan{display:flex;align-items:center;justify-content:space-between;margin-top:9px;font-size:12px;color:'+INK2+'}' +
+    '.mv-pause{background:transparent;border:1px solid #2e3a4c;color:'+INK+';border-radius:8px;padding:5px 12px;font-family:Poppins;font-size:12px;cursor:pointer}' +
     /* faixa de tema no topo dos cards */
     '.mv-themed,.mv-ccard{padding:0;overflow:hidden}' +
     '.mv-stripe{display:flex;height:5px}.mv-stripe i{flex:1}' +
@@ -5465,6 +5475,7 @@ try{ if(typeof RICH!=='undefined'){
     return '<span class="mv-flag" style="background:'+BLUE+'"></span>';
   }
   function hasMeta(sk){ try{ return !!(state&&state.pace&&state.pace[sk.name]!=null); }catch(e){ return false; } }
+  function isPaused(sk){ try{ return !!(state&&state.stats&&state.stats.paused&&state.stats.paused[sk.name]); }catch(e){ return false; } }
   // horas restantes para chegar ao nível L (soma das horas dos tópicos até L menos as feitas)
   function hoursForLevel(sk,L){
     var tot=0,don=0;
@@ -5488,7 +5499,7 @@ try{ if(typeof RICH!=='undefined'){
         '</svg>' +
         '<span id="mobStreak">0</span>' +
       '</div>' +
-      '<span class="mob-trophy" title="Conquistas">' +
+      '<span class="mob-trophy" title="Estatísticas" onclick="__msh.openStats()">' +
         '<svg viewBox="0 0 24 24" stroke="' + INK2 + '" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + IC.trophy + '</svg>' +
       '</span>' +
       '<img class="mob-mascote" id="mobMascote" src="img/mascote.png" alt="" title="Sua jornada">' +
@@ -5576,20 +5587,27 @@ try{ if(typeof RICH!=='undefined'){
       '</div>';
     }
 
-    // Meus cursos (recolhido — abre a lista completa, igual ao "ver objetivos")
-    var sum=0; sks.forEach(function(sk){ var cc=computeOf(sk); sum+=cc?cc.pct:0; });
-    var avg = sks.length ? Math.round(sum/sks.length*100) : 0;
+    // Meus cursos (recolhido) — % de conclusão + plano diário (h/dia) + pausar
+    var sumPct=0, planH=0, planN=0;
+    sks.forEach(function(sk){ var cc=computeOf(sk); sumPct+=cc?cc.pct:0; if(hasMeta(sk)&&!isPaused(sk)){ planH+=(state.pace[sk.name]||0); planN++; } });
+    var avg = sks.length ? Math.round(sumPct/sks.length*100) : 0;
+    var planTxt = planN ? (' · ' + (Math.round(planH*10)/10) + ' h/dia no plano') : '';
     var cards='';
     sks.forEach(function(sk) {
       var idx = sks.indexOf(sk), c = computeOf(sk), p = Math.round((c?c.pct:0)*100);
-      var t = theme(sk.name), showCont = p>0 || hasMeta(sk);
-      cards += '<div class="mv-ccard">' + stripeHTML(t) +
+      var t = theme(sk.name), showCont = p>0 || hasMeta(sk), meta = hasMeta(sk), paused = isPaused(sk);
+      var paceH = meta ? (state.pace[sk.name]||0) : 0;
+      cards += '<div class="mv-ccard"' + (paused?' style="opacity:.55"':'') + '>' + stripeHTML(t) +
         '<div class="mv-card-in">' +
           '<div class="mv-row">' +
             '<span class="mv-cname2">' + flagChip(sk.name) + ' ' + esc(sk.name) + ' <span class="mv-badge">' + esc(cefr(c?c.cl:1)) + '</span></span>' +
             '<span class="mv-pct">' + p + '%</span>' +
           '</div>' +
           '<div class="mv-track" style="margin-top:8px"><div class="mv-fill" style="width:' + p + '%;background:' + t.bar + '"></div></div>' +
+          (meta
+            ? '<div class="mv-plan"><span>' + (paused?'⏸ pausado (fora da meta)':'Plano: ' + (Math.round(paceH*10)/10) + ' h/dia') + '</span>' +
+              '<button class="mv-pause" onclick="__msh.togglePause(' + idx + ')">' + (paused?'Retomar':'Pausar') + '</button></div>'
+            : '') +
           '<div class="mv-btns" style="margin-top:11px">' +
             (showCont
               ? '<button class="mv-cta" style="flex:1" onclick="__msh.goEstudar(' + idx + ')">Continuar →</button><button class="mv-iconbtn" title="Ajustar meta" onclick="__msh.definirMeta(' + idx + ')">⚙</button>'
@@ -5601,7 +5619,7 @@ try{ if(typeof RICH!=='undefined'){
     h += '<div class="mv-card" style="padding:0;margin-bottom:0">' +
            '<div class="mv-row" style="padding:14px 16px;cursor:pointer" onclick="__msh.toggleCursos()">' +
              '<div><div class="mv-cname2">Meus cursos</div>' +
-               '<div class="mv-csub" style="margin-top:3px">' + sks.length + ' cursos · média de andamento ' + avg + '%</div></div>' +
+               '<div class="mv-csub" style="margin-top:3px">' + sks.length + ' cursos · média ' + avg + '%' + planTxt + '</div></div>' +
              '<span class="mv-link" id="mvCursosToggle">ver meus cursos ▾</span>' +
            '</div>' +
          '</div>' +
@@ -5825,6 +5843,7 @@ try{ if(typeof RICH!=='undefined'){
 
   // ── Public interface ──────────────────────────────────────────────────────
   window.__msh = {
+    openStats: function(){ showNative(); if(window.openStats) window.openStats(); },
     openModuleList: function(){ openModList(); },
     closeModList: function(){ modListEl.style.display='none'; },
     goModule: function(i){ modListEl.style.display='none'; showNative(); call('openDetail', [curIdx]); },
@@ -5866,6 +5885,14 @@ try{ if(typeof RICH!=='undefined'){
       var open = box.style.display !== 'none';
       box.style.display = open ? 'none' : 'block';
       if (tg) tg.innerHTML = open ? 'ver meus cursos ▾' : 'ocultar ▴';
+    },
+    togglePause: function(i) {
+      var s = skills()[i]; if(!s) return;
+      if(!state.stats) state.stats={}; if(!state.stats.paused) state.stats.paused={};
+      state.stats.paused[s.name] = !state.stats.paused[s.name];
+      if(typeof save==='function') save();
+      showHome();
+      var box=document.getElementById('mvCursos'); if(box){ box.style.display='block'; var tg=document.getElementById('mvCursosToggle'); if(tg)tg.innerHTML='ocultar ▴'; }
     },
     toggleObj: function(btn) {
       var box = btn.closest('.mv-daily').querySelector('.mv-obj');
@@ -5975,6 +6002,74 @@ try{ if(typeof RICH!=='undefined'){
 
   if (document.body) mount();
   else document.addEventListener('DOMContentLoaded', mount);
+})();
+
+</script>
+<script>
+/* ============================================================
+   30-activity-time.js — tempo de ATIVIDADE por subtópico (etapa).
+   Conta segundos de estudo ATIVO: só enquanto a aba está visível E houve
+   interação recente (não conta com a tela parada/ao fundo). NÃO usa dia
+   início/fim. Descarrega incrementos via RPC registrar_tempo (Supabase) e
+   mantém cópia em state.stats.times[etapa] para a UI.
+   API: window.actStart(etapaId)  /  window.actStop({concluido:true|false})
+   ============================================================ */
+(function () {
+  if (window.__actTime) return; window.__actTime = true;
+  var IDLE_MS = 60000, FLUSH_MS = 30000;
+  var cur = null, buffer = 0, lastInteract = Date.now(), tick = null, flushTimer = null;
+
+  ['pointerdown', 'keydown', 'scroll', 'touchstart', 'mousemove'].forEach(function (ev) {
+    document.addEventListener(ev, function () { lastInteract = Date.now(); }, { passive: true });
+  });
+  function active() { return document.visibilityState === 'visible' && (Date.now() - lastInteract) < IDLE_MS; }
+
+  function persistLocal(etapa, secs) {
+    try {
+      if (typeof state === 'undefined' || !state) return;
+      if (!state.stats) state.stats = {};
+      if (!state.stats.times) state.stats.times = {};
+      state.stats.times[etapa] = (state.stats.times[etapa] || 0) + secs;
+    } catch (e) {}
+  }
+  function flush(done) {
+    if (!cur || buffer <= 0) return;
+    var etapa = cur, secs = Math.round(buffer); buffer = 0;
+    persistLocal(etapa, secs);
+    try { if (typeof save === 'function') save(); } catch (e) {}
+    try {
+      var c = window.sb;
+      if (c && c.rpc && window.currentUser) c.rpc('registrar_tempo', { p_etapa: etapa, p_segundos: secs, p_concluido: !!done });
+    } catch (e) {}
+  }
+
+  window.actStart = function (etapaId) {
+    if (!etapaId) return;
+    if (cur && cur !== etapaId) flush(false);
+    cur = etapaId; lastInteract = Date.now();
+    if (!tick) tick = setInterval(function () { if (cur && active()) buffer += 1; }, 1000);
+    if (!flushTimer) flushTimer = setInterval(function () { flush(false); }, FLUSH_MS);
+  };
+  window.actStop = function (opts) { flush(opts && opts.concluido); cur = null; };
+
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') flush(false); });
+  window.addEventListener('pagehide', function () { flush(false); });
+
+  // Auto-instrumenta os modos de estudo POR SUBTÓPICO (assinatura open*(id, deck)).
+  // Os modos agregados (openAll*) e o conteúdo (openDetail por curso) serão
+  // instrumentados quando ligarmos o tempo no nível de cada cartão/lição.
+  function wrap(name, mode) {
+    var orig = window[name];
+    if (typeof orig !== 'function' || orig.__actWrapped) return;
+    var w = function (id) { try { mode === 'stop' ? window.actStop() : (id && window.actStart(id)); } catch (e) {} return orig.apply(this, arguments); };
+    w.__actWrapped = true; window[name] = w;
+  }
+  function instrument() {
+    ['openPronunc', 'openLeitura', 'openFill', 'openReview'].forEach(function (f) { wrap(f, 'start'); });
+    ['closePronunc', 'closeLeitura', 'closeFill', 'closeReview'].forEach(function (f) { wrap(f, 'stop'); });
+  }
+  if (document.readyState !== 'loading') setTimeout(instrument, 0);
+  else document.addEventListener('DOMContentLoaded', instrument);
 })();
 
 </script>
