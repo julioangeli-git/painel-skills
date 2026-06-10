@@ -372,6 +372,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 .ov-obj-row .ov-obj-ic{width:26px;height:26px;border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .ov-obj-row div{display:flex;flex-direction:column}
 .ov-obj-row small{font-size:11px;color:#e08a2a}
+.ov-obj-prog{font-size:12px;color:var(--ink);background:var(--surface2);border-radius:8px;padding:8px 10px;margin-bottom:10px;display:inline-block}
 .ov-soon{margin-left:10px;font-size:10px;color:#e08a2a;background:#3a2305;padding:3px 9px;border-radius:8px}
 .ov-add{margin-left:auto;font-size:12px;color:#4d88ff;cursor:pointer;text-decoration:none}
 .ov-courses{display:flex;gap:12px;overflow-x:auto;padding-bottom:8px}
@@ -1493,6 +1494,7 @@ function renderOverview(){
     '</div>'+
     '<div class="ov-meta-right">'+
       '<div class="ov-obj-title">Como bater sua meta hoje</div>'+
+      '<div class="ov-obj-prog">'+(done?'🔥 '+xp+' XP hoje — meta batida!':'✅ '+xp+' XP feitos · faltam '+(goal-xp)+' XP')+'</div>'+
       '<div class="ov-obj-row"><span class="ov-obj-ic">📘</span><div><b>Faça uma aula</b> → +10 XP<small>já garante seu fogo do dia 🔥</small></div></div>'+
       '<div class="ov-obj-row"><span class="ov-obj-ic">⚡</span><div><b>Modo prático</b> → +10 XP<small>completa os 20 XP da meta</small></div></div>'+
     '</div>';
@@ -1509,7 +1511,7 @@ function renderOverview(){
     '<div class="ov-jor">'+
       '<p class="ov-jor-sub">Escolha um cargo-alvo e montamos sua jornada a partir de vagas reais.</p>'+
       '<div class="ov-jor-steps">'+
-        '<div class="ov-jor-step"><b>1</b>Defina o cargo (ex.: Analista de Dados Jr)</div>'+
+        '<div class="ov-jor-step"><b>1</b>Defina o cargo que você quer alcançar</div>'+
         '<div class="ov-jor-step"><b>2</b>Vagas reais definem o nível de cada skill</div>'+
         '<div class="ov-jor-step"><b>3</b>Jornada automática, priorizando o mais crítico</div>'+
         '<div class="ov-jor-step"><b>4</b>Previsão de quando estará pronto pra se candidatar</div>'+
@@ -5211,7 +5213,7 @@ try{ if(typeof RICH!=='undefined'){
     book2:  '<path d="M5 5a2 2 0 0 1 2-2h11v16H7a2 2 0 0 0-2 2z"/><path d="M18 19H7"/>',
     pulse:  '<polyline points="3 12 8 12 10 5 14 19 16 12 21 12"/>',
     people: '<circle cx="9" cy="8" r="3"/><path d="M3.5 20c0-3 2.7-5 5.5-5s5.5 2 5.5 5"/><circle cx="17.5" cy="9" r="2"/><path d="M16.5 15c2.5.2 4 2 4 5"/>',
-    gear:   '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
+    gear:   '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
     refresh:'<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.08-6.24"/>',
     mic:    '<path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>',
     swap:   '<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>',
@@ -5219,7 +5221,7 @@ try{ if(typeof RICH!=='undefined'){
     stars:  '<path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" fill="currentColor" stroke="none"/>',
     book:   '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" stroke-linecap="round"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
     lock:   '<rect x="3" y="11" width="18" height="11" rx="2" ry="2" fill="none"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
-    trophy: '<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 20v-1a6 6 0 0 1 12 0v1"/><line x1="4" y1="22" x2="20" y2="22"/><path d="M6 9a6 6 0 0 0 12 0"/>',
+    trophy: '<path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h2a1 1 0 0 1 1 1v1a3 3 0 0 1-3 3"/><path d="M7 5H5a1 1 0 0 0-1 1v1a3 3 0 0 0 3 3"/>',
     arrow:  '<line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>',
   };
   function si(name, col, fill) {
@@ -5347,6 +5349,7 @@ try{ if(typeof RICH!=='undefined'){
     '.mv-obj-row .mv-obj-ic{font-size:16px;width:26px;height:26px;border-radius:8px;background:#1e2c44;display:flex;align-items:center;justify-content:center;flex-shrink:0}' +
     '.mv-obj-row div{font-family:Poppins;font-size:13px;color:'+INK+';display:flex;flex-direction:column}' +
     '.mv-obj-row small{font-size:11px;color:'+ORANGE+'}' +
+    '.mv-obj-prog{font-size:12px;color:'+INK+';background:#1e2c44;border-radius:8px;padding:8px 10px;margin-bottom:10px}' +
     /* faixa de tema no topo dos cards */
     '.mv-themed,.mv-ccard{padding:0;overflow:hidden}' +
     '.mv-stripe{display:flex;height:5px}.mv-stripe i{flex:1}' +
@@ -5363,6 +5366,10 @@ try{ if(typeof RICH!=='undefined'){
     '.mv-cta2{background:transparent;border:1px solid #2e3a4c;color:'+INK+';border-radius:14px;padding:11px 15px;cursor:pointer;font-family:Poppins;font-weight:600;font-size:14px}' +
     '.mv-cta3{flex:1;background:#1e2c44;border:0;color:#9fcbef;border-radius:12px;padding:10px;cursor:pointer;font-family:Poppins;font-weight:600;font-size:13px}' +
     '.mv-iconbtn{background:transparent;border:1px solid #2e3a4c;color:'+INK+';border-radius:11px;padding:0 13px;cursor:pointer;font-size:15px}' +
+    '.mv-btns{align-items:stretch}' +
+    '.mv-btns .mv-cta{margin-top:0}' +
+    '.mv-cta,.mv-cta2,.mv-cta3,.mv-iconbtn{box-sizing:border-box;min-height:46px}' +
+    '.mv-cta2,.mv-cta3{display:flex;align-items:center;justify-content:center}' +
     /* jornada em breve */
     '.mv-jhead{display:flex;align-items:center;gap:10px;margin-bottom:6px}' +
     '.mv-jic{font-size:20px}' +
@@ -5427,6 +5434,8 @@ try{ if(typeof RICH!=='undefined'){
   function pctOf(sk){ var c=computeOf(sk); return c?c.pct:skillPct(sk); }
   // curso para "Continue de onde parou": maior progresso; se tudo zerado, 1o idioma
   function bestCourse(sks){
+    var pin=''; try{ pin=localStorage.getItem('mshFeatured')||''; }catch(e){}
+    if(pin){ var pn=sks.filter(function(s){return s.name===pin;})[0]; if(pn) return pn; }
     var best=null,bp=-1;
     sks.forEach(function(sk){ var p=pctOf(sk); if(p>bp){bp=p;best=sk;} });
     if(bp<=0){ var lg=sks.filter(function(s){return s.lang;}); return lg[0]||sks[0]||null; }
@@ -5493,7 +5502,13 @@ try{ if(typeof RICH!=='undefined'){
     var av = document.getElementById('mobAv');
     var hl = document.getElementById('mobHello');
     var st = document.getElementById('mobStreak');
-    if(av) av.textContent = (n.charAt(0)||'?').toUpperCase();
+    if(av){
+      var avId=''; try{ avId=localStorage.getItem('painelAvatar')||''; }catch(e){}
+      var ic='';
+      if(avId && typeof AVATARS!=='undefined'){ var f=AVATARS.filter(function(a){return a.id===avId;})[0]; if(f)ic=f.icon; }
+      if(ic){ av.textContent=ic; av.style.background='transparent'; av.style.fontSize='24px'; }
+      else { av.textContent=(n.charAt(0)||'?').toUpperCase(); av.style.background=BLUE; av.style.fontSize='15px'; }
+    }
     if(hl) hl.textContent = 'Olá, ' + n.split(' ')[0] + '!';
     if(st) st.textContent = streakVal();
   }
@@ -5533,6 +5548,7 @@ try{ if(typeof RICH!=='undefined'){
       '<div class="mv-track"><div class="mv-fill" style="width:' + xpPct + '%;background:' + metaCol + '"></div></div>' +
       '<div class="mv-daily-hint">' + metaHint + '</div>' +
       '<div class="mv-obj" style="display:none">' +
+        '<div class="mv-obj-prog">'+(done?'🔥 '+xp+' XP hoje — meta batida!':'✅ '+xp+' XP feitos · faltam '+(goal-xp)+' XP')+'</div>' +
         '<div class="mv-obj-row"><span class="mv-obj-ic">📘</span><div><span><b>Faça uma aula</b> → +10 XP</span><small>já garante seu fogo do dia 🔥</small></div></div>' +
         '<div class="mv-obj-row"><span class="mv-obj-ic">⚡</span><div><span><b>Modo prático</b> → +10 XP</span><small>completa os 20 XP da meta</small></div></div>' +
       '</div>' +
@@ -5554,7 +5570,7 @@ try{ if(typeof RICH!=='undefined'){
           '<div class="mv-track"><div class="mv-fill" style="width:' + bp + '%;background:' + bt.bar + '"></div></div>' +
           '<div class="mv-btns">' +
             '<button class="mv-cta mv-cta-fire" onclick="__msh.goEstudar(' + bi + ')">' + (started?'Continuar':'Começar') + ' →</button>' +
-            '<button class="mv-cta2" onclick="__msh.goEstudar(' + bi + ')">Trocar</button>' +
+            '<button class="mv-cta2" onclick="__msh.trocarCurso()">Trocar</button>' +
           '</div>' +
         '</div>' +
       '</div>';
@@ -5699,7 +5715,7 @@ try{ if(typeof RICH!=='undefined'){
       '<div class="mv-jhead"><span class="mv-jic">🧭</span><span class="mv-h2" style="margin:0">Jornada</span><span class="mv-soon">Em breve</span></div>' +
       '<p class="mv-jsub">Escolha um cargo-alvo e montamos sua jornada a partir de vagas reais.</p>' +
       '<div>' +
-        jstep(1, 'Defina o cargo (ex.: Analista de Dados Jr)') +
+        jstep(1, 'Defina o cargo que você quer alcançar') +
         jstep(2, 'Vagas reais definem o nível de cada skill') +
         jstep(3, 'Jornada automática, priorizando o mais crítico') +
         jstep(4, 'Previsão de quando estará pronto pra se candidatar') +
@@ -5793,11 +5809,27 @@ try{ if(typeof RICH!=='undefined'){
     setTimeout(function(){ var cur=modListEl.querySelector('.mml-cur'); if(cur&&cur.scrollIntoView) cur.scrollIntoView({block:'center'}); }, 30);
   }
 
+  // Trocar o curso PRINCIPAL (o "Continue de onde parou"): escolhe qual fica fixado.
+  function openCoursePicker(){
+    var sks=skills();
+    var rows=sks.map(function(s,i){
+      var c=computeOf(s), p=Math.round((c?c.pct:0)*100);
+      return '<button class="mml-row" onclick="__msh.pickFeatured('+i+')">'+flagChip(s.name)+
+        '<span class="mml-name">'+esc(s.name)+'</span><span class="mml-tag" style="color:#8baec8">'+p+'%</span></button>';
+    }).join('');
+    modListEl.innerHTML='<div class="mml-card"><div class="mml-head"><b>Trocar curso principal</b>'+
+      '<button class="msh-x" onclick="__msh.closeModList()" aria-label="Fechar">✕</button></div>'+
+      '<div class="mml-list">'+rows+'</div></div>';
+    modListEl.style.display='flex';
+  }
+
   // ── Public interface ──────────────────────────────────────────────────────
   window.__msh = {
     openModuleList: function(){ openModList(); },
     closeModList: function(){ modListEl.style.display='none'; },
     goModule: function(i){ modListEl.style.display='none'; showNative(); call('openDetail', [curIdx]); },
+    trocarCurso: function(){ openCoursePicker(); },
+    pickFeatured: function(i){ var s=skills()[i]; if(s){ try{ localStorage.setItem('mshFeatured', s.name); }catch(e){} } modListEl.style.display='none'; setActive(0); showHome(); },
     pickCourse: function(v) { renderHub(parseInt(v, 10) || 0); },
     pickModule: function(v) {
       var i = parseInt(v, 10);
