@@ -351,6 +351,59 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 .lp-footer{padding:32px 24px;text-align:center;font-size:12px;color:rgba(245,245,247,.3);border-top:1px solid rgba(255,255,255,.06)}
 
 </style>
+<style id="ov-redesign">
+/* Home desktop (redesign): banner, meta congelada/fogo, cursos, jornada em breve */
+.ov-banner{display:flex;align-items:center;gap:12px;width:100%;border:0;cursor:pointer;text-align:left;background:#e08a2a;border-radius:14px;padding:14px 18px;margin-bottom:18px;font-family:inherit}
+.ov-banner-ic{font-size:20px}
+.ov-banner-tx{flex:1;display:flex;flex-direction:column;color:#3a2305}
+.ov-banner-tx b{font-weight:600;font-size:15px}.ov-banner-tx small{font-size:12px;color:#5e3a0c}
+.ov-banner-ar{font-size:22px;color:#3a2305}
+.ov-meta{display:flex;gap:22px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:8px;flex-wrap:wrap}
+.ov-meta-left{width:240px;flex:none;border-right:1px solid var(--border);padding-right:20px}
+.ov-meta-left.is-ice{} .ov-meta-left.is-fire{}
+.ov-meta-lbl{font-size:13px;color:var(--ink2);margin-bottom:4px}
+.ov-meta-num{font-size:30px;font-weight:700;color:var(--ink)}
+.ov-meta-num span{font-size:15px;font-weight:400;color:var(--ink2)}
+.ov-meta-left .ov-track2{margin:10px 0 8px}
+.ov-meta-hint{font-size:11px;color:var(--ink2)}
+.ov-meta-right{flex:1;min-width:220px}
+.ov-obj-title{font-size:13px;color:var(--ink);margin-bottom:10px}
+.ov-obj-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;font-size:13px;color:var(--ink)}
+.ov-obj-row .ov-obj-ic{width:26px;height:26px;border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ov-obj-row div{display:flex;flex-direction:column}
+.ov-obj-row small{font-size:11px;color:#e08a2a}
+.ov-soon{margin-left:10px;font-size:10px;color:#e08a2a;background:#3a2305;padding:3px 9px;border-radius:8px}
+.ov-add{margin-left:auto;font-size:12px;color:#4d88ff;cursor:pointer;text-decoration:none}
+.ov-courses{display:flex;gap:12px;overflow-x:auto;padding-bottom:8px}
+.ov-courses::-webkit-scrollbar{height:6px}
+.ov-courses::-webkit-scrollbar-track{background:transparent}
+.ov-courses::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+.ov-ccard{flex:1 1 0;min-width:210px;background:var(--surface);border-radius:14px;overflow:hidden;cursor:pointer}
+.ov-ccard.ov-feat{flex:1.4 1 0;border:1px solid #234b40}
+.ov-stripe{display:flex;height:5px}.ov-stripe i{flex:1}
+.ov-cc-in{padding:14px 16px}
+.ov-cc-top{display:flex;align-items:center;gap:8px}
+.ov-flag{display:inline-flex;width:22px;height:15px;border-radius:3px;overflow:hidden;flex-shrink:0}
+.ov-flag i{flex:1}
+.ov-cc-name{font-weight:600;font-size:16px;color:var(--ink)}
+.ov-cc-pct{margin-left:auto;font-size:12px;color:var(--ink2)}
+.ov-badge{display:inline-block;margin:8px 0;font-size:11px;color:#9fcbef;background:var(--surface2);padding:2px 9px;border-radius:8px}
+.ov-cc-next{font-size:12px;color:var(--ink2);margin:2px 0 8px}
+.ov-track2{height:6px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden}
+.ov-fill2{height:100%;border-radius:4px}
+.ov-cc-btns{display:flex;gap:8px;margin-top:12px}
+.ov-btn{border:0;cursor:pointer;font-family:inherit;font-weight:600;font-size:13px;padding:10px;border-radius:10px}
+.ov-btn-fire{flex:1;background:#e08a2a;color:#3a2305}
+.ov-btn-ic{background:transparent;border:1px solid var(--border2);color:var(--ink);padding:10px 13px}
+.ov-btn-soft{flex:1;background:var(--surface2);color:#9fcbef}
+.ov-jornada{margin-top:2px}
+.ov-jor{background:var(--surface);border-radius:14px;padding:16px}
+.ov-jor-sub{font-size:13px;color:var(--ink2);margin:0 0 12px}
+.ov-jor-steps{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.ov-jor-step{font-size:13px;color:var(--ink)}
+.ov-jor-step b{color:#4d88ff;margin-right:6px}
+@media(max-width:820px){#overview .ov-banner,#overview .ov-meta,#overview .ov-courses,#overview .ov-jornada{display:none!important}}
+</style>
 <link rel="manifest" href="manifest.webmanifest">
 </head><body>
 <div id="loginOverlay" class="login-ov" style="display:none">
@@ -670,36 +723,27 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 <div class="banner" id="banner">Salvamento automatico indisponivel neste preview. Use Exportar.</div>
 
 <section id="overview">
-  <div class="hero">
-    <div class="gaugewrap" style="width:164px;height:164px" id="heroGauge"></div>
-    <div class="herostats" id="heroStats"></div>
-    <div class="radar-hero" id="radarHero"></div>
-  </div>
+  <button class="ov-banner" id="ovBanner" type="button">
+    <span class="ov-banner-ic">🚀</span>
+    <span class="ov-banner-tx"><b>Personalize sua jornada</b><small>Escolha o curso e defina sua meta</small></span>
+    <span class="ov-banner-ar">›</span>
+  </button>
 
-  <div class="sec" style="margin-top:28px">
+  <div class="ov-meta" id="ovMeta"></div>
+
+  <div class="sec" style="margin-top:24px">
+    <div class="sec-flag"><span class="g"></span><span class="w"></span><span class="r"></span></div>
+    <span class="sec-label">Todos os cursos</span>
+    <a class="ov-add" id="ovAdd" href="#">+ adicionar curso</a>
+  </div>
+  <div class="ov-courses" id="ovCourses"></div>
+
+  <div class="sec" style="margin-top:24px">
     <div class="sec-flag"><span class="g"></span><span class="w"></span><span class="r"></span></div>
     <span class="sec-label">Jornada</span>
+    <span class="ov-soon">Em breve</span>
   </div>
-  <div class="journey" id="journey"></div>
-
-  <div class="sec">
-    <div class="sec-flag"><span class="g"></span><span class="w"></span><span class="r"></span></div>
-    <span class="sec-label">Em foco agora - Prioridade critica</span>
-  </div>
-  <div class="focus-grid" id="focusGrid"></div>
-
-  <div class="sec">
-    <div class="sec-flag"><span class="g"></span><span class="w"></span><span class="r"></span></div>
-    <span class="sec-label">Em desenvolvimento - Prioridade alta</span>
-  </div>
-  <div class="dev-grid" id="devGrid"></div>
-
-  <div class="sec">
-    <div class="sec-flag" style="opacity:.45"><span class="g"></span><span class="w"></span><span class="r"></span></div>
-    <span class="sec-label">No radar - Demais skills mapeadas</span>
-  </div>
-  <div class="sec-sub">Skills ja solidas ou que entram em foco nas proximas fases - clique para detalhar</div>
-  <div class="radar-grid" id="radarGrid"></div>
+  <div class="ov-jornada" id="ovJornada"></div>
 </section>
 
 <section class="detail" id="detail">
@@ -1265,7 +1309,8 @@ window.addEventListener('DOMContentLoaded',()=>{
 });
 // Se ainda não renderizou após 2s, força
 setTimeout(()=>{
-  if(!document.getElementById('heroGauge').innerHTML){renderOverview();}
+  var ov=document.getElementById('ovCourses');
+  if(ov&&!ov.innerHTML){renderOverview();}
 },2000);
 
 function copyText(txt,btn){
@@ -1388,32 +1433,99 @@ function miniCard(s,i){
   </div>`;
 }
 
+// ── Redesign da home (desktop) ───────────────────────────────────────────────
+function _todayKey(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);}
+function _ovCefr(n){return (APP.cefr&&APP.cefr[n])||'Iniciante';}
+function _ovTheme(name){
+  var n=(name||'').toLowerCase();
+  if(n.indexOf('ital')>-1) return {bar:'#009246',stripe:['#009246','#ffffff','#ce2b37']};
+  if(n.indexOf('ingl')>-1||n.indexOf('engl')>-1) return {bar:'#b22234',stripe:['#b22234','#ffffff','#3c3b6e']};
+  return {bar:'#4d88ff',stripe:['#4d88ff','#4d88ff','#4d88ff']};
+}
+function _ovFlag(name){
+  var n=(name||'').toLowerCase();
+  if(n.indexOf('ital')>-1)
+    return '<span class="ov-flag"><i style="background:#009246"></i><i style="background:#fff"></i><i style="background:#ce2b37"></i></span>';
+  if(n.indexOf('ingl')>-1||n.indexOf('engl')>-1)
+    return '<span class="ov-flag" style="position:relative;background:#fff">'+
+      '<u style="position:absolute;top:2px;left:0;width:100%;height:2px;background:#b22234"></u>'+
+      '<u style="position:absolute;top:6px;left:0;width:100%;height:2px;background:#b22234"></u>'+
+      '<u style="position:absolute;top:10px;left:0;width:100%;height:2px;background:#b22234"></u>'+
+      '<u style="position:absolute;top:0;left:0;width:10px;height:8px;background:#3c3b6e"></u></span>';
+  return '<span class="ov-flag" style="background:#4d88ff"></span>';
+}
+function ovCourseCard(s,i,feat){
+  var c=compute(s);var p=Math.round(c.pct*100);var started=p>0;var t=_ovTheme(s.name);
+  var stripe='<div class="ov-stripe">'+t.stripe.map(function(cc){return '<i style="background:'+cc+'"></i>';}).join('')+'</div>';
+  var btns=started
+    ? '<button class="ov-btn ov-btn-fire" data-go="'+i+'">Continuar →</button><button class="ov-btn ov-btn-ic" data-meta="'+i+'" title="Ajustar meta">⚙</button>'
+    : '<button class="ov-btn ov-btn-soft" data-meta="'+i+'">Definir meta</button>';
+  var next=(feat&&started&&c.next)?'<div class="ov-cc-next">▶ '+c.next.t+'</div>':'';
+  return '<div class="ov-ccard'+(feat?' ov-feat':'')+'" data-i="'+i+'">'+stripe+
+    '<div class="ov-cc-in">'+
+      '<div class="ov-cc-top">'+_ovFlag(s.name)+'<span class="ov-cc-name">'+s.name+'</span>'+
+        '<span class="ov-cc-pct">'+p+'%</span></div>'+
+      '<div class="ov-badge">'+_ovCefr(c.cl)+(started?' · em curso':'')+'</div>'+
+      next+
+      '<div class="ov-track2"><div class="ov-fill2" style="width:'+p+'%;background:'+t.bar+'"></div></div>'+
+      '<div class="ov-cc-btns">'+btns+'</div>'+
+    '</div></div>';
+}
+
 function renderOverview(){
-  const sums=APP.skills.map(s=>({s,c:compute(s)}));
-  const avg=sums.reduce((a,x)=>a+x.c.pct,0)/sums.length;
-  const alerts=sums.filter(x=>x.c.st==='alert').length;
-  const totT=APP.skills.reduce((a,s)=>a+s.topics.filter(t=>t.level<=s.target).length,0);
-  const doneT=APP.skills.reduce((a,s)=>a+s.topics.filter(t=>t.level<=s.target&&state.done[t.id]).length,0);
+  var sks=APP.skills||[];
 
-  document.getElementById('heroGauge').innerHTML=heroGauge(avg,164);
-  document.getElementById('heroStats').innerHTML=
-    `<div class="hs"><div class="v">${doneT}<small>/${totT}</small></div><div class="l">etapas concluídas</div></div>
-     <div class="hs"><div class="v ${alerts?'alert':'good'}">${alerts}<small>/${sums.length}</small></div><div class="l">skills em alerta</div></div>
-     <div class="hs"><div class="v">${sums.length}</div><div class="l">skills mapeadas</div></div>`;
-  document.getElementById('radarHero').innerHTML=radarSVG();
+  // Meta diária (congelada em 0 XP → fogo ao concluir)
+  var st=(state&&state.stats)?state.stats:{};
+  var xp=st.hist?(st.hist[_todayKey()]||0):0;
+  var goal=st.goal||20;
+  var pct=Math.min(Math.round(xp/goal*100),100);
+  var zero=xp<=0,done=xp>=goal;
+  var col=zero?'#5ba7e0':'#e08a2a',icon=zero?'❄️':'🔥';
+  var hint=done?'Meta concluída! 🔥':zero?'Complete uma lição para acender o seu dia':'Continue para manter o fogo aceso';
+  var meta=document.getElementById('ovMeta');
+  if(meta) meta.innerHTML=
+    '<div class="ov-meta-left'+(zero?' is-ice':done?' is-fire':'')+'">'+
+      '<div class="ov-meta-lbl">Meta diária '+icon+'</div>'+
+      '<div class="ov-meta-num"'+(zero?' style="color:#9fcbef"':'')+'>'+xp+'<span> / '+goal+' XP</span></div>'+
+      '<div class="ov-track2"><div class="ov-fill2" style="width:'+pct+'%;background:'+col+'"></div></div>'+
+      '<div class="ov-meta-hint">'+hint+'</div>'+
+    '</div>'+
+    '<div class="ov-meta-right">'+
+      '<div class="ov-obj-title">Como bater sua meta hoje</div>'+
+      '<div class="ov-obj-row"><span class="ov-obj-ic">📘</span><div><b>Faça uma aula</b> → +10 XP<small>já garante seu fogo do dia 🔥</small></div></div>'+
+      '<div class="ov-obj-row"><span class="ov-obj-ic">⚡</span><div><b>Modo prático</b> → +10 XP<small>completa os 20 XP da meta</small></div></div>'+
+    '</div>';
 
-  renderJourney();
+  // Cursos (maior progresso primeiro, primeiro em destaque)
+  var arr=sks.map(function(s,i){return {s:s,i:i,p:compute(s).pct};});
+  arr.sort(function(a,b){return b.p-a.p;});
+  var cE=document.getElementById('ovCourses');
+  if(cE) cE.innerHTML=arr.map(function(o,k){return ovCourseCard(o.s,o.i,k===0);}).join('');
 
-  const focus=sums.filter(x=>x.s.priority==='Crítica');
-  const dev=sums.filter(x=>x.s.priority==='Alta');
-  const radar=sums.filter(x=>x.s.priority==='Média'||x.s.priority==='Baixa');
+  // Jornada (Em breve)
+  var jE=document.getElementById('ovJornada');
+  if(jE) jE.innerHTML=
+    '<div class="ov-jor">'+
+      '<p class="ov-jor-sub">Escolha um cargo-alvo e montamos sua jornada a partir de vagas reais.</p>'+
+      '<div class="ov-jor-steps">'+
+        '<div class="ov-jor-step"><b>1</b>Defina o cargo (ex.: Analista de Dados Jr)</div>'+
+        '<div class="ov-jor-step"><b>2</b>Vagas reais definem o nível de cada skill</div>'+
+        '<div class="ov-jor-step"><b>3</b>Jornada automática, priorizando o mais crítico</div>'+
+        '<div class="ov-jor-step"><b>4</b>Previsão de quando estará pronto pra se candidatar</div>'+
+      '</div>'+
+    '</div>';
 
-  document.getElementById('focusGrid').innerHTML=focus.map(x=>skillCard(x.s,APP.skills.indexOf(x.s))).join('');
-  document.getElementById('devGrid').innerHTML=dev.map(x=>skillCard(x.s,APP.skills.indexOf(x.s))).join('');
-  document.getElementById('radarGrid').innerHTML=radar.map(x=>miniCard(x.s,APP.skills.indexOf(x.s))).join('');
-
-  document.querySelectorAll('.sk-card,.sk-mini').forEach(el=>el.onclick=()=>openDetail(+el.dataset.i));
-  animRings();
+  // Wiring (clique no card e nos botões abre o detalhe do curso)
+  if(cE){
+    cE.querySelectorAll('.ov-ccard').forEach(function(el){
+      el.addEventListener('click',function(e){ if(e.target.closest('button'))return; openDetail(+el.getAttribute('data-i')); });
+    });
+    cE.querySelectorAll('[data-go]').forEach(function(b){ b.onclick=function(){ openDetail(+b.getAttribute('data-go')); }; });
+    cE.querySelectorAll('[data-meta]').forEach(function(b){ b.onclick=function(){ openDetail(+b.getAttribute('data-meta')); }; });
+  }
+  var bn=document.getElementById('ovBanner');
+  if(bn&&!bn._wired){ bn._wired=true; bn.onclick=function(){ var j=document.getElementById('ovJornada'); if(j)j.scrollIntoView({behavior:'smooth',block:'center'}); }; }
 }
 
 let curIdx=0;
@@ -2387,7 +2499,15 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progre
       applyUser(user);
       try{ await applyCloud(); _origSave(); }catch(e){ console.error('restaurar progresso',e); }
       hideLanding();
-      var lo=document.getElementById('loginOverlay');if(lo)lo.style.display='none';
+      var temNome=user.user_metadata&&user.user_metadata.display_name;
+      var lo=document.getElementById('loginOverlay');
+      if(!temNome){
+        // Sessao restaurada (ex.: Google/usuario antigo) sem nome de exibicao:
+        // pede o nome em vez de cair no prefixo do e-mail.
+        var nlb=document.getElementById('nomeInput');if(nlb)nlb.value='';
+        if(lo)lo.style.display='flex';
+        showStep('nomeStep');
+      } else if(lo){ lo.style.display='none'; }
       try{ renderOverview(); }catch(e){}
       setStatus('salvo na nuvem');
     } else {
@@ -5169,6 +5289,56 @@ try{ if(typeof RICH!=='undefined'){
     '#squTab .ind{position:absolute;top:0;height:3px;width:18%;background:' + BLUE + ';border-radius:0 0 3px 3px;transition:left .22s}';
   document.head.appendChild(css);
 
+  // ── CSS do redesign (banner, meta congelada/fogo, cursos, jornada) ─────────
+  var css2 = document.createElement('style');
+  css2.textContent =
+    '#mobileJornada{display:none;position:fixed;top:56px;left:0;right:0;bottom:74px;background:'+NAVY+';overflow-y:auto;-webkit-overflow-scrolling:touch;z-index:30}' +
+    /* mascote/troféu no topo */
+    '.mob-mascote{width:26px;height:26px;border-radius:50%;object-fit:cover}' +
+    '.mob-trophy svg{width:19px;height:19px}' +
+    '#mobAv,.mob-hello{cursor:pointer}' +
+    /* banner laranja */
+    '.mv-banner{display:flex;align-items:center;gap:11px;width:100%;border:0;cursor:pointer;text-align:left;' +
+    '  background:'+ORANGE+';border-radius:16px;padding:13px 15px;margin-bottom:14px}' +
+    '.mv-banner-ic{font-size:19px}' +
+    '.mv-banner-tx{flex:1;display:flex;flex-direction:column;font-family:Poppins;color:#3a2305}' +
+    '.mv-banner-tx b{font-weight:600;font-size:14px}.mv-banner-tx small{font-size:12px;color:#5e3a0c}' +
+    '.mv-banner-ar{font-size:20px;color:#3a2305;font-weight:600}' +
+    /* meta diária: estados */
+    '.mv-daily.is-ice{background:#14202e;border:1px solid #25415c}' +
+    '.mv-daily.is-fire{background:#241a10;border:1px solid #6b4a1e}' +
+    '.mv-link{background:none;border:0;cursor:pointer;font-family:Poppins;font-size:11px;color:'+BLUE+';padding:0}' +
+    '.mv-daily-hint{font-family:Poppins;font-size:11px;color:'+INK2+';margin-top:8px}' +
+    '.mv-obj{margin-top:12px;border-top:1px solid rgba(255,255,255,.06);padding-top:12px}' +
+    '.mv-obj-row{display:flex;align-items:flex-start;gap:10px;margin-top:10px}' +
+    '.mv-obj-row .mv-obj-ic{font-size:16px;width:26px;height:26px;border-radius:8px;background:#1e2c44;display:flex;align-items:center;justify-content:center;flex-shrink:0}' +
+    '.mv-obj-row div{font-family:Poppins;font-size:13px;color:'+INK+';display:flex;flex-direction:column}' +
+    '.mv-obj-row small{font-size:11px;color:'+ORANGE+'}' +
+    /* faixa de tema no topo dos cards */
+    '.mv-themed,.mv-ccard{padding:0;overflow:hidden}' +
+    '.mv-stripe{display:flex;height:5px}.mv-stripe i{flex:1}' +
+    '.mv-card-in{padding:14px 16px}' +
+    '.mv-ccard{background:'+SURF+';border-radius:16px;margin-bottom:10px}' +
+    '.mv-ccard .mv-card-in{padding:13px 14px}' +
+    '.mv-cname2{font-family:Poppins;font-weight:600;font-size:15px;color:'+INK+';display:flex;align-items:center;gap:7px;flex-wrap:wrap}' +
+    '.mv-pct{font-family:Poppins;font-size:12px;color:'+INK2+'}' +
+    '.mv-flag{display:inline-flex;width:22px;height:15px;border-radius:3px;overflow:hidden;vertical-align:middle;flex-shrink:0}' +
+    '.mv-flag i{flex:1}' +
+    /* botões */
+    '.mv-btns{display:flex;gap:9px;margin-top:14px}' +
+    '.mv-cta-fire{background:'+ORANGE+'!important;color:#3a2305!important}' +
+    '.mv-cta2{background:transparent;border:1px solid #2e3a4c;color:'+INK+';border-radius:14px;padding:11px 15px;cursor:pointer;font-family:Poppins;font-weight:600;font-size:14px}' +
+    '.mv-cta3{flex:1;background:#1e2c44;border:0;color:#9fcbef;border-radius:12px;padding:10px;cursor:pointer;font-family:Poppins;font-weight:600;font-size:13px}' +
+    '.mv-iconbtn{background:transparent;border:1px solid #2e3a4c;color:'+INK+';border-radius:11px;padding:0 13px;cursor:pointer;font-size:15px}' +
+    /* jornada em breve */
+    '.mv-jhead{display:flex;align-items:center;gap:10px;margin-bottom:6px}' +
+    '.mv-jic{font-size:20px}' +
+    '.mv-soon{margin-left:auto;font-family:Poppins;font-size:10px;color:'+ORANGE+';background:#3a2305;padding:3px 9px;border-radius:8px}' +
+    '.mv-jsub{font-family:Poppins;font-size:12px;color:'+INK2+';line-height:1.6;margin:0 0 14px}' +
+    '.mv-jstep{display:flex;gap:10px;align-items:flex-start;margin-bottom:11px;font-family:Poppins;font-size:13px;color:'+INK+'}' +
+    '.mv-jstep b{color:'+BLUE+';font-weight:600;flex-shrink:0;width:14px}';
+  document.head.appendChild(css2);
+
   // ── Helpers ───────────────────────────────────────────────────────────────
   function call(fn, args) { try { if (typeof window[fn] === 'function') return window[fn].apply(null, args||[]); } catch(e){} }
   function esc(s) { return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -5190,11 +5360,47 @@ try{ if(typeof RICH!=='undefined'){
     return total ? done/total : 0;
   }
 
+  // ── Helpers de redesign (meta / cursos / temas) ────────────────────────────
+  var ICE = '#5ba7e0';            // meta congelada (0 XP)
+  function cefr(n){ try{ return (APP.cefr&&APP.cefr[n])||'Iniciante'; }catch(e){ return 'Iniciante'; } }
+  function computeOf(sk){ try{ return (typeof compute==='function')?compute(sk):null; }catch(e){ return null; } }
+  function pctOf(sk){ var c=computeOf(sk); return c?c.pct:skillPct(sk); }
+  // curso para "Continue de onde parou": maior progresso; se tudo zerado, 1o idioma
+  function bestCourse(sks){
+    var best=null,bp=-1;
+    sks.forEach(function(sk){ var p=pctOf(sk); if(p>bp){bp=p;best=sk;} });
+    if(bp<=0){ var lg=sks.filter(function(s){return s.lang;}); return lg[0]||sks[0]||null; }
+    return best;
+  }
+  // tema por curso: cores da faixa superior + barra
+  function theme(name){
+    var n=(name||'').toLowerCase();
+    if(n.indexOf('ital')>-1) return {bar:'#009246', stripe:['#009246','#ffffff','#ce2b37']};
+    if(n.indexOf('ingl')>-1||n.indexOf('engl')>-1) return {bar:'#b22234', stripe:['#b22234','#ffffff','#3c3b6e']};
+    return {bar:BLUE, stripe:[BLUE,BLUE,BLUE]};
+  }
+  function stripeHTML(t){
+    return '<div class="mv-stripe">'+t.stripe.map(function(c){return '<i style="background:'+c+'"></i>';}).join('')+'</div>';
+  }
+  // mini-bandeira ao lado do nome (Italiano tricolor, Inglês EUA, demais azul)
+  function flagChip(name){
+    var n=(name||'').toLowerCase();
+    if(n.indexOf('ital')>-1)
+      return '<span class="mv-flag"><i style="background:#009246"></i><i style="background:#fff"></i><i style="background:#ce2b37"></i></span>';
+    if(n.indexOf('ingl')>-1||n.indexOf('engl')>-1)
+      return '<span class="mv-flag" style="position:relative;background:#fff">'+
+        '<u style="position:absolute;top:2px;left:0;width:100%;height:2px;background:#b22234"></u>'+
+        '<u style="position:absolute;top:6px;left:0;width:100%;height:2px;background:#b22234"></u>'+
+        '<u style="position:absolute;top:10px;left:0;width:100%;height:2px;background:#b22234"></u>'+
+        '<u style="position:absolute;top:0;left:0;width:10px;height:8px;background:#3c3b6e"></u></span>';
+    return '<span class="mv-flag" style="background:'+BLUE+'"></span>';
+  }
+
   // ── Top bar ───────────────────────────────────────────────────────────────
   var topBar = document.createElement('div');
   topBar.id = 'mobileTopBar';
   topBar.innerHTML =
-    '<div style="display:flex;align-items:center">' +
+    '<div style="display:flex;align-items:center" id="mobProfile">' +
       '<div class="mob-av" id="mobAv">?</div>' +
       '<span class="mob-hello" id="mobHello">Olá!</span>' +
     '</div>' +
@@ -5205,6 +5411,10 @@ try{ if(typeof RICH!=='undefined'){
         '</svg>' +
         '<span id="mobStreak">0</span>' +
       '</div>' +
+      '<span class="mob-trophy" title="Conquistas">' +
+        '<svg viewBox="0 0 24 24" stroke="' + INK2 + '" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + IC.trophy + '</svg>' +
+      '</span>' +
+      '<img class="mob-mascote" id="mobMascote" src="img/mascote.png" alt="" title="Sua jornada">' +
       '<button class="mob-icbtn" id="mobCfg" title="Ajustes">' +
         '<svg viewBox="0 0 24 24" width="21" height="21" stroke="' + INK2 + '" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + IC.gear + '</svg>' +
       '</button>' +
@@ -5230,41 +5440,76 @@ try{ if(typeof RICH!=='undefined'){
     var xp = s.hist ? (s.hist[todayKey()]||0) : 0;
     var goal = s.goal || 20;
     var xpPct = Math.min(Math.round((xp/goal)*100), 100);
-    var langs = sks.filter(function(sk){ return sk.lang; });
+    var zero = xp <= 0, done = xp >= goal;
+    var metaCol = done ? ORANGE : zero ? ICE : ORANGE;
+    var metaIcon = (zero ? '❄️' : '🔥');
+    var metaCls = zero ? ' is-ice' : done ? ' is-fire' : '';
+    var metaHint = done ? 'Meta concluída! 🔥' : zero ? 'Complete uma lição para acender o seu dia' : 'Continue para manter o fogo aceso';
 
     var h = '<div class="mv-pad">';
-    h += '<div class="mv-daily">' +
-      '<div class="mv-daily-lbl">Meta diária</div>' +
-      '<div class="mv-daily-num">' + xp + '<span class="mv-daily-of"> / ' + goal + ' XP</span></div>' +
-      '<div class="mv-track"><div class="mv-fill" style="width:' + xpPct + '%;background:' + ORANGE + '"></div></div>' +
+
+    // Banner de onboarding (Jornada)
+    h += '<button class="mv-banner" onclick="__msh.openJornada()">' +
+      '<span class="mv-banner-ic">🚀</span>' +
+      '<span class="mv-banner-tx"><b>Personalize sua jornada</b><small>Escolha o curso e defina sua meta</small></span>' +
+      '<span class="mv-banner-ar">›</span>' +
+    '</button>';
+
+    // Meta diária (congelada em 0 → fogo ao concluir)
+    h += '<div class="mv-daily' + metaCls + '">' +
+      '<div class="mv-row">' +
+        '<span class="mv-daily-lbl">Meta diária ' + metaIcon + '</span>' +
+        '<button class="mv-link" onclick="__msh.toggleObj(this)">ver objetivos ▾</button>' +
+      '</div>' +
+      '<div class="mv-daily-num" style="' + (zero?'color:#9fcbef':'') + '">' + xp + '<span class="mv-daily-of"> / ' + goal + ' XP</span></div>' +
+      '<div class="mv-track"><div class="mv-fill" style="width:' + xpPct + '%;background:' + metaCol + '"></div></div>' +
+      '<div class="mv-daily-hint">' + metaHint + '</div>' +
+      '<div class="mv-obj" style="display:none">' +
+        '<div class="mv-obj-row"><span class="mv-obj-ic">📘</span><div><span><b>Faça uma aula</b> → +10 XP</span><small>já garante seu fogo do dia 🔥</small></div></div>' +
+        '<div class="mv-obj-row"><span class="mv-obj-ic">⚡</span><div><span><b>Modo prático</b> → +10 XP</span><small>completa os 20 XP da meta</small></div></div>' +
+      '</div>' +
     '</div>';
 
-    if (langs.length) {
-      var pri = langs[0];
-      var idx = sks.indexOf(pri);
-      var pct = Math.round(skillPct(pri) * 100);
-      h += '<div class="mv-h2">Continuar agora</div>';
-      h += '<div class="mv-card">' +
-        '<div class="mv-cname">' + esc(pri.name) + '</div>' +
-        '<div class="mv-csub">Prioridade ' + esc(pri.priority) + ' · ' + pct + '%</div>' +
-        '<div class="mv-track"><div class="mv-fill" style="width:' + pct + '%"></div></div>' +
-        '<button class="mv-cta" onclick="__msh.goEstudar(' + idx + ')">' +
-          'Continuar' +
-          '<svg viewBox="0 0 24 24" width="18" height="18" stroke="#fff" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + IC.arrow + '</svg>' +
-        '</button>' +
+    // Continue de onde parou / Comece a estudar
+    var best = bestCourse(sks);
+    if (best) {
+      var bi = sks.indexOf(best), bc = computeOf(best), bp = Math.round((bc?bc.pct:0)*100);
+      var started = bp > 0, bt = theme(best.name);
+      h += '<div class="mv-h2">' + (started ? 'Continue de onde parou' : 'Comece a estudar') + '</div>';
+      h += '<div class="mv-card mv-themed">' + stripeHTML(bt) +
+        '<div class="mv-card-in">' +
+          '<div class="mv-row">' +
+            '<span class="mv-cname2" style="font-size:18px">' + flagChip(best.name) + ' ' + esc(best.name) + '</span>' +
+            '<span class="mv-badge">' + esc(cefr(bc?bc.cl:1)) + (started?' · '+bp+'%':'') + '</span>' +
+          '</div>' +
+          '<div class="mv-csub">' + (started ? 'Continue de onde parou' : 'Sua primeira lição te espera') + '</div>' +
+          '<div class="mv-track"><div class="mv-fill" style="width:' + bp + '%;background:' + bt.bar + '"></div></div>' +
+          '<div class="mv-btns">' +
+            '<button class="mv-cta mv-cta-fire" onclick="__msh.goEstudar(' + bi + ')">' + (started?'Continuar':'Começar') + ' →</button>' +
+            '<button class="mv-cta2" onclick="__msh.goEstudar(' + bi + ')">Trocar</button>' +
+          '</div>' +
+        '</div>' +
       '</div>';
     }
 
+    // Todos os cursos
     h += '<div class="mv-h2">Todos os cursos</div>';
     sks.slice(0, 12).forEach(function(sk) {
-      var pct = Math.round(skillPct(sk) * 100);
-      var idx = sks.indexOf(sk);
-      h += '<div class="mv-card" style="padding:12px 14px;cursor:pointer" onclick="__msh.goEstudar(' + idx + ')">' +
-        '<div class="mv-row">' +
-          '<span class="mv-cname" style="font-size:15px">' + esc(sk.name) + '</span>' +
-          '<span class="mv-badge">' + esc(sk.priority) + '</span>' +
+      var idx = sks.indexOf(sk), c = computeOf(sk), p = Math.round((c?c.pct:0)*100);
+      var started = p > 0, t = theme(sk.name);
+      h += '<div class="mv-ccard">' + stripeHTML(t) +
+        '<div class="mv-card-in">' +
+          '<div class="mv-row">' +
+            '<span class="mv-cname2">' + flagChip(sk.name) + ' ' + esc(sk.name) + ' <span class="mv-badge">' + esc(cefr(c?c.cl:1)) + '</span></span>' +
+            '<span class="mv-pct">' + p + '%</span>' +
+          '</div>' +
+          '<div class="mv-track" style="margin-top:8px"><div class="mv-fill" style="width:' + p + '%;background:' + t.bar + '"></div></div>' +
+          '<div class="mv-btns" style="margin-top:11px">' +
+            (started
+              ? '<button class="mv-cta" style="flex:1" onclick="__msh.goEstudar(' + idx + ')">Continuar →</button><button class="mv-iconbtn" title="Ajustar meta" onclick="__msh.definirMeta(' + idx + ')">⚙</button>'
+              : '<button class="mv-cta3" onclick="__msh.definirMeta(' + idx + ')">Definir meta</button>') +
+          '</div>' +
         '</div>' +
-        '<div class="mv-track" style="margin-top:8px"><div class="mv-fill" style="width:' + pct + '%"></div></div>' +
       '</div>';
     });
     h += '</div>';
@@ -5373,6 +5618,24 @@ try{ if(typeof RICH!=='undefined'){
       arcSection('Frases', 'phrases', sk);
   }
 
+  // ── Jornada (Em breve) ─────────────────────────────────────────────────────
+  var jornadaEl = document.createElement('div');
+  jornadaEl.id = 'mobileJornada';
+  function jstep(n, txt) { return '<div class="mv-jstep"><b>' + n + '</b><span>' + txt + '</span></div>'; }
+  function renderJornada() {
+    jornadaEl.innerHTML = '<div class="mv-pad">' +
+      '<div class="mv-jhead"><span class="mv-jic">🧭</span><span class="mv-h2" style="margin:0">Jornada</span><span class="mv-soon">Em breve</span></div>' +
+      '<p class="mv-jsub">Escolha um cargo-alvo e montamos sua jornada a partir de vagas reais.</p>' +
+      '<div>' +
+        jstep(1, 'Defina o cargo (ex.: Analista de Dados Jr)') +
+        jstep(2, 'Vagas reais definem o nível de cada skill') +
+        jstep(3, 'Jornada automática, priorizando o mais crítico') +
+        jstep(4, 'Previsão de quando estará pronto pra se candidatar') +
+      '</div>' +
+      '<button class="mv-cta3" style="margin-top:16px;flex:none;width:100%" onclick="__msh.backHome()">Voltar</button>' +
+    '</div>';
+  }
+
   // ── Public interface ──────────────────────────────────────────────────────
   window.__msh = {
     pickCourse: function(v) { renderHub(parseInt(v, 10) || 0); },
@@ -5387,6 +5650,17 @@ try{ if(typeof RICH!=='undefined'){
     },
     theory: function() { showNative(); call('openDetail', [curIdx]); },
     goEstudar: function(i) { setActive(1); showEstudar(i); },
+    // "Definir meta"/"Ajustar": abre o detalhe (ritmo h/dia → previsão de data)
+    definirMeta: function(i) { setActive(1); showNative(); call('openDetail', [i]); },
+    toggleObj: function(btn) {
+      var box = btn.closest('.mv-daily').querySelector('.mv-obj');
+      if (!box) return;
+      var open = box.style.display !== 'none';
+      box.style.display = open ? 'none' : 'block';
+      btn.innerHTML = open ? 'ver objetivos ▾' : 'ocultar objetivos ▴';
+    },
+    openJornada: function() { showJornada(); },
+    backHome: function() { setActive(0); showHome(); },
   };
 
   // abre o painel de ajustes COMPLETO do site (nome, projeto, personagem, tema, sair)
@@ -5396,9 +5670,10 @@ try{ if(typeof RICH!=='undefined'){
   }
 
   // ── View management ───────────────────────────────────────────────────────
-  function showNative()  { homeEl.style.display='none'; estudarEl.style.display='none'; }
-  function showHome()    { renderHome();  homeEl.style.display='block'; estudarEl.style.display='none'; }
-  function showEstudar(idx) { renderHub(idx); estudarEl.style.display='block'; homeEl.style.display='none'; }
+  function showNative()  { homeEl.style.display='none'; estudarEl.style.display='none'; jornadaEl.style.display='none'; }
+  function showHome()    { renderHome();  homeEl.style.display='block'; estudarEl.style.display='none'; jornadaEl.style.display='none'; }
+  function showEstudar(idx) { renderHub(idx); estudarEl.style.display='block'; homeEl.style.display='none'; jornadaEl.style.display='none'; }
+  function showJornada() { renderJornada(); jornadaEl.style.display='block'; homeEl.style.display='none'; estudarEl.style.display='none'; }
 
   // ── Bottom nav ────────────────────────────────────────────────────────────
   var TABS = [
@@ -5441,6 +5716,7 @@ try{ if(typeof RICH!=='undefined'){
       nav.style.display = 'none';
       homeEl.style.display = 'none';
       estudarEl.style.display = 'none';
+      jornadaEl.style.display = 'none';
       lastActive = false;
       return;
     }
@@ -5463,11 +5739,17 @@ try{ if(typeof RICH!=='undefined'){
     document.body.appendChild(topBar);
     document.body.appendChild(homeEl);
     document.body.appendChild(estudarEl);
+    document.body.appendChild(jornadaEl);
     document.body.appendChild(nav);
     setActive(0);
 
     var cfg = document.getElementById('mobCfg');
     if (cfg) cfg.onclick = function(){ showNative(); openSettings(); };
+    // Avatar/nome e mascote → Jornada
+    var prof = document.getElementById('mobProfile');
+    if (prof) prof.onclick = function(){ showJornada(); };
+    var masc = document.getElementById('mobMascote');
+    if (masc) masc.onclick = function(){ showJornada(); };
 
     window.addEventListener('resize', vis);
     setInterval(vis, 800);
