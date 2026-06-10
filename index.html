@@ -4900,20 +4900,33 @@ try{ if(typeof RICH!=='undefined'){
     try { var u = new SpeechSynthesisUtterance(text); u.lang = lang || "it-IT"; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) {}
   }
 
-  function audioEl() { if (!_audioEl) { _audioEl = new Audio(); _audioEl.preload = "auto"; } return _audioEl; }
+  function audioEl() {
+    if (!_audioEl) {
+      _audioEl = new Audio(); _audioEl.preload = "auto";
+      // iOS: quando o áudio termina, sai do estado "ended" imediatamente.
+      // O iOS revoga a ativação do elemento quando ele fica em ended — o próximo
+      // play() sem gesto direto falha. Resetar para SILENCE previne isso.
+      _audioEl.addEventListener("ended", function () {
+        D("ended -> resetando para SILENCE");
+        try { _audioEl.src = SILENCE; _audioEl.load(); } catch (e) {}
+      });
+    }
+    return _audioEl;
+  }
 
-  // Desbloqueio do áudio no iOS: na 1a interação tentamos um play no próprio player
-  // (sem src -> não toca nada), só para a página ganhar "user activation".
+  // Desbloqueio do áudio no iOS: em CADA interação re-ativa o player com SILENCE.
+  // Sem o guard de "_unlocked" porque o iOS revoga a ativação após cada ended.
   function unlock() {
-    if (_unlocked) return;
+    var a = audioEl();
+    if (!a.paused && !a.ended) return; // não interromper áudio que está tocando
+    D("unlock (gesto)");
     _unlocked = true;
-    D("unlock (1o gesto)");
     try {
-      var a = audioEl(); a.muted = true;
+      a.muted = true; a.src = SILENCE;
       var p = a.play();
       if (p && p.then) p.then(function () { try { a.pause(); a.currentTime = 0; } catch (e) {} a.muted = false; }).catch(function () { a.muted = false; });
       else a.muted = false;
-    } catch (e) {}
+    } catch (e) { a.muted = false; }
   }
   ["touchend", "mousedown", "keydown"].forEach(function (ev) {
     document.addEventListener(ev, unlock, { passive: true });
@@ -4930,10 +4943,15 @@ try{ if(typeof RICH!=='undefined'){
     function playSrc(src) {
       return new Promise(function (resolve, reject) {
         try {
-          a.muted = false; a.src = src;
+          a.muted = false;
+          if (a.src !== src) { a.src = src; a.load(); } // iOS: load() ao trocar src garante reset do estado ended
           var p = a.play();
-          if (p && p.then) p.then(resolve).catch(reject); else resolve();
-        } catch (e) { reject(e); }
+          if (p && p.then) p.then(resolve).catch(function (e) {
+            D("play() rejeitado: " + (e && e.name) + " — ended=" + a.ended + " readyState=" + a.readyState);
+            reject(e);
+          });
+          else resolve();
+        } catch (e) { D("play() threw: " + (e && e.name)); reject(e); }
       });
     }
 
