@@ -1,6 +1,6 @@
 /* sw.js — PWA shell. Estrategia: network-first para o HTML principal (sempre fresco),
    cache-first para assets estaticos (imagens, manifesto). */
-var CACHE = 'central-2';
+var CACHE = 'central-3';
 var STATIC = ['manifest.webmanifest', 'img/mascote.png'];
 
 self.addEventListener('install', function(e){
