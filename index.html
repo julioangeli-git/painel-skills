@@ -3892,27 +3892,33 @@ function srsDoRecog(){
   if(btn)btn.classList.add('listening');
   if(res)res.innerHTML='<div style="opacity:.6;font-size:13px;margin-top:8px">🎤 Ouvindo… fale agora</div>';
   document.getElementById('pronuncBtns').innerHTML='';
-  if(_pronuncRecog){try{_pronuncRecog.stop();}catch(e){}}
+  // abort()+null garante que cada tentativa começa do zero (no iOS o stop() deixa preso)
+  if(_pronuncRecog){try{_pronuncRecog.abort();}catch(e){} _pronuncRecog=null;}
   var recog=new SRC();
-  recog.lang=srsTTSLang();recog.interimResults=false;recog.maxAlternatives=2;
+  recog.lang=srsTTSLang(); recog.interimResults=true; recog.maxAlternatives=3; recog.continuous=false;
   _pronuncRecog=recog;
-  recog.onresult=function(e){
+  var done=false, lastSaid='', silenceT=null, hardT=null;
+  function clearTimers(){ if(silenceT)clearTimeout(silenceT); if(hardT)clearTimeout(hardT); silenceT=hardT=null; }
+  function finalize(said){
+    if(done) return; done=true; clearTimers();
+    try{ recog.abort(); }catch(e){} _pronuncRecog=null;
+    if(btn)btn.classList.remove('listening');
+    if(!said){
+      if(res)res.innerHTML='<div style="color:#c0212e;font-size:12px;margin-top:8px">'+(srsIsIOS()?'Não captei sua voz. Toque no 🎤 e fale logo em seguida.':'Nenhuma fala detectada — tente de novo.')+'</div>';
+      document.getElementById('pronuncBtns').innerHTML='<button class="btn" onclick="srsMicStart()">🎤 Tentar novamente</button><button class="btn" onclick="pronuncNext()">Pular →</button>';
+      return;
+    }
     var c=_pronuncQueue[_pronuncIdx];
-    var alts=[];for(var i=0;i<e.results[0].length;i++)alts.push(e.results[0][i].transcript);
     var cf2=typeof srsApplyPlaceholders==="function"?srsApplyPlaceholders(c.f):c.f;
-    var scores=alts.map(function(s){return pronuncScore(s,cf2);});
-    var score=Math.max.apply(null,scores);
-    var bestAlt=alts[scores.indexOf(score)];
+    var score=pronuncScore(said,cf2);
     if(!state.pronunc)state.pronunc={};
-if(!state.leitura)state.leitura={};
     if(score>pronuncBest(c.key))state.pronunc[c.key]=score;
     save();
-    if(btn)btn.classList.remove('listening');_pronuncRecog=null;
     var col=score>=PRONUNC_THRESHOLD?'#4f7a3a':score>=50?'#e8a020':'#c0212e';
     var emj=score>=PRONUNC_THRESHOLD?'✓':score>=50?'⚡':'✗';
     var msg=score>=PRONUNC_THRESHOLD?'Ótimo!':score>=50?'Quase lá!':'Tente novamente';
     res.innerHTML='<div style="margin-top:10px;text-align:center">'
-      +'<div style="font-size:13px;color:#666;margin-bottom:4px">Você disse: <i>&ldquo;'+srsEsc(bestAlt)+'&rdquo;</i></div>'
+      +'<div style="font-size:13px;color:#666;margin-bottom:4px">Você disse: <i>&ldquo;'+srsEsc(said)+'&rdquo;</i></div>'
       +'<div style="font-size:13px;color:#444;margin-bottom:8px">Esperado: <b>'+srsEsc(c.f)+'</b></div>'
       +'<div style="font-size:36px;font-weight:800;color:'+col+'">'+score+'%</div>'
       +'<div style="font-size:14px;color:'+col+'">'+emj+' '+msg+'</div>'
@@ -3924,17 +3930,30 @@ if(!state.leitura)state.leitura={};
       var pron=typeof srsPronFor==='function'?srsPronFor(c.f,_pronuncId):'';
       srsSpeakKaraoke(c.f,pron);
     },700);
+  }
+  recog.onresult=function(e){
+    for(var i=e.resultIndex;i<e.results.length;i++){
+      var r=e.results[i], t=r[0]?r[0].transcript:'';
+      if(r.isFinal){ finalize(t); return; }
+      if(t) lastSaid=t;
+    }
+    // parou de falar? força o fim após ~1,5s sem novo trecho (iOS não dispara isFinal)
+    if(silenceT)clearTimeout(silenceT);
+    silenceT=setTimeout(function(){ try{recog.stop();}catch(e){} },1500);
   };
   recog.onerror=function(e){
-    if(btn)btn.classList.remove('listening');_pronuncRecog=null;
+    if(e&&(e.error==='no-speech'||e.error==='aborted')&&lastSaid){ finalize(lastSaid); return; }
+    if(done)return; done=true; clearTimers(); _pronuncRecog=null;
+    if(btn)btn.classList.remove('listening');
     var errMsg=srsMicErrMsg(e.error);
     if(res)res.innerHTML='<div style="color:#c0212e;font-size:12px;margin-top:8px">'+errMsg+'</div>';
     document.getElementById('pronuncBtns').innerHTML=
       '<button class="btn" onclick="srsMicStart()">🎤 Tentar novamente</button>'
       +'<button class="btn" onclick="pronuncNext()">Pular →</button>';
   };
-  recog.onend=function(){if(btn)btn.classList.remove('listening');};
-  try{recog.start();}catch(e){if(res)res.innerHTML='<div style="color:#c0212e;font-size:12px">Permita o microfone.</div>';}
+  recog.onend=function(){ if(btn)btn.classList.remove('listening'); if(!done) finalize(lastSaid); };
+  try{ recog.start(); hardT=setTimeout(function(){ try{recog.stop();}catch(e){} },8000); }
+  catch(e){ done=true; if(btn)btn.classList.remove('listening'); if(res)res.innerHTML='<div style="color:#c0212e;font-size:12px">Permita o microfone.</div>'; }
 }
 
 /* ===== LEITURA (nova Pronúncia): mostra palavra IT/EN, usuario le em voz alta ===== */
@@ -4026,27 +4045,33 @@ function leituraDoRecog(){
   if(btn)btn.classList.add('listening');
   if(res)res.innerHTML='<div style="opacity:.6;font-size:13px;margin-top:8px">🎤 Ouvindo… fale agora</div>';
   document.getElementById('leituraBtns').innerHTML='';
-  if(_leituraRecog){try{_leituraRecog.stop();}catch(e){}}
+  if(_leituraRecog){try{_leituraRecog.abort();}catch(e){} _leituraRecog=null;}
   var recog=new SRC();
   recog.lang=typeof srsTTSLang==='function'?srsTTSLang():'it-IT';
-  recog.interimResults=false;recog.maxAlternatives=2;
+  recog.interimResults=true; recog.maxAlternatives=3; recog.continuous=false;
   _leituraRecog=recog;
-  recog.onresult=function(e){
+  var done=false, lastSaid='', silenceT=null, hardT=null;
+  function clearTimers(){ if(silenceT)clearTimeout(silenceT); if(hardT)clearTimeout(hardT); silenceT=hardT=null; }
+  function finalize(said){
+    if(done) return; done=true; clearTimers();
+    try{ recog.abort(); }catch(e){} _leituraRecog=null;
+    if(btn)btn.classList.remove('listening');
     var c=_leituraQueue[_leituraIdx];
-    var alts=[];for(var i=0;i<e.results[0].length;i++)alts.push(e.results[0][i].transcript);
     var cf=typeof srsApplyPlaceholders==='function'?srsApplyPlaceholders(c.f):c.f;
     var cb=typeof srsApplyPlaceholders==='function'?srsApplyPlaceholders(c.b):c.b;
-    var scores=alts.map(function(s){return pronuncScore(s,cf);});
-    var score=Math.max.apply(null,scores);
-    var bestAlt=alts[scores.indexOf(score)];
+    if(!said){
+      if(res)res.innerHTML='<div style="color:#c0212e;font-size:12px;margin-top:8px">'+(srsIsIOS()?'Não captei sua voz. Toque no 🎤 e fale logo em seguida.':'Nenhuma fala detectada — tente de novo.')+'</div>';
+      document.getElementById('leituraBtns').innerHTML='<button class="btn" onclick="leituraMicStart()">🎤 Tentar novamente</button><button class="btn" onclick="leituraNext()">Pular</button>';
+      return;
+    }
+    var score=pronuncScore(said,cf);
     if(!state.leitura)state.leitura={};
     if(score>leituraBest(c.key))state.leitura[c.key]=score;
     save();
-    if(btn)btn.classList.remove('listening');_leituraRecog=null;
     var col=score>=LEITURA_THRESHOLD?'#4f7a3a':score>=50?'#e8a020':'#c0212e';
     var emj=score>=LEITURA_THRESHOLD?'OK':score>=50?'Quase':'Tente de novo';
     res.innerHTML='<div style="margin-top:10px;text-align:center">'
-      +'<div style="font-size:13px;color:#666;margin-bottom:4px">Voce disse: <i>&ldquo;'+srsEsc(bestAlt)+'&rdquo;</i></div>'
+      +'<div style="font-size:13px;color:#666;margin-bottom:4px">Voce disse: <i>&ldquo;'+srsEsc(said)+'&rdquo;</i></div>'
       +'<div style="font-size:13px;color:#444;margin-bottom:4px">Esperado: <b>'+srsEsc(cf)+'</b></div>'
       +'<div style="font-size:14px;color:#444;margin-bottom:8px">Traducao: '+srsEsc(cb)+'</div>'
       +'<div style="font-size:36px;font-weight:800;color:'+col+'">'+score+'%</div>'
@@ -4059,17 +4084,29 @@ function leituraDoRecog(){
       var pron=typeof srsPronFor==='function'?srsPronFor(cf,_leituraId):'';
       srsSpeakKaraoke(cf,pron);
     },700);
+  }
+  recog.onresult=function(e){
+    for(var i=e.resultIndex;i<e.results.length;i++){
+      var r=e.results[i], t=r[0]?r[0].transcript:'';
+      if(r.isFinal){ finalize(t); return; }
+      if(t) lastSaid=t;
+    }
+    if(silenceT)clearTimeout(silenceT);
+    silenceT=setTimeout(function(){ try{recog.stop();}catch(e){} },1500);
   };
   recog.onerror=function(e){
-    if(btn)btn.classList.remove('listening');_leituraRecog=null;
+    if(e&&(e.error==='no-speech'||e.error==='aborted')&&lastSaid){ finalize(lastSaid); return; }
+    if(done)return; done=true; clearTimers(); _leituraRecog=null;
+    if(btn)btn.classList.remove('listening');
     var errMsg=srsMicErrMsg(e.error);
     if(res)res.innerHTML='<div style="color:#c0212e;font-size:12px;margin-top:8px">'+errMsg+'</div>';
     document.getElementById('leituraBtns').innerHTML=
       '<button class="btn" onclick="leituraMicStart()">🎤 Tentar novamente</button>'
       +'<button class="btn" onclick="leituraNext()">Pular</button>';
   };
-  recog.onend=function(){if(btn)btn.classList.remove('listening');};
-  try{recog.start();}catch(e){if(res)res.innerHTML='<div style="color:#c0212e;font-size:12px">Permita o microfone.</div>';}
+  recog.onend=function(){ if(btn)btn.classList.remove('listening'); if(!done) finalize(lastSaid); };
+  try{ recog.start(); hardT=setTimeout(function(){ try{recog.stop();}catch(e){} },8000); }
+  catch(e){ done=true; if(btn)btn.classList.remove('listening'); if(res)res.innerHTML='<div style="color:#c0212e;font-size:12px">Permita o microfone.</div>'; }
 }
 
 function leituraNext(){
@@ -5020,127 +5057,102 @@ try{ if(typeof RICH!=='undefined'){
     try { var u = new SpeechSynthesisUtterance(text); u.lang = lang || "it-IT"; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) {}
   }
 
-  function audioEl() {
-    if (!_audioEl) {
-      _audioEl = new Audio(); _audioEl.preload = "auto";
-      // iOS: quando o áudio termina, sai do estado "ended" imediatamente.
-      // O iOS revoga a ativação do elemento quando ele fica em ended — o próximo
-      // play() sem gesto direto falha. Resetar para SILENCE previne isso.
-      _audioEl.addEventListener("ended", function () {
-        D("ended -> resetando para SILENCE");
-        try { _audioEl.src = SILENCE; _audioEl.load(); } catch (e) {}
-      });
-    }
-    return _audioEl;
-  }
+  // ── Web Audio API ───────────────────────────────────────────────────────────
+  // Abordagem robusta no iOS: desbloqueia o AudioContext UMA vez (no 1º gesto) e,
+  // a partir daí, toca buffers decodificados quantas vezes quiser SEM precisar de
+  // um novo gesto a cada som. Substitui o <audio>+SILENCE (que só tocava o 1º som).
+  var _actx = null, _waUnlocked = false, _seqWA = 0, _curSrc = null;
+  var _bufCache = {};   // chave md5 -> AudioBuffer já decodificado
+  var _abCache  = {};   // url       -> ArrayBuffer já baixado
+  var _ltext = "", _lat = 0;
 
-  // Desbloqueio do áudio no iOS: em CADA interação re-ativa o player com SILENCE.
-  // Sem o guard de "_unlocked" porque o iOS revoga a ativação após cada ended.
-  function unlock() {
-    var a = audioEl();
-    if (!a.paused && !a.ended) return; // não interromper áudio que está tocando
-    D("unlock (gesto)");
-    _unlocked = true;
-    try {
-      a.muted = true; a.src = SILENCE;
-      var p = a.play();
-      if (p && p.then) p.then(function () { try { a.pause(); a.currentTime = 0; } catch (e) {} a.muted = false; }).catch(function () { a.muted = false; });
-      else a.muted = false;
-    } catch (e) { a.muted = false; }
+  function actx() {
+    if (!_actx) { var AC = window.AudioContext || window.webkitAudioContext; if (AC) { try { _actx = new AC(); } catch (e) {} } }
+    return _actx;
   }
-  ["touchend", "mousedown", "keydown"].forEach(function (ev) {
+  function unlock() {
+    var c = actx(); if (!c) return;
+    if (c.state === "suspended") { try { c.resume(); } catch (e) {} }
+    if (_waUnlocked) return;
+    try {
+      var b = c.createBuffer(1, 1, 22050), s = c.createBufferSource();
+      s.buffer = b; s.connect(c.destination); s.start(0);
+      _waUnlocked = true; D("unlock (gesto) ctx=" + c.state);
+    } catch (e) {}
+  }
+  ["touchend", "mousedown", "keydown", "click"].forEach(function (ev) {
     document.addEventListener(ev, unlock, { passive: true });
   });
 
-  // Toca uma URL no player. onStart(durSeg) dispara quando o som REALMENTE começa.
-  // Para URLs remotas (Supabase), baixamos como BLOB e tocamos de um object URL —
-  // o iOS recusa o mp3 remoto direto (NotSupportedError/erro 4), mas aceita blob.
-  function playUrl(url, onStart) {
-    var a = audioEl();
-    a.onplaying = function () { a.onplaying = null; D("onplaying dur=" + (a.duration || 0)); if (onStart) onStart(a.duration || 0); };
-    a.onerror = function () { D("audio onerror (" + (a.error && a.error.code) + ")"); };
+  function stopCur() { if (_curSrc) { try { _curSrc.onended = null; _curSrc.stop(0); } catch (e) {} _curSrc = null; } }
 
-    function playSrc(src) {
-      return new Promise(function (resolve, reject) {
-        try {
-          a.muted = false;
-          if (a.src !== src) { a.src = src; a.load(); } // iOS: load() ao trocar src garante reset do estado ended
-          var p = a.play();
-          if (p && p.then) p.then(resolve).catch(function (e) {
-            D("play() rejeitado: " + (e && e.name) + " — ended=" + a.ended + " readyState=" + a.readyState);
-            reject(e);
-          });
-          else resolve();
-        } catch (e) { D("play() threw: " + (e && e.name)); reject(e); }
-      });
-    }
+  function playBuffer(buf, onStart) {
+    var c = actx(); if (!c || !buf) return false;
+    if (c.state === "suspended") { try { c.resume(); } catch (e) {} }
+    stopCur();
+    var s = c.createBufferSource(); s.buffer = buf; s.connect(c.destination);
+    _curSrc = s; s.onended = function () { if (_curSrc === s) _curSrc = null; };
+    try { s.start(0); } catch (e) { D("start threw " + (e && e.name)); return false; }
+    if (onStart) onStart(buf.duration || 0);
+    D("▶ tocando (" + (Math.round((buf.duration || 0) * 100) / 100) + "s)");
+    return true;
+  }
 
-    // local / blob -> toca direto
-    if (!/^https?:/i.test(url)) return playSrc(url);
-    if (_blobCache[url]) { D("blob (cache)"); return playSrc(_blobCache[url]); }
-
-    // remoto -> baixa como blob primeiro
-    return fetch(url).then(function (r) {
-      D("fetch " + r.status + " ct=" + (r.headers.get("content-type") || "?") + " ar=" + (r.headers.get("accept-ranges") || "?"));
-      if (!r.ok) throw new Error("HTTP " + r.status);
-      return r.blob();
-    }).then(function (blob) {
-      D("blob " + blob.size + "b type=" + (blob.type || "?"));
-      var b = blob.type ? blob : new Blob([blob], { type: "audio/mpeg" });
-      var burl = URL.createObjectURL(b);
-      _blobCache[url] = burl;
-      return playSrc(burl);
-    }).catch(function (e) {
-      D("fetch/blob FALHOU (" + ((e && e.message) || e) + ")");
-      throw e;
+  function fetchAB(url) {
+    if (_abCache[url]) return Promise.resolve(_abCache[url]);
+    return fetch(url).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.arrayBuffer(); })
+      .then(function (ab) { _abCache[url] = ab; return ab; });
+  }
+  function decode(ab) {
+    var c = actx(); if (!c) return Promise.reject("no ctx");
+    // decodeAudioData "consome" o ArrayBuffer; passa uma cópia p/ manter o cache reaproveitável.
+    return new Promise(function (res, rej) {
+      try { var p = c.decodeAudioData(ab.slice(0), res, rej); if (p && p.then) p.then(res, rej); }
+      catch (e) { rej(e); }
+    });
+  }
+  // Resolve o AudioBuffer da chave: cache -> Supabase (signed URL) -> pasta local.
+  function bufferFor(k) {
+    if (_bufCache[k]) return Promise.resolve(_bufCache[k]);
+    return signed(k).then(function (url) {
+      var srcs = []; if (url) srcs.push(url); srcs.push("audio/" + k);
+      return (function tryNext(i) {
+        if (i >= srcs.length) return Promise.reject(new Error("sem fonte"));
+        return fetchAB(srcs[i]).then(decode).then(function (buf) { _bufCache[k] = buf; return buf; })
+          .catch(function (e) { D("fonte #" + i + " falhou (" + ((e && e.message) || e) + ")"); return tryNext(i + 1); });
+      })(0);
     });
   }
 
-  // API pública: toca o mp3 (Supabase -> pasta local). SEM voz robótica de fallback,
-  // que se sobrepunha ao mp3 e causava o áudio "duplicado".
+  // API pública: toca o mp3 (Supabase -> pasta local) via Web Audio; fallback = voz do navegador.
   window.squSpeak = function (text, lang, onStart) {
     if (!text) return;
     unlock();
     var now = Date.now();
-    if (text === _lastText && (now - _lastAt) < 200) { D('dedupe ignorou "' + text + '"'); return; } // dedupe (autoplay + clique)
-    _lastText = text; _lastAt = now;
-    var mySeq = ++_seq;                 // este vira o fluxo "vigente"; os anteriores morrem
-    D('speak "' + text + '" #' + mySeq);
-    try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) {} // mata qualquer voz pendente
-    try { var a0 = audioEl(); a0.pause(); } catch (e) {}                       // para o player antes de recomeçar
-    var k = key(text);
-    signed(k).then(function (url) {
-      if (mySeq !== _seq) { D('abortado (novo speak) #' + mySeq); return; }
-      D('signed -> ' + (url ? 'URL ok' : 'NULL') + ' [' + k + ']');
-      var srcs = []; if (url) srcs.push(url);
-      srcs.push("audio/" + k); // fallback: pasta local (dev/file://)
-      (function tryNext(i) {
-        if (mySeq !== _seq) return; // outro speak assumiu -> este fluxo para
-        if (i >= srcs.length) {
-          // Último recurso: voz do navegador. Só chega aqui se NENHUM mp3 tocou,
-          // então não há risco do áudio "duplicado" de antes.
-          D('sem fonte tocavel -> fallback voz do navegador');
-          browserSpeak(text, lang || _lang());
-          if (onStart) onStart(0);
-          return;
-        }
-        D('tentando fonte #' + i);
-        playUrl(srcs[i], onStart).then(function () { D('play resolveu #' + i); }).catch(function (e) {
-          if (mySeq !== _seq) { D('play interrompido p/ novo speak #' + mySeq); return; }
-          D('play FALHOU #' + i + ' (' + ((e && e.name) || e) + ')'); tryNext(i + 1);
-        });
-      })(0);
+    if (text === _ltext && (now - _lat) < 200) { D('dedupe "' + text + '"'); return; } // dedupe (autoplay + clique)
+    _ltext = text; _lat = now;
+    var mySeq = ++_seqWA;
+    try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) {}
+    stopCur();
+    if (!actx()) { D("sem Web Audio -> voz do navegador"); browserSpeak(text, lang || _lang()); if (onStart) onStart(0); return; }
+    var k = key(text); D('speak "' + text + '" #' + mySeq + " [" + k + "]");
+    bufferFor(k).then(function (buf) {
+      if (mySeq !== _seqWA) { D("abortado (novo speak) #" + mySeq); return; }
+      if (!playBuffer(buf, onStart)) { browserSpeak(text, lang || _lang()); if (onStart) onStart(0); }
+    }).catch(function (e) {
+      if (mySeq !== _seqWA) return;
+      D("sem mp3 (" + ((e && e.message) || e) + ") -> voz do navegador");
+      browserSpeak(text, lang || _lang()); if (onStart) onStart(0);
     });
   };
 
   // Sobrepõe os helpers existentes para preferir o áudio de qualidade.
   var _lang = function () { try { return (typeof srsTTSLang === "function") ? srsTTSLang() : "it-IT"; } catch (e) { return "it-IT"; } };
-  window.srsSpeak = function (t) { D('srsSpeak <- toque "' + t + '"'); window.squSpeak(t, _lang()); };
+  window.srsSpeak = function (t) { D('srsSpeak "' + t + '"'); window.squSpeak(t, _lang()); };
   var _karaTimers = [];
   window.srsSpeakKaraoke = function (text, pron) {
     var sylls = pron ? String(pron).split("-") : [];
     _karaTimers.forEach(clearTimeout); _karaTimers = [];
-    // reseta as sílabas e só as acende quando o áudio começa (sincronizado com o som)
     sylls.forEach(function (s, i) { var e = document.getElementById("ks" + i); if (e) { e.style.color = "#7a8aa0"; e.style.fontWeight = "400"; } });
     window.squSpeak(text, _lang(), function (durSec) {
       if (!sylls.length) return;
