@@ -3345,7 +3345,7 @@ function srsRender(){
     ?'<div id="karaoke" style="font-size:15px;color:#7a8aa0;letter-spacing:.5px;margin-top:8px">'
       +pron.split('-').map(function(s,i){return '<span id="ks'+i+'">'+srsEsc(s)+'</span>';}).join(' ')
       +'</div>':'';
-  var img=c.img?'<img src="'+srsEsc(c.img)+'" alt="" style="max-width:120px;max-height:120px;border-radius:12px;margin-bottom:12px;object-fit:cover">':'<img src="img/mascote-hd.png" alt="" style="height:72px;margin-bottom:10px" onerror="this.style.display=\'none\'">';
+  var img=c.img?'<img src="'+srsEsc(c.img)+'" alt="" style="max-width:120px;max-height:120px;border-radius:12px;margin-bottom:12px;object-fit:cover">':'<img src="img/mascote-char.png" alt="" style="height:80px;margin-bottom:10px" onerror="this.style.display=\'none\'">';
   var _ttsLang=typeof srsTTSLang==='function'?srsTTSLang():'it-IT';
   var _frontCC=_ttsLang==='en-US'?'us':_ttsLang==='en-GB'?'gb':'it';
   var flagIT='<img src="https://flagcdn.com/w40/'+_frontCC+'.png" alt="'+_frontCC.toUpperCase()+'" style="width:28px;border-radius:3px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,.2)">';
@@ -3874,6 +3874,8 @@ function ensurePronuncView(){
     +'50%{box-shadow:0 0 0 14px rgba(192,33,46,0)}}';
   document.head.appendChild(st);
   var v=document.createElement('div');v.id='pronuncView';v.style.display='none';
+  v.style.background='#0d1520';v.style.color='#d8e6f5';
+  v.style.position='fixed';v.style.top='0';v.style.left='0';v.style.right='0';v.style.bottom='0';v.style.zIndex='500';v.style.overflowY='auto';v.style.webkitOverflowScrolling='touch';
   v.innerHTML='<div style="max-width:580px;margin:0 auto;padding:18px">'
     +'<button class="btn" id="pronuncBack">← Voltar</button>'
     +'<div id="pronuncTitle" style="margin:12px 0 4px;font-weight:700;font-size:16px"></div>'
@@ -3893,7 +3895,7 @@ function closePronunc(){
   if(typeof renderDetail==='function')renderDetail();
 }
 function openPronunc(id,deck){
-  ensurePronuncView();_pronuncId=id;
+  ensurePronuncView();if(typeof ensureExStyles==='function')ensureExStyles();_pronuncId=id;
   // Usa o filtro por deck diretamente em vez de filtro por espaço (impreciso para frases curtas)
   var cs=srsCardsForTopic(id,deck||null);
   var notDone=cs.filter(function(c){return pronuncBest(c.key)<PRONUNC_THRESHOLD;});
@@ -3932,17 +3934,19 @@ function renderPronunc(){
   var c=_pronuncQueue[_pronuncIdx];
   var best=pronuncBest(c.key);
   var lang=APP.skills[curIdx]?APP.skills[curIdx].name:'Italiano';
+  var ptWord=srsEsc(typeof srsApplyPlaceholders==="function"?srsApplyPlaceholders(c.b):c.b);
   box.innerHTML=
-    '<div style="border:2px solid #4f7a3a;border-radius:22px;padding:28px 22px;'
-    +'background:linear-gradient(135deg,#eef7ea,#d8efcf);text-align:center;min-height:200px;'
-    +'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px">'
-    +'<div style="font-size:22px">🇧🇷</div>'
-    +'<div style="font-size:30px;font-weight:800;color:#234a18">'+srsEsc(typeof srsApplyPlaceholders==="function"?srsApplyPlaceholders(c.b):c.b)+'</div>'
-    +'<div style="font-size:13px;color:#4f7a3a;opacity:.8">Como se diz em '+srsEsc(lang)+'?</div>'
-    +'<button class="mic-btn" id="micBtn" onclick="srsMicStart()" title="Clique e fale">🎤</button>'
-    +'<div style="font-size:12px;opacity:.5">Clique no microfone e fale</div>'
+    '<div style="text-align:center;margin-bottom:4px" id="pronuncMasc">'+sqMascot('neutro',76)+'</div>'
+    +'<div class="sq-prompt" style="text-align:center">Como se diz em '+srsEsc(lang)+'?</div>'
+    +'<div style="text-align:center;margin:14px 0 4px">'
+    +'<img src="https://flagcdn.com/w40/br.png" style="width:28px;border-radius:3px;margin-bottom:10px;display:inline-block">'
+    +'<div style="font-size:34px;font-weight:800;color:#d8e6f5;line-height:1.25">'+ptWord+'</div>'
+    +'</div>'
+    +'<div style="display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:18px">'
+    +'<button class="sq-mic" id="micBtn" onclick="srsMicStart()" title="toque e fale">🎤</button>'
+    +'<div style="font-size:13px;color:#8baec8">toque e fale em '+srsEsc(lang)+'</div>'
     +'<div id="pronuncResult" style="min-height:40px;width:100%"></div>'
-    +(best>0?'<div style="font-size:11px;opacity:.45">Melhor: <b style="color:'+(best>=PRONUNC_THRESHOLD?'#4f7a3a':'#e8a020')+'">'+best+'%</b></div>':'')
+    +(best>0?'<div style="font-size:11px;color:#8baec8;opacity:.7">Melhor: <b style="color:'+(best>=PRONUNC_THRESHOLD?'#5dcaa5':'#e7b483')+'">'+best+'%</b></div>':'')
     +'</div>';
   btns.innerHTML='';
 }
@@ -4015,18 +4019,19 @@ function srsDoRecog(){
     if(!state.pronunc)state.pronunc={};
     if(score>pronuncBest(c.key))state.pronunc[c.key]=score;
     save();
-    var col=score>=PRONUNC_THRESHOLD?'#4f7a3a':score>=50?'#e8a020':'#c0212e';
+    var _pm=document.getElementById('pronuncMasc');if(_pm)_pm.innerHTML=sqMascot(score>=PRONUNC_THRESHOLD?'feliz':'triste',76);
+    var col=score>=PRONUNC_THRESHOLD?'#5dcaa5':score>=50?'#e7b483':'#f1a7a3';
     var emj=score>=PRONUNC_THRESHOLD?'✓':score>=50?'⚡':'✗';
     var msg=score>=PRONUNC_THRESHOLD?'Ótimo!':score>=50?'Quase lá!':'Tente novamente';
     res.innerHTML='<div style="margin-top:10px;text-align:center">'
-      +'<div style="font-size:13px;color:#666;margin-bottom:4px">Você disse: <i>&ldquo;'+srsEsc(said)+'&rdquo;</i></div>'
-      +'<div style="font-size:13px;color:#444;margin-bottom:8px">Esperado: <b>'+srsEsc(c.f)+'</b></div>'
+      +'<div style="font-size:13px;color:#8baec8;margin-bottom:4px">Você disse: <i>&ldquo;'+srsEsc(said)+'&rdquo;</i></div>'
+      +'<div style="font-size:13px;color:#d8e6f5;margin-bottom:8px">Esperado: <b>'+srsEsc(c.f)+'</b></div>'
       +'<div style="font-size:36px;font-weight:800;color:'+col+'">'+score+'%</div>'
       +'<div style="font-size:14px;color:'+col+'">'+emj+' '+msg+'</div>'
       +'</div>';
     document.getElementById('pronuncBtns').innerHTML=
-      '<button class="btn" onclick="srsMicStart()">🎤 Tentar novamente</button>'
-      +'<button class="btn" style="background:#1c6b8c;color:#fff;border:none;font-weight:700" onclick="pronuncNext()">Próximo →</button>';
+      '<button class="sq-cta good" onclick="pronuncNext()">Próximo →</button>'
+      +'<div style="text-align:center;margin-top:10px"><button class="sq-link" onclick="srsMicStart()">🎤 tentar de novo</button></div>';
     setTimeout(function(){
       var pron=typeof srsPronFor==='function'?srsPronFor(c.f,_pronuncId):'';
       srsSpeakKaraoke(c.f,pron);
@@ -4105,13 +4110,22 @@ function ensureExStyles(){
     +'@keyframes sqpulse{0%{box-shadow:0 0 0 4px rgba(248,81,73,.32)}50%{box-shadow:0 0 0 16px rgba(248,81,73,.06)}100%{box-shadow:0 0 0 4px rgba(248,81,73,.32)}}';
   document.head.appendChild(st);
 }
-function sqBubble(text,onSpeak){
+function sqBubble(text,onSpeak,mascotState){
   return '<div class="sq-bubble-row">'
-    +'<div class="sq-masc"><img src="img/mascote-hd.png" alt="" onerror="this.onerror=null;this.src=\'img/mascote.png\'"></div>'
+    +'<div class="sq-masc">'+sqMascot(mascotState||'neutro',58)+'</div>'
     +'<div class="sq-bubble"><div class="sq-bubble-in">'
     +'<button class="sq-spk" onclick="'+onSpeak+'">🔊</button>'
     +'<span class="sq-bubble-txt" onclick="'+onSpeak+'">'+srsEsc(text)+'</span>'
     +'</div></div></div>';
+}
+// Mascote por estado: 'neutro' (escutando), 'feliz' (acerto), 'triste' (erro).
+// Arquivos esperados em img/: mascote-char.png (neutro, já existe), mascote-feliz.png, mascote-triste.png.
+function sqMascot(stateOrSize, sizeMaybe){
+  var state='neutro', size=64;
+  if(typeof stateOrSize==='number'){ size=stateOrSize; }
+  else if(stateOrSize){ state=stateOrSize; if(typeof sizeMaybe==='number')size=sizeMaybe; }
+  var f=state==='feliz'?'mascote-feliz':state==='triste'?'mascote-triste':'mascote-char';
+  return '<img src="img/'+f+'.png" alt="" style="height:'+size+'px;display:inline-block" onerror="this.onerror=null;this.src=\'img/mascote-char.png\'">';
 }
 function openLeitura(id,deck){
   ensureLeituraView();ensureExStyles();_leituraId=id;
@@ -4158,7 +4172,8 @@ function renderLeitura(){
   var cf=typeof srsApplyPlaceholders==='function'?srsApplyPlaceholders(c.f):c.f;
   var cb=typeof srsApplyPlaceholders==='function'?srsApplyPlaceholders(c.b):c.b;
   box.innerHTML=
-    '<div class="sq-prompt" style="text-align:center">Leia em voz alta em '+srsEsc(lang)+'</div>'
+    '<div style="text-align:center;margin-bottom:4px" id="leituraMasc">'+sqMascot('neutro',76)+'</div>'
+    +'<div class="sq-prompt" style="text-align:center">Leia em voz alta em '+srsEsc(lang)+'</div>'
     +'<div style="text-align:center;margin:14px 0 4px">'
     +'<img src="https://flagcdn.com/w40/'+_cc+'.png" style="width:28px;border-radius:3px;margin-bottom:10px;display:inline-block">'
     +'<div style="font-size:40px;font-weight:800;color:#d8e6f5;line-height:1.2">'+srsEsc(cf)+'</div>'
@@ -4210,6 +4225,7 @@ function leituraDoRecog(){
     if(!state.leitura)state.leitura={};
     if(score>leituraBest(c.key))state.leitura[c.key]=score;
     save();
+    var _lm=document.getElementById('leituraMasc');if(_lm)_lm.innerHTML=sqMascot(score>=LEITURA_THRESHOLD?'feliz':'triste',76);
     var col=score>=LEITURA_THRESHOLD?'#5dcaa5':score>=50?'#e7b483':'#f1a7a3';
     var emj=score>=LEITURA_THRESHOLD?'OK':score>=50?'Quase':'Tente de novo';
     res.innerHTML='<div style="margin-top:10px;text-align:center">'
@@ -4412,7 +4428,7 @@ function renderFillCard(sentence, translation, checked, isCorrect){
   }
   box.innerHTML=
     '<div class="sq-prompt">Monte a frase em '+srsEsc(lang)+'</div>'
-    +sqBubble(sentence, "srsSpeakKaraoke('"+srsJsq(sentence)+"','')")
+    +sqBubble(sentence, "srsSpeakKaraoke('"+srsJsq(sentence)+"','')", checked?(isCorrect?'feliz':'triste'):'neutro')
     +'<div class="sq-ans">'+ansHtml+'</div>'
     +'<div class="sq-pool">'+poolHtml+'</div>'
     +feedbackHtml;
@@ -4742,6 +4758,7 @@ try{ if(typeof RICH!=='undefined'){
 
   window.openAllPronunc=function(skillName, section){
     if(typeof ensurePronuncView==='function')ensurePronuncView();
+    if(typeof ensureExStyles==='function')ensureExStyles();
     var all=[];
     var _gate=section==='phrases'?'::f':'::v';
     (APP.skills||[]).forEach(function(s){
@@ -5801,9 +5818,10 @@ try{ if(typeof RICH!=='undefined'){
   // modos por seção (mesma ordem nos dois cartões). 'section' = 'vocab' | 'phrases'
   function modesFor(section) {
     return [
-      { lbl:'Revisão',   icon:'refresh', fn:function(sn){ call('openAllVocabReview',[section, sn]); } },
-      { lbl:'Pronúncia', icon:'mic',     fn:function(sn){ call('openAllLeitura',[sn, section]); } },
-      { lbl:'Preencher', icon:'pencil',  fn:function(sn){ call('openAllFill',[sn, section]); } },
+      { lbl:'Flashcards', icon:'refresh', fn:function(sn){ call('openAllVocabReview',[section, sn]); } },
+      { lbl:'Pronúncia',  icon:'mic',     fn:function(sn){ call('openAllLeitura',[sn, section]); } },
+      { lbl:'Tradução',   icon:'swap',    fn:function(sn){ call('openAllPronunc',[sn, section]); } },
+      { lbl:'Preencher',  icon:'pencil',  fn:function(sn){ call('openAllFill',[sn, section]); } },
     ];
   }
 
