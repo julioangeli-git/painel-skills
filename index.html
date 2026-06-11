@@ -1840,7 +1840,7 @@ function ensureSrsView(){
   if(document.getElementById('srsView'))return;
   var v=document.createElement('div');v.id='srsView';v.style.display='none';
   v.innerHTML='<style>'
-    +'#srsView{color:#d8e6f5;background:#0d1520;min-height:100vh}'
+    +'#srsView{color:#d8e6f5;background:#0d1520;position:fixed;top:0;left:0;right:0;bottom:0;z-index:500;overflow-y:auto;-webkit-overflow-scrolling:touch}'
     +'#srsView .flip{perspective:1200px;cursor:pointer}'
     +'#srsView .flip-in{position:relative;transition:transform .55s cubic-bezier(.4,.2,.2,1);transform-style:preserve-3d;min-height:260px}'
     +'#srsView .flip.flipped .flip-in{transform:rotateY(180deg)}'
@@ -3345,7 +3345,7 @@ function srsRender(){
     ?'<div id="karaoke" style="font-size:15px;color:#7a8aa0;letter-spacing:.5px;margin-top:8px">'
       +pron.split('-').map(function(s,i){return '<span id="ks'+i+'">'+srsEsc(s)+'</span>';}).join(' ')
       +'</div>':'';
-  var img=c.img?'<img src="'+srsEsc(c.img)+'" alt="" style="max-width:120px;max-height:120px;border-radius:12px;margin-bottom:12px;object-fit:cover">':'<img src="img/mascote.png" alt="" style="height:64px;margin-bottom:10px;opacity:.92" onerror="this.style.display=\'none\'">';
+  var img=c.img?'<img src="'+srsEsc(c.img)+'" alt="" style="max-width:120px;max-height:120px;border-radius:12px;margin-bottom:12px;object-fit:cover">':'<img src="img/mascote-hd.png" alt="" style="height:72px;margin-bottom:10px" onerror="this.style.display=\'none\'">';
   var _ttsLang=typeof srsTTSLang==='function'?srsTTSLang():'it-IT';
   var _frontCC=_ttsLang==='en-US'?'us':_ttsLang==='en-GB'?'gb':'it';
   var flagIT='<img src="https://flagcdn.com/w40/'+_frontCC+'.png" alt="'+_frontCC.toUpperCase()+'" style="width:28px;border-radius:3px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,.2)">';
@@ -4064,6 +4064,7 @@ function ensureLeituraView(){
   if(document.getElementById('leituraView'))return;
   var v=document.createElement('div');v.id='leituraView';v.style.display='none';
   v.style.background='#0d1520';v.style.minHeight='100vh';v.style.color='#d8e6f5';
+  v.style.position='fixed';v.style.top='0';v.style.left='0';v.style.right='0';v.style.bottom='0';v.style.zIndex='500';v.style.overflowY='auto';v.style.webkitOverflowScrolling='touch';
   v.innerHTML='<div style="max-width:520px;margin:0 auto;padding:18px 16px">'
     +'<button class="btn" onclick="closeLeitura()" style="margin-bottom:12px">Voltar</button>'
     +'<div style="font-weight:700;font-size:15px;margin-bottom:4px" id="leituraTitle">Pronuncia</div>'
@@ -4106,7 +4107,7 @@ function ensureExStyles(){
 }
 function sqBubble(text,onSpeak){
   return '<div class="sq-bubble-row">'
-    +'<div class="sq-masc"><img src="img/mascote.png" alt="" onerror="this.parentNode.innerHTML=\'🐻\';this.parentNode.style.fontSize=\'30px\'"></div>'
+    +'<div class="sq-masc"><img src="img/mascote-hd.png" alt="" onerror="this.onerror=null;this.src=\'img/mascote.png\'"></div>'
     +'<div class="sq-bubble"><div class="sq-bubble-in">'
     +'<button class="sq-spk" onclick="'+onSpeak+'">🔊</button>'
     +'<span class="sq-bubble-txt" onclick="'+onSpeak+'">'+srsEsc(text)+'</span>'
@@ -4308,6 +4309,7 @@ function ensureFillView(){
   document.head.appendChild(st);
   var v=document.createElement('div');v.id='fillView';v.style.display='none';
   v.style.background='#0d1520';v.style.minHeight='100vh';v.style.color='#d8e6f5';
+  v.style.position='fixed';v.style.top='0';v.style.left='0';v.style.right='0';v.style.bottom='0';v.style.zIndex='500';v.style.overflowY='auto';v.style.webkitOverflowScrolling='touch';
   v.innerHTML='<div style="max-width:640px;margin:0 auto;padding:18px">'
     +'<button class="btn" id="fillBack">← Voltar</button>'
     +'<div id="fillTitle" style="margin:12px 0 4px;font-weight:700;font-size:16px"></div>'
@@ -4765,6 +4767,7 @@ try{ if(typeof RICH!=='undefined'){
 
   window.openAllLeitura=function(skillName, section){
     if(typeof ensureLeituraView==='function')ensureLeituraView();
+    if(typeof ensureExStyles==='function')ensureExStyles();
     var all=[];
     var _gate=section==='phrases'?'::f':'::v';
     (APP.skills||[]).forEach(function(s){
@@ -4789,6 +4792,7 @@ try{ if(typeof RICH!=='undefined'){
 
   window.openAllFill=function(skillName, section){
     if(typeof ensureFillView==='function')ensureFillView();
+    if(typeof ensureExStyles==='function')ensureExStyles();
     var all=[];
     var _gate=section==='phrases'?'::f':'::v';
     (APP.skills||[]).forEach(function(s){
@@ -5798,8 +5802,7 @@ try{ if(typeof RICH!=='undefined'){
   function modesFor(section) {
     return [
       { lbl:'Revisão',   icon:'refresh', fn:function(sn){ call('openAllVocabReview',[section, sn]); } },
-      { lbl:'Pronúncia', icon:'mic',     fn:function(sn){ call('openAllPronunc',[sn, section]); } },
-      { lbl:'Leitura',   icon:'swap',    fn:function(sn){ call('openAllLeitura',[sn, section]); } },
+      { lbl:'Pronúncia', icon:'mic',     fn:function(sn){ call('openAllLeitura',[sn, section]); } },
       { lbl:'Preencher', icon:'pencil',  fn:function(sn){ call('openAllFill',[sn, section]); } },
     ];
   }
