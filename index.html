@@ -390,6 +390,7 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 .ov-cc-pct{margin-left:auto;font-size:12px;color:var(--ink2)}
 .ov-badge{display:inline-block;margin:8px 0;font-size:11px;color:#9fcbef;background:var(--surface2);padding:2px 9px;border-radius:8px}
 .ov-cc-next{font-size:12px;color:var(--ink2);margin:2px 0 8px}
+.ov-crit{font-size:11px;margin:8px 0 0}.ov-crit.ok{color:#5dcaa5}.ov-crit.due{color:#e08a2a}
 .ov-track2{height:6px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden}
 .ov-fill2{height:100%;border-radius:4px}
 .ov-cc-btns{display:flex;gap:8px;margin-top:12px}
@@ -1437,23 +1438,31 @@ function miniCard(s,i){
 // ── Redesign da home (desktop) ───────────────────────────────────────────────
 function _todayKey(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);}
 function _ovCefr(n){return (APP.cefr&&APP.cefr[n])||'Iniciante';}
-function _ovTheme(name){
+function _ovCT(name){
   var n=(name||'').toLowerCase();
-  if(n.indexOf('ital')>-1) return {bar:'#009246',stripe:['#009246','#ffffff','#ce2b37']};
-  if(n.indexOf('ingl')>-1||n.indexOf('engl')>-1) return {bar:'#b22234',stripe:['#b22234','#ffffff','#3c3b6e']};
-  return {bar:'#4d88ff',stripe:['#4d88ff','#4d88ff','#4d88ff']};
+  if(n.indexOf('ital')>-1) return {flag:'it',bar:'#009246',stripe:['#009246','#ffffff','#ce2b37']};
+  if(n.indexOf('ingl')>-1||n.indexOf('engl')>-1) return {flag:'us',bar:'#b22234',stripe:['#b22234','#ffffff','#3c3b6e']};
+  if(n.indexOf('sql')>-1) return {icon:'🗄️',bg:'#0f3b33',bar:'#1d9e75',stripe:['#0f9e75','#1d9e75','#5dcaa5']};
+  if(n.indexOf('power')>-1) return {icon:'📊',bg:'#3a2e08',bar:'#e8a020',stripe:['#b8860b','#e8a020','#f2c811']};
+  if(n.indexOf('python')>-1) return {icon:'🐍',bg:'#13314a',bar:'#4f8cc9',stripe:['#2f5d8a','#4f8cc9','#ffd34d']};
+  if(n.indexOf('excel')>-1) return {icon:'📗',bg:'#10311f',bar:'#3fa66a',stripe:['#1e6b41','#3fa66a','#a7e0bf']};
+  if(n.indexOf('git')>-1) return {icon:'🌿',bg:'#3a1e12',bar:'#e8693a',stripe:['#b0451f','#e8693a','#f0a085']};
+  if(n.indexOf('tableau')>-1) return {icon:'📈',bg:'#3a2810',bar:'#e9883a',stripe:['#b85f1c','#e9883a','#f2b585']};
+  if(n.indexOf('cloud')>-1) return {icon:'☁️',bg:'#15314a',bar:'#6aa9e0',stripe:['#3f7bb0','#6aa9e0','#bcdcf5']};
+  return {icon:'📘',bg:'#1e2c44',bar:'#4d88ff',stripe:['#4d88ff','#4d88ff','#4d88ff']};
 }
+function _ovTheme(name){ return _ovCT(name); }
 function _ovFlag(name){
-  var n=(name||'').toLowerCase();
-  if(n.indexOf('ital')>-1)
+  var t=_ovCT(name);
+  if(t.flag==='it')
     return '<span class="ov-flag"><i style="background:#009246"></i><i style="background:#fff"></i><i style="background:#ce2b37"></i></span>';
-  if(n.indexOf('ingl')>-1||n.indexOf('engl')>-1)
+  if(t.flag==='us')
     return '<span class="ov-flag" style="position:relative;background:#fff">'+
       '<u style="position:absolute;top:2px;left:0;width:100%;height:2px;background:#b22234"></u>'+
       '<u style="position:absolute;top:6px;left:0;width:100%;height:2px;background:#b22234"></u>'+
       '<u style="position:absolute;top:10px;left:0;width:100%;height:2px;background:#b22234"></u>'+
       '<u style="position:absolute;top:0;left:0;width:10px;height:8px;background:#3c3b6e"></u></span>';
-  return '<span class="ov-flag" style="background:#4d88ff"></span>';
+  return '<span class="ov-flag" style="background:'+t.bg+';display:inline-flex;align-items:center;justify-content:center;font-size:11px;line-height:1">'+t.icon+'</span>';
 }
 function ovCourseCard(s,i,feat){
   var c=compute(s);var p=Math.round(c.pct*100);var started=p>0;var t=_ovTheme(s.name);
@@ -1469,8 +1478,20 @@ function ovCourseCard(s,i,feat){
       '<div class="ov-badge">'+_ovCefr(c.cl)+(started?' · em curso':'')+'</div>'+
       next+
       '<div class="ov-track2"><div class="ov-fill2" style="width:'+p+'%;background:'+t.bar+'"></div></div>'+
+      _ovCrit(s)+
       '<div class="ov-cc-btns">'+btns+'</div>'+
     '</div></div>';
+}
+// criticidade do dia: plano (h/dia) - tempo ja estudado hoje (de 30-activity-time)
+function _ovCrit(s){
+  try{
+    if(!state.pace||state.pace[s.name]==null) return '';
+    if(state.stats&&state.stats.paused&&state.stats.paused[s.name]) return '';
+    var dk=_todayKey(); var spent=(state.stats&&state.stats.daily&&state.stats.daily[dk]&&state.stats.daily[dk][s.name])||0;
+    var rem=(state.pace[s.name]||0)*3600 - spent;
+    return rem<=0 ? '<div class="ov-crit ok">✓ plano de hoje concluído</div>'
+                  : '<div class="ov-crit due">faltam '+Math.round(rem/60)+' min hoje</div>';
+  }catch(e){ return ''; }
 }
 
 function renderOverview(){
@@ -5360,6 +5381,10 @@ try{ if(typeof RICH!=='undefined'){
     '.mv-obj-prog{font-size:12px;color:'+INK+';background:#1e2c44;border-radius:8px;padding:8px 10px;margin-bottom:10px}' +
     '.mv-plan{display:flex;align-items:center;justify-content:space-between;margin-top:9px;font-size:12px;color:'+INK2+'}' +
     '.mv-pause{background:transparent;border:1px solid #2e3a4c;color:'+INK+';border-radius:8px;padding:5px 12px;font-family:Poppins;font-size:12px;cursor:pointer}' +
+    '.mv-plantag{font-size:10px;color:'+INK2+';background:#1e2c44;border-radius:7px;padding:2px 7px;white-space:nowrap}' +
+    '.mv-pause2{box-sizing:border-box;min-height:46px;background:transparent;border:1px solid #2e3a4c;color:'+INK+';border-radius:11px;padding:0 14px;font-family:Poppins;font-size:13px;cursor:pointer}' +
+    '.mv-crit{font-size:11px;margin-top:7px;font-family:Poppins}.mv-crit.is-ok{color:#5dcaa5}.mv-crit.is-due{color:'+ORANGE+'}' +
+    '.mml-crit{font-size:10px;margin-right:8px;padding:2px 7px;border-radius:7px;white-space:nowrap}.mml-crit.ok{color:#5dcaa5;background:#0f3b33}.mml-crit.due{color:'+ORANGE+';background:#3a2e08}' +
     /* faixa de tema no topo dos cards */
     '.mv-themed,.mv-ccard{padding:0;overflow:hidden}' +
     '.mv-stripe{display:flex;height:5px}.mv-stripe i{flex:1}' +
@@ -5451,31 +5476,54 @@ try{ if(typeof RICH!=='undefined'){
     if(bp<=0){ var lg=sks.filter(function(s){return s.lang;}); return lg[0]||sks[0]||null; }
     return best;
   }
-  // tema por curso: cores da faixa superior + barra
-  function theme(name){
+  // tema por curso: idiomas = bandeira; técnicos = cor própria + emoji
+  function ctheme(name){
     var n=(name||'').toLowerCase();
-    if(n.indexOf('ital')>-1) return {bar:'#009246', stripe:['#009246','#ffffff','#ce2b37']};
-    if(n.indexOf('ingl')>-1||n.indexOf('engl')>-1) return {bar:'#b22234', stripe:['#b22234','#ffffff','#3c3b6e']};
-    return {bar:BLUE, stripe:[BLUE,BLUE,BLUE]};
+    if(n.indexOf('ital')>-1) return {flag:'it', bar:'#009246', stripe:['#009246','#ffffff','#ce2b37']};
+    if(n.indexOf('ingl')>-1||n.indexOf('engl')>-1) return {flag:'us', bar:'#b22234', stripe:['#b22234','#ffffff','#3c3b6e']};
+    if(n.indexOf('sql')>-1) return {icon:'🗄️', bg:'#0f3b33', bar:'#1d9e75', stripe:['#0f9e75','#1d9e75','#5dcaa5']};
+    if(n.indexOf('power')>-1) return {icon:'📊', bg:'#3a2e08', bar:'#e8a020', stripe:['#b8860b','#e8a020','#f2c811']};
+    if(n.indexOf('python')>-1) return {icon:'🐍', bg:'#13314a', bar:'#4f8cc9', stripe:['#2f5d8a','#4f8cc9','#ffd34d']};
+    if(n.indexOf('excel')>-1) return {icon:'📗', bg:'#10311f', bar:'#3fa66a', stripe:['#1e6b41','#3fa66a','#a7e0bf']};
+    if(n.indexOf('git')>-1) return {icon:'🌿', bg:'#3a1e12', bar:'#e8693a', stripe:['#b0451f','#e8693a','#f0a085']};
+    if(n.indexOf('tableau')>-1) return {icon:'📈', bg:'#3a2810', bar:'#e9883a', stripe:['#b85f1c','#e9883a','#f2b585']};
+    if(n.indexOf('cloud')>-1) return {icon:'☁️', bg:'#15314a', bar:'#6aa9e0', stripe:['#3f7bb0','#6aa9e0','#bcdcf5']};
+    return {icon:'📘', bg:'#1e2c44', bar:BLUE, stripe:[BLUE,BLUE,BLUE]};
   }
+  function theme(name){ return ctheme(name); }
   function stripeHTML(t){
     return '<div class="mv-stripe">'+t.stripe.map(function(c){return '<i style="background:'+c+'"></i>';}).join('')+'</div>';
   }
-  // mini-bandeira ao lado do nome (Italiano tricolor, Inglês EUA, demais azul)
+  // chip ao lado do nome: bandeira (idiomas) ou quadradinho colorido + emoji (técnicos)
   function flagChip(name){
-    var n=(name||'').toLowerCase();
-    if(n.indexOf('ital')>-1)
+    var t=ctheme(name);
+    if(t.flag==='it')
       return '<span class="mv-flag"><i style="background:#009246"></i><i style="background:#fff"></i><i style="background:#ce2b37"></i></span>';
-    if(n.indexOf('ingl')>-1||n.indexOf('engl')>-1)
+    if(t.flag==='us')
       return '<span class="mv-flag" style="position:relative;background:#fff">'+
         '<u style="position:absolute;top:2px;left:0;width:100%;height:2px;background:#b22234"></u>'+
         '<u style="position:absolute;top:6px;left:0;width:100%;height:2px;background:#b22234"></u>'+
         '<u style="position:absolute;top:10px;left:0;width:100%;height:2px;background:#b22234"></u>'+
         '<u style="position:absolute;top:0;left:0;width:10px;height:8px;background:#3c3b6e"></u></span>';
-    return '<span class="mv-flag" style="background:'+BLUE+'"></span>';
+    return '<span class="mv-flag" style="background:'+t.bg+';display:inline-flex;align-items:center;justify-content:center;font-size:12px;line-height:1">'+t.icon+'</span>';
   }
   function hasMeta(sk){ try{ return !!(state&&state.pace&&state.pace[sk.name]!=null); }catch(e){ return false; } }
   function isPaused(sk){ try{ return !!(state&&state.stats&&state.stats.paused&&state.stats.paused[sk.name]); }catch(e){ return false; } }
+  // segundos estudados HOJE no curso (gravado por 30-activity-time.js)
+  function spentTodaySec(name){ try{ var dk=todayKey(); return (state&&state.stats&&state.stats.daily&&state.stats.daily[dk]&&state.stats.daily[dk][name])||0; }catch(e){ return 0; } }
+  // criticidade = plano do dia (h/dia) - tempo já feito hoje
+  function critOf(sk){
+    if(!hasMeta(sk)||isPaused(sk)) return null;
+    var planSec=(state.pace[sk.name]||0)*3600, spent=spentTodaySec(sk.name);
+    var rem=planSec-spent;
+    return { done: rem<=0, remMin: Math.max(0,Math.round(rem/60)) };
+  }
+  function critHTML(sk){
+    var cr=critOf(sk); if(!cr) return '';
+    return cr.done
+      ? '<div class="mv-crit is-ok">✓ plano de hoje concluído</div>'
+      : '<div class="mv-crit is-due">faltam ' + cr.remMin + ' min hoje</div>';
+  }
   // horas restantes para chegar ao nível L (soma das horas dos tópicos até L menos as feitas)
   function hoursForLevel(sk,L){
     var tot=0,don=0;
@@ -5570,7 +5618,6 @@ try{ if(typeof RICH!=='undefined'){
     if (best) {
       var bi = sks.indexOf(best), bc = computeOf(best), bp = Math.round((bc?bc.pct:0)*100);
       var started = bp > 0, bt = theme(best.name);
-      h += '<div class="mv-h2">' + (started ? 'Continue de onde parou' : 'Comece a estudar') + '</div>';
       h += '<div class="mv-card mv-themed">' + stripeHTML(bt) +
         '<div class="mv-card-in">' +
           '<div class="mv-row">' +
@@ -5587,40 +5634,43 @@ try{ if(typeof RICH!=='undefined'){
       '</div>';
     }
 
-    // Meus cursos (recolhido) — % de conclusão + plano diário (h/dia) + pausar
-    var sumPct=0, planH=0, planN=0;
-    sks.forEach(function(sk){ var cc=computeOf(sk); sumPct+=cc?cc.pct:0; if(hasMeta(sk)&&!isPaused(sk)){ planH+=(state.pace[sk.name]||0); planN++; } });
+    // Meus cursos — resumo elegante + cards no mesmo padrão do card principal
+    var sumPct=0, planH=0, activeN=0;
+    sks.forEach(function(sk){ var cc=computeOf(sk); sumPct+=cc?cc.pct:0; if(!isPaused(sk)) activeN++; if(hasMeta(sk)&&!isPaused(sk)) planH+=(state.pace[sk.name]||0); });
     var avg = sks.length ? Math.round(sumPct/sks.length*100) : 0;
-    var planTxt = planN ? (' · ' + (Math.round(planH*10)/10) + ' h/dia no plano') : '';
+    var planFmt = Math.round(planH*10)/10;
     var cards='';
     sks.forEach(function(sk) {
       var idx = sks.indexOf(sk), c = computeOf(sk), p = Math.round((c?c.pct:0)*100);
       var t = theme(sk.name), showCont = p>0 || hasMeta(sk), meta = hasMeta(sk), paused = isPaused(sk);
-      var paceH = meta ? (state.pace[sk.name]||0) : 0;
-      cards += '<div class="mv-ccard"' + (paused?' style="opacity:.55"':'') + '>' + stripeHTML(t) +
+      var paceH = meta ? (Math.round((state.pace[sk.name]||0)*10)/10) : 0;
+      cards += '<div class="mv-ccard"' + (paused?' style="opacity:.5"':'') + '>' + stripeHTML(t) +
         '<div class="mv-card-in">' +
           '<div class="mv-row">' +
-            '<span class="mv-cname2">' + flagChip(sk.name) + ' ' + esc(sk.name) + ' <span class="mv-badge">' + esc(cefr(c?c.cl:1)) + '</span></span>' +
-            '<span class="mv-pct">' + p + '%</span>' +
+            '<span class="mv-cname2">' + flagChip(sk.name) + ' ' + esc(sk.name) +
+              (meta?' <span class="mv-plantag">' + (paused?'⏸':paceH+'h/dia') + '</span>':'') + '</span>' +
+            '<span class="mv-badge">' + esc(cefr(c?c.cl:1)) + ' · ' + p + '%</span>' +
           '</div>' +
           '<div class="mv-track" style="margin-top:8px"><div class="mv-fill" style="width:' + p + '%;background:' + t.bar + '"></div></div>' +
-          (meta
-            ? '<div class="mv-plan"><span>' + (paused?'⏸ pausado (fora da meta)':'Plano: ' + (Math.round(paceH*10)/10) + ' h/dia') + '</span>' +
-              '<button class="mv-pause" onclick="__msh.togglePause(' + idx + ')">' + (paused?'Retomar':'Pausar') + '</button></div>'
-            : '') +
+          critHTML(sk) +
           '<div class="mv-btns" style="margin-top:11px">' +
             (showCont
-              ? '<button class="mv-cta" style="flex:1" onclick="__msh.goEstudar(' + idx + ')">Continuar →</button><button class="mv-iconbtn" title="Ajustar meta" onclick="__msh.definirMeta(' + idx + ')">⚙</button>'
+              ? '<button class="mv-cta" style="flex:1" onclick="__msh.goEstudar(' + idx + ')">Continuar →</button>' +
+                (meta?'<button class="mv-pause2" onclick="__msh.togglePause(' + idx + ')">' + (paused?'Retomar':'Pausar') + '</button>':'') +
+                '<button class="mv-iconbtn" title="Ajustar meta" onclick="__msh.definirMeta(' + idx + ')">⚙</button>'
               : '<button class="mv-cta3" onclick="__msh.definirMeta(' + idx + ')">Definir meta</button>') +
           '</div>' +
         '</div>' +
       '</div>';
     });
-    h += '<div class="mv-card" style="padding:0;margin-bottom:0">' +
-           '<div class="mv-row" style="padding:14px 16px;cursor:pointer" onclick="__msh.toggleCursos()">' +
-             '<div><div class="mv-cname2">Meus cursos</div>' +
-               '<div class="mv-csub" style="margin-top:3px">' + sks.length + ' cursos · média ' + avg + '%' + planTxt + '</div></div>' +
-             '<span class="mv-link" id="mvCursosToggle">ver meus cursos ▾</span>' +
+    h += '<div class="mv-card" style="padding:14px 16px;cursor:pointer" onclick="__msh.toggleCursos()">' +
+           '<div class="mv-row">' +
+             '<span class="mv-cname2">Meus cursos</span>' +
+             '<span class="mv-badge">' + avg + '% no geral</span>' +
+           '</div>' +
+           '<div class="mv-row" style="margin-top:6px">' +
+             '<span class="mv-csub">' + activeN + ' cursos ativos · ' + planFmt + ' h/dia no plano</span>' +
+             '<span class="mv-link" id="mvCursosToggle" style="white-space:nowrap;margin-left:10px">ver meus cursos ▾</span>' +
            '</div>' +
          '</div>' +
          '<div id="mvCursos" style="display:none;margin-top:10px">' + cards + '</div>';
@@ -5831,11 +5881,12 @@ try{ if(typeof RICH!=='undefined'){
   function openCoursePicker(){
     var sks=skills();
     var rows=sks.map(function(s,i){
-      var c=computeOf(s), p=Math.round((c?c.pct:0)*100);
+      var c=computeOf(s), p=Math.round((c?c.pct:0)*100), cr=critOf(s);
+      var critTag = cr ? '<span class="mml-crit '+(cr.done?'ok':'due')+'">'+(cr.done?'✓ hoje':cr.remMin+'min')+'</span>' : '';
       return '<button class="mml-row" onclick="__msh.pickFeatured('+i+')">'+flagChip(s.name)+
-        '<span class="mml-name">'+esc(s.name)+'</span><span class="mml-tag" style="color:#8baec8">'+p+'%</span></button>';
+        '<span class="mml-name">'+esc(s.name)+'</span>'+critTag+'<span class="mml-tag" style="color:#8baec8">'+p+'%</span></button>';
     }).join('');
-    modListEl.innerHTML='<div class="mml-card"><div class="mml-head"><b>Trocar curso principal</b>'+
+    modListEl.innerHTML='<div class="mml-card"><div class="mml-head"><b style="color:'+ORANGE+'">Trocar curso principal</b>'+
       '<button class="msh-x" onclick="__msh.closeModList()" aria-label="Fechar">✕</button></div>'+
       '<div class="mml-list">'+rows+'</div></div>';
     modListEl.style.display='flex';
@@ -6024,12 +6075,20 @@ try{ if(typeof RICH!=='undefined'){
   });
   function active() { return document.visibilityState === 'visible' && (Date.now() - lastInteract) < IDLE_MS; }
 
+  function dayKey() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
   function persistLocal(etapa, secs) {
     try {
       if (typeof state === 'undefined' || !state) return;
       if (!state.stats) state.stats = {};
+      // (1) CUMULATIVO por subtópico — "tempo real" para aprender, com o tempo,
+      //     quanto cada módulo leva de fato (independe do plano). NÃO perder.
       if (!state.stats.times) state.stats.times = {};
       state.stats.times[etapa] = (state.stats.times[etapa] || 0) + secs;
+      // (2) POR DIA e POR CURSO — base da criticidade do dia (plano - feito hoje).
+      var dk = dayKey(), course = String(etapa).split('::')[0];
+      if (!state.stats.daily) state.stats.daily = {};
+      if (!state.stats.daily[dk]) state.stats.daily[dk] = {};
+      state.stats.daily[dk][course] = (state.stats.daily[dk][course] || 0) + secs;
     } catch (e) {}
   }
   function flush(done) {
