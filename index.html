@@ -4169,7 +4169,7 @@ function renderLeitura(){
     +'<div id="leituraResult" style="min-height:40px;width:100%"></div>'
     +(best>0?'<div style="font-size:11px;color:#8baec8;opacity:.7">Melhor: <b style="color:'+(best>=LEITURA_THRESHOLD?'#5dcaa5':'#e7b483')+'">'+best+'%</b></div>':'')
     +'</div>';
-  btns.innerHTML='<button class="sq-link" onclick="leituraNext()">não consigo falar agora</button>';
+  btns.innerHTML='';
 }
 
 function leituraMicStart(){
