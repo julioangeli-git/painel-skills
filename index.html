@@ -404,7 +404,19 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 .ov-jor-steps{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .ov-jor-step{font-size:13px;color:var(--ink)}
 .ov-jor-step b{color:#4d88ff;margin-right:6px}
-@media(max-width:820px){#overview{display:none!important}}
+/* Barra lateral (desktop) */
+.ov-side{position:fixed;top:0;left:0;bottom:0;width:200px;background:#0b111b;border-right:1px solid #1b2433;padding:18px 12px;display:flex;flex-direction:column;gap:4px;z-index:60}
+.ov-side-logo{display:flex;align-items:center;gap:8px;font-weight:500;color:var(--ink);font-size:15px;margin-bottom:16px;padding:0 6px}
+.ov-side-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:var(--ink2);font-size:14px;cursor:pointer;text-decoration:none}
+.ov-side-item span{font-size:16px;width:20px;text-align:center}
+.ov-side-item:hover{background:#16202e;color:var(--ink)}
+.ov-side-item.active{background:#16202e;color:#e08a2a}
+.ov-side-bottom{margin-top:auto}
+@media(min-width:821px){
+  .wrap{padding-left:216px}
+  header.top .top-in{padding-left:216px}
+}
+@media(max-width:820px){.ov-side{display:none!important}#overview{display:none!important}}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 </head><body>
@@ -722,6 +734,18 @@ select{font-family:'IBM Plex Mono',monospace;font-size:11.5px;border:1px solid v
 </section>
 
 <div class="wrap" style="display:none">
+<nav class="ov-side" id="ovSide">
+  <div class="ov-side-logo"><img src="img/mascote.png" alt="" style="width:24px;height:24px;border-radius:6px">Squuilui</div>
+  <a class="ov-side-item active" onclick="ovNav('inicio',this)"><span>🏠</span> Início</a>
+  <a class="ov-side-item" onclick="ovNav('jornada',this)"><span>🧭</span> Jornada</a>
+  <a class="ov-side-item" onclick="ovNav('estudar',this)"><span>📖</span> Estudar</a>
+  <a class="ov-side-item" onclick="ovNav('treino',this)"><span>🏋️</span> Treino</a>
+  <a class="ov-side-item" onclick="ovNav('amigos',this)"><span>👥</span> Amigos</a>
+  <a class="ov-side-item" onclick="ovNav('ajustes',this)"><span>⚙️</span> Ajustes</a>
+  <div class="ov-side-bottom">
+    <a class="ov-side-item" onclick="ovNav('sair',this)"><span>↩</span> Sair</a>
+  </div>
+</nav>
 <div class="banner" id="banner">Salvamento automatico indisponivel neste preview. Use Exportar.</div>
 
 <section id="overview">
@@ -1551,6 +1575,27 @@ function renderOverview(){
   if(bn&&!bn._wired){ bn._wired=true; bn.onclick=function(){ var j=document.getElementById('ovJornada'); if(j)j.scrollIntoView({behavior:'smooth',block:'center'}); }; }
 }
 
+// Navegação da barra lateral (desktop). Liga os itens às telas/funções existentes.
+function ovNav(which, el){
+  try{ document.querySelectorAll('.ov-side-item').forEach(function(a){a.classList.remove('active');}); }catch(e){}
+  if(el) el.classList.add('active');
+  ['detail','statsView','pronuncView','leituraView','fillView','srsView'].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display='none';});
+  var ov=document.getElementById('overview');
+  if(which==='treino'){ try{ if(typeof openAllVocabReview==='function'){ openAllVocabReview('vocab'); return; } }catch(e){} }
+  if(which==='amigos'){ if(ov)ov.style.display='block'; alert('Amigos e ranking — em breve!'); return; }
+  if(which==='ajustes'){ try{ if(typeof srsOpenConfig==='function') srsOpenConfig(); }catch(e){} return; }
+  if(which==='sair'){ var b=document.getElementById('logoutBtn'); if(b)b.click(); return; }
+  // inicio / jornada / estudar -> volta pro overview e rola até a seção
+  if(ov)ov.style.display='block';
+  try{ renderOverview(); }catch(e){}
+  var target = which==='jornada' ? 'ovJornada' : which==='estudar' ? 'ovCourses' : null;
+  setTimeout(function(){
+    if(target){ var t=document.getElementById(target); if(t){ t.scrollIntoView({behavior:'smooth',block:'start'}); return; } }
+    window.scrollTo({top:0,behavior:'smooth'});
+  },40);
+}
+window.ovNav=ovNav;
+
 let curIdx=0;
 
 // ── Conteúdo rico por bloco (Semana 1 = Italiano::1::0) ──────────────────────
@@ -2201,6 +2246,11 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('Zerar todo o progre
     window.currentUser={id:user.id, nome:nomeFromUser(user)};
     var w=document.getElementById('whoami'); if(w)w.textContent=window.currentUser.nome;
     applyProjectName(projectFromUser(user));
+    // Avatar do perfil (nuvem) -> aplica e mantem o localStorage em sincronia
+    try{
+      var av=user.user_metadata&&user.user_metadata.avatar;
+      if(av){ localStorage.setItem('painelAvatar',av); if(typeof srsApplyAvatar==='function') srsApplyAvatar(av); }
+    }catch(e){}
     setStatus('salvo na nuvem');
   }
 
@@ -3013,6 +3063,8 @@ function srsApplyAvatar(id){
   if(!av)return;
   _srsApplyingAvatar=true;
   try{localStorage.setItem('painelAvatar',id);}catch(e){}
+  // persiste no perfil (nuvem) para nao sumir ao recarregar/trocar de aparelho
+  try{ if(window.sb&&window.currentUser){ window.sb.auth.updateUser({data:{avatar:id}}); } }catch(e){}
   // Badge dedicado (único lugar — visível em todos os dispositivos)
   var badge=document.getElementById('srsAvatarBadge');
   if(badge)badge.textContent=av.icon;
