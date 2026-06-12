@@ -6069,10 +6069,43 @@ try{ if(typeof RICH!=='undefined'){
     backHome: function() { setActive(0); showHome(); },
   };
 
-  // abre o painel de ajustes COMPLETO do site (nome, projeto, personagem, tema, sair)
+  // PERSONALIZAÇÃO (engrenagem do TOPO): nome, projeto/data, personagem, tema.
   function openSettings() {
     if (typeof window.srsOpenConfig === 'function') window.srsOpenConfig();
     else call('openAjustes', []);
+  }
+
+  // MENU DA CONTA (aba "Ajustes" de BAIXO): Estatísticas, Assinatura, Sair.
+  // Separado da personalização do topo pra não misturarem recursos.
+  function openAppMenu() {
+    var ov = document.getElementById('mshAppMenu');
+    if (!ov) {
+      ov = document.createElement('div');
+      ov.id = 'mshAppMenu';
+      ov.style.cssText = 'position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.55);display:none;align-items:flex-end;justify-content:center';
+      ov.innerHTML = '<div style="width:100%;max-width:440px;background:' + SURF + ';border:1px solid ' + BRD + ';border-bottom:0;border-top-left-radius:20px;border-top-right-radius:20px;padding:14px 16px 28px;font-family:Poppins">'
+        + '<div style="width:40px;height:4px;background:#2e3a4c;border-radius:2px;margin:2px auto 14px"></div>'
+        + '<div style="font-weight:600;font-size:13px;color:' + INK2 + ';margin:2px 8px 8px">Conta</div>'
+        + '<button class="mam-row" data-act="stats"><span>📊</span> Estatísticas</button>'
+        + '<button class="mam-row" data-act="sub"><span>⭐</span> Assinatura</button>'
+        + '<button class="mam-row" data-act="out" style="color:#f85149"><span>↩</span> Sair</button>'
+        + '</div>';
+      document.body.appendChild(ov);
+      var st = document.createElement('style');
+      st.textContent = '.mam-row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:none;border:0;color:' + INK + ';font-family:Poppins;font-weight:600;font-size:15px;padding:14px 8px;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer}.mam-row span{font-size:18px;width:24px;text-align:center}';
+      document.head.appendChild(st);
+      ov.addEventListener('click', function (e) { if (e.target === ov) ov.style.display = 'none'; });
+      ov.querySelectorAll('.mam-row').forEach(function (b) {
+        b.onclick = function () {
+          var a = b.getAttribute('data-act');
+          ov.style.display = 'none';
+          if (a === 'stats') { showNative(); if (window.openStats) window.openStats(); }
+          else if (a === 'out') { var lb = document.getElementById('logoutBtn'); if (lb) lb.click(); }
+          else if (a === 'sub') { alert('Assinatura — em breve no web (já disponível no app).'); }
+        };
+      });
+    }
+    ov.style.display = 'flex';
   }
 
   // ── View management ───────────────────────────────────────────────────────
@@ -6087,7 +6120,7 @@ try{ if(typeof RICH!=='undefined'){
     { lbl:'Estudar', ic:IC.book2,  run:function(){ showEstudar(); } },
     { lbl:'Treino',  ic:IC.pulse,  run:function(){ showNative(); call('openAllVocabReview', ['vocab']); } },
     { lbl:'Amigos',  ic:IC.people, run:function(){ showNative(); alert('Amigos e ranking — em breve!'); } },
-    { lbl:'Ajustes', ic:IC.gear,   run:function(){ showNative(); openSettings(); } },
+    { lbl:'Ajustes', ic:IC.gear,   run:function(){ showNative(); openAppMenu(); } },
   ];
 
   var nav = document.createElement('nav');
